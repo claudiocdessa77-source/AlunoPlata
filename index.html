@@ -32,7 +32,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .cabecalho .instrucao{margin:0;font-size:1rem;max-width:62ch;}
 
 /* ---- cartão central (identificação / carregando / login) ---- */
-.cartao-central{max-width:420px;margin:60px auto;background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:30px 28px;box-shadow:5px 5px 0 var(--borda);text-align:left;}
+.cartao-central{max-width:460px;margin:60px auto;background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:30px 28px;box-shadow:5px 5px 0 var(--borda);text-align:left;}
+.rotulo-selecao{font-weight:700;font-size:.85rem;margin:0 0 10px;}
+.lista-selecao{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:14px;padding-right:2px;}
+.item-selecao{text-align:left;padding:12px 14px;border:1.5px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:var(--font-display);font-size:.95rem;cursor:pointer;}
+.item-selecao:hover{background:#F0EDE4;}
 .cartao-central h1{margin:0 0 4px;font-size:1.5rem;text-transform:uppercase;font-weight:900;}
 .cartao-central .subtitulo{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.05em;margin:0 0 20px;}
 .campo{margin-bottom:16px;}
@@ -152,24 +156,29 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 </head>
 <body>
 
-<!-- ===== TELA: IDENTIFICAÇÃO DO ALUNO ===== -->
-<section id="tela-identificacao" class="tela">
+<!-- ===== TELA: ESCOLHER TURMA (lista vinda do ProfessorHub) ===== -->
+<section id="tela-escolher-turma" class="tela">
   <div class="cartao-central">
     <h1>Teorias da Administração</h1>
     <p class="subtitulo">em quadrinhos — desafio de associação</p>
-    <div class="campo">
-      <label for="input-nome">Nome completo</label>
-      <input type="text" id="input-nome" autocomplete="off" placeholder="Digite seu nome">
-    </div>
-    <div class="campo">
-      <label for="input-turma">Turma</label>
-      <input type="text" id="input-turma" autocomplete="off" placeholder="Ex.: RH 301">
-      <div class="chips-sugestao" id="chips-turma-sugestao"></div>
-    </div>
-    <p class="erro-msg" id="erro-identificacao" hidden></p>
-    <button class="botao botao-primario" id="btn-continuar">Continuar</button>
-    <br>
+    <p class="rotulo-selecao">Escolha sua turma:</p>
+    <div id="lista-turmas-prof" class="lista-selecao"></div>
+    <p class="erro-msg" id="erro-turmas" hidden></p>
     <button class="link-discreto" id="link-area-professor" type="button">Área do professor</button>
+  </div>
+</section>
+
+<!-- ===== TELA: ESCOLHER NOME (lista de alunos da turma escolhida) ===== -->
+<section id="tela-escolher-nome" class="tela">
+  <div class="cartao-central">
+    <h1 id="titulo-turma-escolhida"></h1>
+    <p class="subtitulo">encontre seu nome na lista</p>
+    <div class="campo">
+      <input type="text" id="filtro-nome" autocomplete="off" placeholder="Digite para filtrar…">
+    </div>
+    <div id="lista-alunos-prof" class="lista-selecao"></div>
+    <p class="erro-msg" id="erro-alunos" hidden></p>
+    <button class="link-discreto" id="link-trocar-turma" type="button">← Escolher outra turma</button>
   </div>
 </section>
 
@@ -291,6 +300,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <script>
 /* =========================================================
@@ -309,8 +319,19 @@ const CONFIG = {
     messagingSenderId: "157684184707",
     appId: "1:157684184707:web:f72ea53f31ea24bb710db6"
   },
-  senhaProfessor: "Lore_2001",
-  turmasSugeridas: ["Recursos Humanos","Logística","Administração"]
+  // Projeto do ProfessorHub (professorfacil.vercel.app) — usado só para LER turmas/alunos.
+  // Pegue em: console.firebase.google.com → projeto do ProfessorHub → Configurações → Seus apps.
+  firebaseProfessorHub: {
+    apiKey: "COLE_AQUI",
+    authDomain: "COLE_AQUI.firebaseapp.com",
+    projectId: "COLE_AQUI",
+    storageBucket: "COLE_AQUI.appspot.com",
+    messagingSenderId: "COLE_AQUI",
+    appId: "COLE_AQUI"
+  },
+  // Nome exato da disciplina no ProfessorHub cujas turmas/alunos devem aparecer aqui.
+  disciplinaProfessorHub: "Gestão de Pessoas",
+  senhaProfessor: "Lore_2001"
 };
 
 /* ===== DADOS: PENSADORES, HISTÓRIAS, ÍCONES ===== */
@@ -408,6 +429,29 @@ function initFirebase(){
   db = firebase.database();
   return firebase.auth().signInAnonymously();
 }
+
+/* Segunda instância — só para LER turmas/alunos do ProfessorHub (Firestore) */
+let dbProf;
+function initFirebaseProfessorHub(){
+  const appProf = firebase.initializeApp(CONFIG.firebaseProfessorHub, 'professorhub');
+  dbProf = appProf.firestore();
+  return appProf.auth().signInAnonymously();
+}
+async function buscarTurmasDoProfessorHub(){
+  const discSnap = await dbProf.collection('disciplinas').where('nome','==',CONFIG.disciplinaProfessorHub).limit(1).get();
+  if (discSnap.empty) return [];
+  const disciplinaId = discSnap.docs[0].id;
+  const turmasSnap = await dbProf.collection('turmas').where('disciplinaId','==',disciplinaId).get();
+  const turmas = turmasSnap.docs.map(d=>({id:d.id, nome:d.data().nome || '(sem nome)'}));
+  turmas.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  return turmas;
+}
+async function buscarAlunosDaTurmaProfessorHub(turmaId){
+  const snap = await dbProf.collection('alunos').where('turmaId','==',turmaId).get();
+  const alunos = snap.docs.map(d=>({id:d.id, nome:d.data().nome || '(sem nome)'}));
+  alunos.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  return alunos;
+}
 async function buscarAlunoPorNome(turmaKey, nome){
   const snap = await db.ref('turmas/'+turmaKey+'/alunos').once('value');
   const alunos = snap.val() || {};
@@ -454,30 +498,68 @@ function salvarSessaoLocal(){ localStorage.setItem('ta_sessao', JSON.stringify(s
 function carregarSessaoLocal(){ try{ const r=localStorage.getItem('ta_sessao'); return r?JSON.parse(r):null; }catch(e){ return null; } }
 function limparSessaoLocal(){ localStorage.removeItem('ta_sessao'); }
 
-function renderChipsTurmaSugerida(){
-  const wrap = document.getElementById('chips-turma-sugestao');
-  wrap.innerHTML = CONFIG.turmasSugeridas.map(t=>'<button type="button" class="chip" data-valor="'+escapeHTML(t)+'">'+escapeHTML(t)+'</button>').join('');
-  wrap.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ document.getElementById('input-turma').value=b.dataset.valor; }));
+async function mostrarEscolhaTurma(){
+  mostrarTela('tela-carregando');
+  try{
+    const turmas = await buscarTurmasDoProfessorHub();
+    const lista = document.getElementById('lista-turmas-prof');
+    const erro = document.getElementById('erro-turmas');
+    if (!turmas.length){
+      erro.hidden=false;
+      erro.textContent='Nenhuma turma encontrada para "'+CONFIG.disciplinaProfessorHub+'" no ProfessorHub. Avise o professor.';
+      lista.innerHTML='';
+    } else {
+      erro.hidden=true;
+      lista.innerHTML = turmas.map(t=>'<button type="button" class="item-selecao" data-id="'+t.id+'" data-nome="'+escapeHTML(t.nome)+'">'+escapeHTML(t.nome)+'</button>').join('');
+      lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>mostrarEscolhaNome(btn.dataset.id, btn.dataset.nome)));
+    }
+    mostrarTela('tela-escolher-turma');
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas no ProfessorHub: '+e.message;
+    mostrarTela('tela-erro');
+  }
 }
 
-async function continuarIdentificacao(){
-  const nome = document.getElementById('input-nome').value.trim();
-  const turma = document.getElementById('input-turma').value.trim();
-  const erro = document.getElementById('erro-identificacao');
-  if (nome.length<2 || turma.length<2){
-    erro.hidden=false; erro.textContent='Preencha nome e turma para continuar.'; return;
+let turmaProfEscolhida = null;
+let alunosCache = [];
+async function mostrarEscolhaNome(turmaId, turmaNome){
+  turmaProfEscolhida = {id:turmaId, nome:turmaNome};
+  mostrarTela('tela-carregando');
+  try{
+    alunosCache = await buscarAlunosDaTurmaProfessorHub(turmaId);
+    document.getElementById('titulo-turma-escolhida').textContent = turmaNome;
+    document.getElementById('filtro-nome').value = '';
+    renderizarListaAlunos(alunosCache);
+    mostrarTela('tela-escolher-nome');
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar alunos no ProfessorHub: '+e.message;
+    mostrarTela('tela-erro');
+  }
+}
+
+function renderizarListaAlunos(alunos){
+  const lista = document.getElementById('lista-alunos-prof');
+  const erro = document.getElementById('erro-alunos');
+  if (!alunos.length){
+    erro.hidden=false; erro.textContent='Nenhum nome encontrado.'; lista.innerHTML=''; return;
   }
   erro.hidden=true;
+  lista.innerHTML = alunos.map(a=>'<button type="button" class="item-selecao" data-nome="'+escapeHTML(a.nome)+'">'+escapeHTML(a.nome)+'</button>').join('');
+  lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>escolherAlunoEContinuar(btn.dataset.nome)));
+}
+
+async function escolherAlunoEContinuar(nome){
+  const turmaNome = turmaProfEscolhida.nome;
   mostrarTela('tela-carregando');
-  const turmaKey = turmaSlug(turma);
+  const turmaKey = turmaSlug(turmaNome);
   const existente = await buscarAlunoPorNome(turmaKey, nome);
   if (existente){
-    sessao = {turmaKey, turmaNome:turma, alunoId:existente.id, nome:existente.nome};
+    sessao = {turmaKey, turmaNome, alunoId:existente.id, nome:existente.nome};
     salvarSessaoLocal();
     await entrarFluxoPosEnvio();
     return;
   }
-  sessao = {turmaKey, turmaNome:turma, alunoId:gerarId(), nome};
+  sessao = {turmaKey, turmaNome, alunoId:gerarId(), nome};
   salvarSessaoLocal();
   respostasAtuais = {};
   renderHistoriasDesafio();
@@ -587,10 +669,7 @@ function trocarDeAluno(){
   pararEscutaLiberado();
   limparSessaoLocal();
   sessao = {turmaKey:null, turmaNome:null, alunoId:null, nome:null};
-  document.getElementById('input-nome').value='';
-  document.getElementById('input-turma').value='';
-  renderChipsTurmaSugerida();
-  mostrarTela('tela-identificacao');
+  mostrarEscolhaTurma();
 }
 
 /* ===== FLUXO DO PROFESSOR ===== */
@@ -702,6 +781,7 @@ function abrirModalTurma(tk, t){
 async function iniciar(){
   try{
     await initFirebase();
+    await initFirebaseProfessorHub();
   } catch(e){
     document.getElementById('erro-texto').textContent = 'Erro ao conectar: '+e.message+'. Verifique o objeto CONFIG no início do arquivo.';
     mostrarTela('tela-erro');
@@ -715,15 +795,16 @@ async function iniciar(){
     mostrarTela('tela-carregando');
     const aluno = await buscarAlunoPorId(salvo.turmaKey, salvo.alunoId);
     if (aluno){ sessao = salvo; await entrarFluxoPosEnvio(); return; }
-    document.getElementById('input-nome').value = salvo.nome || '';
-    document.getElementById('input-turma').value = salvo.turmaNome || '';
   }
-  renderChipsTurmaSugerida();
-  mostrarTela('tela-identificacao');
+  await mostrarEscolhaTurma();
 }
 
-document.getElementById('btn-continuar').addEventListener('click', continuarIdentificacao);
 document.getElementById('btn-enviar').addEventListener('click', pedirConfirmacaoEnvio);
+document.getElementById('link-trocar-turma').addEventListener('click', mostrarEscolhaTurma);
+document.getElementById('filtro-nome').addEventListener('input', (e)=>{
+  const termo = e.target.value.trim().toLowerCase();
+  renderizarListaAlunos(alunosCache.filter(a=>a.nome.toLowerCase().includes(termo)));
+});
 document.getElementById('btn-confirmar-envio').addEventListener('click', confirmarEnvio);
 document.getElementById('btn-cancelar-envio').addEventListener('click', cancelarEnvio);
 document.getElementById('link-area-professor').addEventListener('click', ()=>{ location.search='?prof=1'; });
