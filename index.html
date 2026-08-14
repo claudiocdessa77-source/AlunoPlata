@@ -322,12 +322,12 @@ const CONFIG = {
   // Projeto do ProfessorHub (professorfacil.vercel.app) — usado só para LER turmas/alunos.
   // Pegue em: console.firebase.google.com → projeto do ProfessorHub → Configurações → Seus apps.
   firebaseProfessorHub: {
-    apiKey: "COLE_AQUI",
-    authDomain: "COLE_AQUI.firebaseapp.com",
-    projectId: "COLE_AQUI",
-    storageBucket: "COLE_AQUI.appspot.com",
-    messagingSenderId: "COLE_AQUI",
-    appId: "COLE_AQUI"
+    apiKey: "AIzaSyCI8OrHATX3rLL_KQMJ67o3pWV5s-g0dTw",
+    authDomain: "professorhub-af113.firebaseapp.com",
+    projectId: "professorhub-af113",
+    storageBucket: "professorhub-af113.firebasestorage.app",
+    messagingSenderId: "532542873762",
+    appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
   },
   // Nome exato da disciplina no ProfessorHub cujas turmas/alunos devem aparecer aqui.
   disciplinaProfessorHub: "Gestão de Pessoas",
@@ -781,9 +781,15 @@ function abrirModalTurma(tk, t){
 async function iniciar(){
   try{
     await initFirebase();
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao banco do AlunoPlata: '+e.message+'. Verifique CONFIG.firebase no início do arquivo.';
+    mostrarTela('tela-erro');
+    return;
+  }
+  try{
     await initFirebaseProfessorHub();
   } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao conectar: '+e.message+'. Verifique o objeto CONFIG no início do arquivo.';
+    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao ProfessorHub: '+e.message+'. Verifique CONFIG.firebaseProfessorHub no início do arquivo (a config do projeto do ProfessorHub ainda precisa ser colada ali).';
     mostrarTela('tela-erro');
     return;
   }
