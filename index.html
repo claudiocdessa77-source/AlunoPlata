@@ -141,6 +141,24 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .barra-fundo{flex:1;height:10px;background:var(--bg);border-radius:6px;overflow:hidden;}
 .barra-preenchida{height:100%;}
 .linha-barra-valor{flex:0 0 70px;text-align:right;color:var(--ink-suave);}
+.input-nota{width:56px;padding:5px 6px;border:1px solid var(--borda);border-radius:5px;font-family:var(--font-mono);text-align:center;background:#fff;color:var(--ink);}
+
+/* ---- senha por data de nascimento / gestão de senhas ---- */
+.select-turma{width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
+.linha-senha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--borda);}
+.linha-senha-nome{flex:1;font-size:.92rem;}
+.input-linha{width:150px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:6px;font-family:var(--font-mono);font-size:.9rem;background:#fff;color:var(--ink);}
+.lista-senhas{max-height:52vh;overflow-y:auto;margin:14px 0;padding-right:2px;}
+.msg-sucesso{color:var(--verde);font-weight:700;margin-top:10px;}
+
+/* ---- arquivo ---- */
+.codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
+#arquivo-secao{margin-top:30px;}
+.arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.arquivo-cabecalho h2{margin:0;font-size:1rem;text-transform:uppercase;letter-spacing:.03em;}
+.arquivo-card{background:var(--papel);border:1.5px dashed var(--borda);border-radius:10px;padding:14px 18px;margin-top:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.arquivo-card:hover{background:#F0EDE4;}
+.arquivo-card .stat-mini{color:var(--ink-suave);font-size:.82rem;}
 
 @media (max-width:640px){
   .paineis-grid{grid-template-columns:1fr;}
@@ -179,6 +197,22 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
     <div id="lista-alunos-prof" class="lista-selecao"></div>
     <p class="erro-msg" id="erro-alunos" hidden></p>
     <button class="link-discreto" id="link-trocar-turma" type="button">← Escolher outra turma</button>
+  </div>
+</section>
+
+<!-- ===== TELA: SENHA (data de nascimento, evita abrir a atividade de outro aluno) ===== -->
+<section id="tela-senha" class="tela">
+  <div class="cartao-central">
+    <h1 id="titulo-nome-escolhido"></h1>
+    <p class="subtitulo">confirme sua identidade</p>
+    <div class="campo">
+      <label for="input-senha-aluno">Data de nascimento (só números)</label>
+      <input type="text" inputmode="numeric" id="input-senha-aluno" autocomplete="off" placeholder="Ex.: 15032008" maxlength="10">
+    </div>
+    <p class="erro-msg" id="erro-senha-aluno" hidden></p>
+    <button class="botao botao-primario" id="btn-confirmar-senha-aluno">Confirmar</button>
+    <br>
+    <button class="link-discreto" id="link-voltar-nome" type="button">← Não sou eu</button>
   </div>
 </section>
 
@@ -277,13 +311,50 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         <div>
           <h1 style="margin:0;">Painel do Professor</h1>
           <p class="subtitulo" style="margin:4px 0 0;">Teorias da Administração — acompanhamento das turmas</p>
+          <p class="codigo-atividade" id="codigo-atividade-label"></p>
         </div>
-        <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="botao botao-secundario botao-pequeno" id="btn-gerenciar-senhas">Senhas dos alunos</button>
+          <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
+        </div>
       </div>
       <div class="stats-grid" id="stats-gerais"></div>
       <div id="turmas-lista"></div>
+      <div id="arquivo-secao">
+        <div class="arquivo-cabecalho" id="arquivo-toggle">
+          <span id="arquivo-seta">▸</span>
+          <h2 id="arquivo-titulo">Arquivo (0)</h2>
+        </div>
+        <div id="arquivo-lista" hidden></div>
+      </div>
     </div>
     <footer>As respostas corretas ficam ocultas para os alunos até você liberar cada turma.</footer>
+  </div>
+</section>
+
+<!-- ===== TELA: GESTÃO DE SENHAS (professor) ===== -->
+<section id="tela-professor-senhas" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo">Painel do Professor · Gestão de Pessoas</div>
+    <div class="cabecalho">
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Senhas dos Alunos</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">data de nascimento usada para abrir a atividade</p>
+        </div>
+        <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-senhas">← Voltar ao painel</button>
+      </div>
+      <div class="campo" style="margin-top:18px;max-width:420px;">
+        <label for="select-turma-senha">Turma</label>
+        <select id="select-turma-senha" class="select-turma"></select>
+      </div>
+      <p style="font-size:.85rem;color:var(--ink-suave);margin:0;">Digite só os números da data de nascimento (ex.: 15032008). Deixe em branco para não exigir senha desse aluno.</p>
+      <div id="lista-senhas-alunos" class="lista-senhas"></div>
+      <div class="acoes">
+        <button class="botao botao-primario" id="btn-salvar-senhas">Salvar senhas</button>
+      </div>
+      <p class="msg-sucesso" id="msg-senhas-salvas" hidden>Senhas salvas!</p>
+    </div>
   </div>
 </section>
 
@@ -329,8 +400,8 @@ const CONFIG = {
     messagingSenderId: "532542873762",
     appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
   },
-  // Nome exato da disciplina no ProfessorHub cujas turmas/alunos devem aparecer aqui.
-  disciplinaProfessorHub: "Gestão de Pessoas",
+  // Código curto desta atividade — aparece no painel e é gravado junto quando uma turma é arquivada.
+  codigoAtividade: "TA-2026-1",
   senhaProfessor: "Lore_2001"
 };
 
@@ -438,17 +509,28 @@ function initFirebaseProfessorHub(){
   return appProf.auth().signInAnonymously();
 }
 async function buscarTurmasDoProfessorHub(){
-  const discSnap = await dbProf.collection('disciplinas').where('nome','==',CONFIG.disciplinaProfessorHub).limit(1).get();
-  if (discSnap.empty) return [];
-  const disciplinaId = discSnap.docs[0].id;
-  const turmasSnap = await dbProf.collection('turmas').where('disciplinaId','==',disciplinaId).get();
-  const turmas = turmasSnap.docs.map(d=>({id:d.id, nome:d.data().nome || '(sem nome)'}));
+  const turmasSnap = await dbProf.collection('turmas').get();
+  const porNome = {};
+  turmasSnap.docs.forEach(d=>{
+    const nome = d.data().nome || '(sem nome)';
+    if (!porNome[nome]) porNome[nome] = [];
+    porNome[nome].push(d.id);
+  });
+  const turmas = Object.entries(porNome).map(([nome,ids])=>({nome, ids}));
   turmas.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   return turmas;
 }
-async function buscarAlunosDaTurmaProfessorHub(turmaId){
-  const snap = await dbProf.collection('alunos').where('turmaId','==',turmaId).get();
-  const alunos = snap.docs.map(d=>({id:d.id, nome:d.data().nome || '(sem nome)'}));
+async function buscarAlunosDaTurmaProfessorHub(turmaIds){
+  const grupos = [];
+  for (let i=0;i<turmaIds.length;i+=30) grupos.push(turmaIds.slice(i,i+30)); // limite do 'in' do Firestore
+  const resultados = await Promise.all(grupos.map(g=>dbProf.collection('alunos').where('turmaId','in',g).get()));
+  const vistos = new Set();
+  const alunos = [];
+  resultados.forEach(snap=>snap.docs.forEach(d=>{
+    const nome = d.data().nome || '(sem nome)';
+    const chave = nome.trim().toLowerCase();
+    if (!vistos.has(chave)){ vistos.add(chave); alunos.push({id:d.id, nome}); }
+  }));
   alunos.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   return alunos;
 }
@@ -471,6 +553,32 @@ async function definirLiberado(turmaKey, valor){
   await db.ref('turmas/'+turmaKey+'/liberadoEm').set(valor?Date.now():null);
 }
 async function zerarTurma(turmaKey){ await db.ref('turmas/'+turmaKey+'/alunos').remove(); }
+
+/* ---- senha (data de nascimento) por aluno, guardada no próprio banco do AlunoPlata ---- */
+async function buscarSenhaAluno(turmaKey, chaveAluno){
+  const snap = await db.ref('senhas/'+turmaKey+'/'+chaveAluno).once('value');
+  const v = snap.val();
+  return (v===undefined || v===null || v==='') ? null : v;
+}
+async function buscarSenhasDaTurma(turmaKey){
+  const snap = await db.ref('senhas/'+turmaKey).once('value');
+  return snap.val() || {};
+}
+async function salvarSenhasDaTurma(turmaKey, atualizacoes){
+  if (Object.keys(atualizacoes).length) await db.ref('senhas/'+turmaKey).update(atualizacoes);
+}
+
+/* ---- arquivo ---- */
+async function arquivarTurma(turmaKey, dadosTurma){
+  const chaveArquivo = turmaKey+'__'+Date.now();
+  const dados = Object.assign({}, dadosTurma, {
+    codigoAtividade: CONFIG.codigoAtividade,
+    turmaKeyOriginal: turmaKey,
+    arquivadoEm: Date.now()
+  });
+  await db.ref('arquivo/'+chaveArquivo).set(dados);
+  await db.ref('turmas/'+turmaKey).remove();
+}
 
 let refLiberado=null, cbLiberado=null;
 function escutarLiberado(turmaKey, cb){
@@ -506,12 +614,12 @@ async function mostrarEscolhaTurma(){
     const erro = document.getElementById('erro-turmas');
     if (!turmas.length){
       erro.hidden=false;
-      erro.textContent='Nenhuma turma encontrada para "'+CONFIG.disciplinaProfessorHub+'" no ProfessorHub. Avise o professor.';
+      erro.textContent='Nenhuma turma encontrada no ProfessorHub. Avise o professor.';
       lista.innerHTML='';
     } else {
       erro.hidden=true;
-      lista.innerHTML = turmas.map(t=>'<button type="button" class="item-selecao" data-id="'+t.id+'" data-nome="'+escapeHTML(t.nome)+'">'+escapeHTML(t.nome)+'</button>').join('');
-      lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>mostrarEscolhaNome(btn.dataset.id, btn.dataset.nome)));
+      lista.innerHTML = turmas.map((t,i)=>'<button type="button" class="item-selecao" data-i="'+i+'">'+escapeHTML(t.nome)+'</button>').join('');
+      lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>mostrarEscolhaNome(turmas[Number(btn.dataset.i)])));
     }
     mostrarTela('tela-escolher-turma');
   } catch(e){
@@ -522,12 +630,12 @@ async function mostrarEscolhaTurma(){
 
 let turmaProfEscolhida = null;
 let alunosCache = [];
-async function mostrarEscolhaNome(turmaId, turmaNome){
-  turmaProfEscolhida = {id:turmaId, nome:turmaNome};
+async function mostrarEscolhaNome(turma){
+  turmaProfEscolhida = turma; // {nome, ids}
   mostrarTela('tela-carregando');
   try{
-    alunosCache = await buscarAlunosDaTurmaProfessorHub(turmaId);
-    document.getElementById('titulo-turma-escolhida').textContent = turmaNome;
+    alunosCache = await buscarAlunosDaTurmaProfessorHub(turma.ids);
+    document.getElementById('titulo-turma-escolhida').textContent = turma.nome;
     document.getElementById('filtro-nome').value = '';
     renderizarListaAlunos(alunosCache);
     mostrarTela('tela-escolher-nome');
@@ -545,7 +653,37 @@ function renderizarListaAlunos(alunos){
   }
   erro.hidden=true;
   lista.innerHTML = alunos.map(a=>'<button type="button" class="item-selecao" data-nome="'+escapeHTML(a.nome)+'">'+escapeHTML(a.nome)+'</button>').join('');
-  lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>escolherAlunoEContinuar(btn.dataset.nome)));
+  lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>selecionarNomeEPedirSenha(btn.dataset.nome)));
+}
+
+let nomeEscolhidoPendente = null;
+function selecionarNomeEPedirSenha(nome){
+  nomeEscolhidoPendente = nome;
+  document.getElementById('titulo-nome-escolhido').textContent = nome;
+  document.getElementById('input-senha-aluno').value = '';
+  document.getElementById('erro-senha-aluno').hidden = true;
+  mostrarTela('tela-senha');
+  document.getElementById('input-senha-aluno').focus();
+}
+
+async function confirmarSenhaAluno(){
+  const digitado = document.getElementById('input-senha-aluno').value.replace(/\D/g,'');
+  const erro = document.getElementById('erro-senha-aluno');
+  const turmaKey = turmaSlug(turmaProfEscolhida.nome);
+  const chaveAluno = turmaSlug(nomeEscolhidoPendente);
+  mostrarTela('tela-carregando');
+  const senhaSalva = await buscarSenhaAluno(turmaKey, chaveAluno);
+  if (senhaSalva === null){
+    mostrarTela('tela-senha');
+    erro.hidden=false; erro.textContent='Sua senha ainda não foi cadastrada pelo professor. Avise-o antes de continuar.';
+    return;
+  }
+  if (!digitado || digitado !== senhaSalva){
+    mostrarTela('tela-senha');
+    erro.hidden=false; erro.textContent='Data incorreta. Tente novamente.';
+    return;
+  }
+  await escolherAlunoEContinuar(nomeEscolhidoPendente);
 }
 
 async function escolherAlunoEContinuar(nome){
@@ -619,7 +757,7 @@ async function entrarFluxoPosEnvio(){
   const liberado = await buscarLiberado(sessao.turmaKey);
   if (liberado){
     const aluno = await buscarAlunoPorId(sessao.turmaKey, sessao.alunoId);
-    renderResultado(aluno.respostas, aluno.acertos);
+    renderResultado(aluno.respostas, aluno.acertos, aluno.nota);
     mostrarTela('tela-resultado');
   } else {
     document.getElementById('aguardando-texto').textContent = 'Sua resposta foi registrada. Assim que o(a) professor(a) liberar a correção da turma "'+sessao.turmaNome+'", seu resultado aparecerá aqui.';
@@ -628,14 +766,14 @@ async function entrarFluxoPosEnvio(){
       if (liberadoAgora){
         pararEscutaLiberado();
         const aluno = await buscarAlunoPorId(sessao.turmaKey, sessao.alunoId);
-        renderResultado(aluno.respostas, aluno.acertos);
+        renderResultado(aluno.respostas, aluno.acertos, aluno.nota);
         mostrarTela('tela-resultado');
       }
     });
   }
 }
 
-function renderResultado(respostas, acertos){
+function renderResultado(respostas, acertos, nota){
   const main=document.getElementById('historias-resultado');
   main.innerHTML='';
   HISTORIAS.forEach(h=>{
@@ -662,13 +800,14 @@ function renderResultado(respostas, acertos){
       '<div class="revelacao"><div class="ficha-pensador"><h3>'+pensador.nome+' — '+pensador.teoria+'</h3><p>'+pensador.explicacao+'</p></div></div>';
     main.appendChild(card);
   });
-  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+HISTORIAS.length+' histórias.';
+  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+HISTORIAS.length+' histórias.'+(nota!=null && nota!=='' ? ' Nota: '+nota+'.' : '');
 }
 
 function trocarDeAluno(){
   pararEscutaLiberado();
   limparSessaoLocal();
   sessao = {turmaKey:null, turmaNome:null, alunoId:null, nome:null};
+  nomeEscolhidoPendente = null;
   mostrarEscolhaTurma();
 }
 
@@ -679,12 +818,14 @@ function entrarProfessor(){
   if (senha !== CONFIG.senhaProfessor){ erro.hidden=false; return; }
   erro.hidden=true;
   document.getElementById('input-senha').value='';
+  document.getElementById('codigo-atividade-label').textContent = 'Código da atividade: '+CONFIG.codigoAtividade;
   mostrarTela('tela-professor-painel');
   escutarTodasTurmas(renderPainelProfessor);
+  carregarArquivo();
 }
 function sairProfessor(){
   pararEscutaTurmas();
-  mostrarTela('tela-identificacao');
+  mostrarEscolhaTurma();
 }
 
 function renderPainelProfessor(turmas){
@@ -728,6 +869,7 @@ function renderPainelProfessor(turmas){
     return '<div class="turma-card" data-turma="'+tk+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao botao-secundario botao-pequeno" data-acao="liberar">'+(t.liberado?'Bloquear novamente':'Liberar respostas')+'</button>'+
+      '<button type="button" class="link-zerar" data-acao="arquivar" style="color:var(--folder-escuro);">Arquivar</button>'+
       '<button type="button" class="link-zerar" data-acao="zerar">Zerar respostas</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) responderam</span><span class="stat-mini">'+media+'% de acerto médio</span>'+
       '<button type="button" class="botao-texto" data-acao="detalhes">Ver detalhes →</button></div></div>';
@@ -741,10 +883,100 @@ function renderPainelProfessor(turmas){
     const tk = e.target.closest('.turma-card').dataset.turma;
     if (confirm('Isso apaga todas as respostas desta turma. Confirmar?')) await zerarTurma(tk);
   }));
+  lista.querySelectorAll('[data-acao="arquivar"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const tk = e.target.closest('.turma-card').dataset.turma;
+    const n = Object.keys(turmas[tk].alunos||{}).length;
+    if (confirm('Arquivar esta turma? As '+n+' resposta(s) saem do painel principal e vão para o Arquivo, com o código '+CONFIG.codigoAtividade+'. Isso não apaga os dados.')){
+      await arquivarTurma(tk, turmas[tk]);
+      await carregarArquivo();
+    }
+  }));
   lista.querySelectorAll('[data-acao="detalhes"]').forEach(b=>b.addEventListener('click',(e)=>{
     const tk = e.target.closest('.turma-card').dataset.turma;
     abrirModalTurma(tk, turmas[tk]);
   }));
+}
+
+/* ---- arquivo ---- */
+document.getElementById('arquivo-toggle').addEventListener('click', ()=>{
+  const lista = document.getElementById('arquivo-lista');
+  const seta = document.getElementById('arquivo-seta');
+  lista.hidden = !lista.hidden;
+  seta.textContent = lista.hidden ? '▸' : '▾';
+});
+
+async function carregarArquivo(){
+  const snap = await db.ref('arquivo').once('value');
+  const arquivo = snap.val() || {};
+  const chaves = Object.keys(arquivo);
+  document.getElementById('arquivo-titulo').textContent = 'Arquivo ('+chaves.length+')';
+  const lista = document.getElementById('arquivo-lista');
+  if (!chaves.length){ lista.innerHTML = '<p class="vazio-msg">Nenhuma turma arquivada ainda.</p>'; return; }
+  chaves.sort((a,b)=>(arquivo[b].arquivadoEm||0)-(arquivo[a].arquivadoEm||0));
+  lista.innerHTML = chaves.map(ck=>{
+    const t = arquivo[ck];
+    const alunos = t.alunos||{};
+    const n = Object.keys(alunos).length;
+    const nomeTurma = n? Object.values(alunos)[0].turma : (t.turmaKeyOriginal||ck);
+    return '<div class="arquivo-card" data-chave="'+ck+'">'+
+      '<div><strong>'+escapeHTML(nomeTurma)+'</strong> <span class="codigo-atividade">'+escapeHTML(t.codigoAtividade||'')+'</span></div>'+
+      '<span class="stat-mini">'+n+' aluno(s) · arquivado em '+formatarData(t.arquivadoEm)+'</span>'+
+    '</div>';
+  }).join('');
+  lista.querySelectorAll('.arquivo-card').forEach(card=>card.addEventListener('click',()=>{
+    const ck = card.dataset.chave;
+    abrirModalTurma(ck, arquivo[ck], true);
+  }));
+}
+
+/* ---- gestão de senhas ---- */
+let turmasCacheSenha = [];
+async function abrirTelaSenhas(){
+  mostrarTela('tela-carregando');
+  try{
+    turmasCacheSenha = await buscarTurmasDoProfessorHub();
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas no ProfessorHub: '+e.message;
+    mostrarTela('tela-erro');
+    return;
+  }
+  const sel = document.getElementById('select-turma-senha');
+  sel.innerHTML = turmasCacheSenha.map((t,i)=>'<option value="'+i+'">'+escapeHTML(t.nome)+'</option>').join('');
+  document.getElementById('msg-senhas-salvas').hidden = true;
+  mostrarTela('tela-professor-senhas');
+  if (turmasCacheSenha.length) await carregarListaSenhas();
+  else document.getElementById('lista-senhas-alunos').innerHTML = '<p class="vazio-msg">Nenhuma turma encontrada no ProfessorHub.</p>';
+}
+
+async function carregarListaSenhas(){
+  const idx = Number(document.getElementById('select-turma-senha').value);
+  const turma = turmasCacheSenha[idx];
+  const lista = document.getElementById('lista-senhas-alunos');
+  if (!turma){ lista.innerHTML=''; return; }
+  lista.innerHTML = '<p class="vazio-msg">Carregando…</p>';
+  const alunos = await buscarAlunosDaTurmaProfessorHub(turma.ids);
+  const turmaKey = turmaSlug(turma.nome);
+  const senhasSalvas = await buscarSenhasDaTurma(turmaKey);
+  if (!alunos.length){ lista.innerHTML = '<p class="vazio-msg">Nenhum aluno nesta turma.</p>'; return; }
+  lista.innerHTML = alunos.map(a=>{
+    const chave = turmaSlug(a.nome);
+    const atual = senhasSalvas[chave] || '';
+    return '<div class="linha-senha"><span class="linha-senha-nome">'+escapeHTML(a.nome)+'</span>'+
+      '<input type="text" inputmode="numeric" class="input-linha" data-chave="'+chave+'" value="'+escapeHTML(atual)+'" placeholder="DDMMAAAA"></div>';
+  }).join('');
+}
+
+async function salvarListaSenhas(){
+  const idx = Number(document.getElementById('select-turma-senha').value);
+  const turma = turmasCacheSenha[idx];
+  if (!turma) return;
+  const turmaKey = turmaSlug(turma.nome);
+  const atualizacoes = {};
+  document.querySelectorAll('#lista-senhas-alunos .input-linha').forEach(inp=>{
+    atualizacoes[inp.dataset.chave] = inp.value.replace(/\D/g,'') || null;
+  });
+  await salvarSenhasDaTurma(turmaKey, atualizacoes);
+  document.getElementById('msg-senhas-salvas').hidden = false;
 }
 
 function abrirModal(titulo, conteudoHtml){
@@ -764,17 +996,27 @@ function abrirModalTodosAlunos(turmas){
   abrirModal('Todas as respostas ('+linhas.length+')', html);
 }
 
-function abrirModalTurma(tk, t){
-  const alunos = Object.values(t.alunos||{}).sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
+function abrirModalTurma(tk, t, arquivado){
+  const alunos = Object.entries(t.alunos||{}).map(([id,dados])=>Object.assign({id},dados)).sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
   const porHistoria={}; HISTORIAS.forEach(h=>porHistoria[h.num]={certo:0,total:0});
   alunos.forEach(a=>HISTORIAS.forEach(h=>{ porHistoria[h.num].total++; if(a.respostas && a.respostas[h.num]===h.pensadorId) porHistoria[h.num].certo++; }));
   const barrasHtml = HISTORIAS.map(h=>{
     const d=porHistoria[h.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
     return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+PENSADORES[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
   }).join('');
-  const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Enviado em</th></tr></thead><tbody>'+
-    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+HISTORIAS.length+'</td><td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
-  abrirModal((alunos[0]?alunos[0].turma:tk)+' — detalhes', '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
+  const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/alunos/');
+  const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Nota</th><th>Enviado em</th></tr></thead><tbody>'+
+    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+HISTORIAS.length+'</td>'+
+      '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
+      '<td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
+  const nomeTurma = alunos[0]?alunos[0].turma:tk;
+  abrirModal(nomeTurma+' — detalhes'+(arquivado?' (arquivada)':''), '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
+  document.querySelectorAll('.input-nota').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const val = e.target.value.trim();
+      await db.ref(e.target.dataset.caminho+'/nota').set(val===''?null:val);
+    });
+  });
 }
 
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
@@ -811,6 +1053,9 @@ document.getElementById('filtro-nome').addEventListener('input', (e)=>{
   const termo = e.target.value.trim().toLowerCase();
   renderizarListaAlunos(alunosCache.filter(a=>a.nome.toLowerCase().includes(termo)));
 });
+document.getElementById('btn-confirmar-senha-aluno').addEventListener('click', confirmarSenhaAluno);
+document.getElementById('input-senha-aluno').addEventListener('keydown', (e)=>{ if(e.key==='Enter') confirmarSenhaAluno(); });
+document.getElementById('link-voltar-nome').addEventListener('click', ()=>{ nomeEscolhidoPendente=null; mostrarTela('tela-escolher-nome'); });
 document.getElementById('btn-confirmar-envio').addEventListener('click', confirmarEnvio);
 document.getElementById('btn-cancelar-envio').addEventListener('click', cancelarEnvio);
 document.getElementById('link-area-professor').addEventListener('click', ()=>{ location.search='?prof=1'; });
@@ -818,6 +1063,10 @@ document.getElementById('link-voltar-aluno').addEventListener('click', ()=>{ loc
 document.getElementById('btn-entrar-professor').addEventListener('click', entrarProfessor);
 document.getElementById('input-senha').addEventListener('keydown', (e)=>{ if(e.key==='Enter') entrarProfessor(); });
 document.getElementById('btn-sair-professor').addEventListener('click', sairProfessor);
+document.getElementById('btn-gerenciar-senhas').addEventListener('click', abrirTelaSenhas);
+document.getElementById('btn-voltar-painel-senhas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
+document.getElementById('select-turma-senha').addEventListener('change', carregarListaSenhas);
+document.getElementById('btn-salvar-senhas').addEventListener('click', salvarListaSenhas);
 document.getElementById('link-trocar-aluno-aguardando').addEventListener('click', trocarDeAluno);
 document.getElementById('link-trocar-aluno-resultado').addEventListener('click', trocarDeAluno);
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
