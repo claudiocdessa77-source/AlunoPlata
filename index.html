@@ -285,6 +285,8 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
     <h2>Resposta enviada!</h2>
     <p id="aguardando-texto"></p>
     <p class="aguardando-nota">Esta página atualiza sozinha assim que a correção for liberada — não é preciso atualizar manualmente.</p>
+    <button class="botao botao-primario" id="btn-voltar-aguardando" type="button" style="margin-top:16px;">← Voltar</button>
+    <br>
     <button class="link-discreto" id="link-trocar-aluno-aguardando" type="button">Não é você? Trocar de aluno</button>
     <div id="outras-atividades-aguardando" class="bloco-outras-atividades"></div>
   </div>
@@ -300,6 +302,9 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
       <div id="pontuacao-resultado"></div>
     </header>
     <main id="historias-resultado"></main>
+    <div class="acoes">
+      <button class="botao botao-primario" id="btn-voltar-resultado" type="button">← Voltar</button>
+    </div>
     <div id="outras-atividades-resultado" class="bloco-outras-atividades" style="max-width:none;"></div>
     <footer>
       Atividade elaborada para apoiar o estudo de Gestão de Pessoas.<br>
@@ -474,6 +479,7 @@ const ATIVIDADES = [
     titulo: "Teorias da Administração",
     subtitulo: "em quadrinhos — desafio de associação",
     instrucao: "Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).",
+    valorTotal: 10,
     pensadores: PENSADORES_ATIV001,
     historias: HISTORIAS_ATIV001
   }
@@ -511,6 +517,10 @@ function turmaSlug(nome){
 }
 function calcularAcertos(respostas, historias){
   let n=0; historias.forEach(h=>{ if(respostas[h.num]===h.pensadorId) n++; }); return n;
+}
+function calcularNota(acertos, totalHistorias, valorTotal){
+  if (!valorTotal) return null;
+  return Math.round((acertos/totalHistorias)*valorTotal*10)/10;
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -855,7 +865,8 @@ async function confirmarEnvio(){
   document.getElementById('confirmacao-envio').hidden=true;
   mostrarTela('tela-carregando');
   const acertos = calcularAcertos(respostasAtuais, atividadeAtual.historias);
-  const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, enviadoEm:Date.now()};
+  const nota = calcularNota(acertos, atividadeAtual.historias.length, atividadeAtual.valorTotal);
+  const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, nota, enviadoEm:Date.now()};
   const chave = turmaSlug(identidade.nome);
   await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
   await entrarNaAtividade();
@@ -1179,6 +1190,8 @@ async function iniciar(){
 
 document.getElementById('btn-voltar-turma').addEventListener('click', mostrarEscolhaTurma);
 document.getElementById('btn-voltar-atividade').addEventListener('click', mostrarEscolhaAtividade);
+document.getElementById('btn-voltar-aguardando').addEventListener('click', mostrarEscolhaAtividade);
+document.getElementById('btn-voltar-resultado').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-enviar').addEventListener('click', pedirConfirmacaoEnvio);
 document.getElementById('filtro-nome').addEventListener('input', (e)=>{
   const termo = e.target.value.trim().toLowerCase();
