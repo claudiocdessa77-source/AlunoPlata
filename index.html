@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teorias da Administração — Atividade</title>
+<title>Plataforma do Aluno</title>
 <style>
 :root{
   --bg:#F7F5F0;
@@ -672,7 +672,13 @@ async function confirmarSenhaAluno(){
   const turmaKey = turmaSlug(turmaProfEscolhida.nome);
   const chaveAluno = turmaSlug(nomeEscolhidoPendente);
   mostrarTela('tela-carregando');
-  const senhaSalva = await buscarSenhaAluno(turmaKey, chaveAluno);
+  let senhaSalva;
+  try{
+    senhaSalva = await buscarSenhaAluno(turmaKey, chaveAluno);
+  } catch(e){
+    mostrarTela('tela-senha');
+    erro.hidden=false; erro.textContent='Erro ao conferir a senha: '+e.message; return;
+  }
   if (senhaSalva === null){
     mostrarTela('tela-senha');
     erro.hidden=false; erro.textContent='Sua senha ainda não foi cadastrada pelo professor. Avise-o antes de continuar.';
@@ -952,31 +958,44 @@ async function carregarListaSenhas(){
   const idx = Number(document.getElementById('select-turma-senha').value);
   const turma = turmasCacheSenha[idx];
   const lista = document.getElementById('lista-senhas-alunos');
+  document.getElementById('msg-senhas-salvas').hidden = true;
   if (!turma){ lista.innerHTML=''; return; }
   lista.innerHTML = '<p class="vazio-msg">Carregando…</p>';
-  const alunos = await buscarAlunosDaTurmaProfessorHub(turma.ids);
-  const turmaKey = turmaSlug(turma.nome);
-  const senhasSalvas = await buscarSenhasDaTurma(turmaKey);
-  if (!alunos.length){ lista.innerHTML = '<p class="vazio-msg">Nenhum aluno nesta turma.</p>'; return; }
-  lista.innerHTML = alunos.map(a=>{
-    const chave = turmaSlug(a.nome);
-    const atual = senhasSalvas[chave] || '';
-    return '<div class="linha-senha"><span class="linha-senha-nome">'+escapeHTML(a.nome)+'</span>'+
-      '<input type="text" inputmode="numeric" class="input-linha" data-chave="'+chave+'" value="'+escapeHTML(atual)+'" placeholder="DDMMAAAA"></div>';
-  }).join('');
+  try{
+    const alunos = await buscarAlunosDaTurmaProfessorHub(turma.ids);
+    const turmaKey = turmaSlug(turma.nome);
+    const senhasSalvas = await buscarSenhasDaTurma(turmaKey);
+    if (!alunos.length){ lista.innerHTML = '<p class="vazio-msg">Nenhum aluno nesta turma.</p>'; return; }
+    lista.innerHTML = alunos.map(a=>{
+      const chave = turmaSlug(a.nome);
+      const atual = senhasSalvas[chave] || '';
+      return '<div class="linha-senha"><span class="linha-senha-nome">'+escapeHTML(a.nome)+'</span>'+
+        '<input type="text" inputmode="numeric" class="input-linha" data-chave="'+chave+'" value="'+escapeHTML(atual)+'" placeholder="DDMMAAAA"></div>';
+    }).join('');
+  } catch(e){
+    lista.innerHTML = '<p class="erro-msg">Erro ao carregar: '+escapeHTML(e.message)+'</p>';
+  }
 }
 
 async function salvarListaSenhas(){
   const idx = Number(document.getElementById('select-turma-senha').value);
   const turma = turmasCacheSenha[idx];
   if (!turma) return;
+  const inputs = document.querySelectorAll('#lista-senhas-alunos .input-linha');
+  const msg = document.getElementById('msg-senhas-salvas');
+  if (!inputs.length){
+    msg.hidden = false; msg.textContent = 'A lista não carregou — nada foi salvo. Escolha a turma novamente.'; msg.style.color = 'var(--vermelho)';
+    return;
+  }
   const turmaKey = turmaSlug(turma.nome);
   const atualizacoes = {};
-  document.querySelectorAll('#lista-senhas-alunos .input-linha').forEach(inp=>{
-    atualizacoes[inp.dataset.chave] = inp.value.replace(/\D/g,'') || null;
-  });
-  await salvarSenhasDaTurma(turmaKey, atualizacoes);
-  document.getElementById('msg-senhas-salvas').hidden = false;
+  inputs.forEach(inp=>{ atualizacoes[inp.dataset.chave] = inp.value.replace(/\D/g,'') || null; });
+  try{
+    await salvarSenhasDaTurma(turmaKey, atualizacoes);
+    msg.hidden = false; msg.textContent = 'Senhas salvas!'; msg.style.color = 'var(--verde)';
+  } catch(e){
+    msg.hidden = false; msg.textContent = 'Erro ao salvar: '+e.message; msg.style.color = 'var(--vermelho)';
+  }
 }
 
 function abrirModal(titulo, conteudoHtml){
