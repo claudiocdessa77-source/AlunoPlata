@@ -286,8 +286,6 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
     <p id="aguardando-texto"></p>
     <p class="aguardando-nota">Esta página atualiza sozinha assim que a correção for liberada — não é preciso atualizar manualmente.</p>
     <button class="botao botao-primario" id="btn-voltar-aguardando" type="button" style="margin-top:16px;">← Voltar</button>
-    <br>
-    <button class="link-discreto" id="link-trocar-aluno-aguardando" type="button">Não é você? Trocar de aluno</button>
     <div id="outras-atividades-aguardando" class="bloco-outras-atividades"></div>
   </div>
 </section>
@@ -307,8 +305,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
     </div>
     <div id="outras-atividades-resultado" class="bloco-outras-atividades" style="max-width:none;"></div>
     <footer>
-      Atividade elaborada para apoiar o estudo de Gestão de Pessoas.<br>
-      <button class="link-discreto" id="link-trocar-aluno-resultado" type="button">Não é você? Trocar de aluno</button>
+      Atividade elaborada para apoiar o estudo de Gestão de Pessoas.
     </footer>
   </div>
 </section>
@@ -348,6 +345,14 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         <label for="select-atividade-prof">Atividade</label>
         <select id="select-atividade-prof" class="select-turma"></select>
       </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:420px;">
+        <div class="campo" style="margin-bottom:0;flex:1;min-width:160px;">
+          <label for="input-valor-atividade">Valor da atividade (nota máxima)</label>
+          <input type="text" inputmode="decimal" id="input-valor-atividade" placeholder="Ex.: 10">
+        </div>
+        <button class="botao botao-secundario botao-pequeno" id="btn-salvar-valor-atividade" style="margin-bottom:16px;">Salvar</button>
+      </div>
+      <p class="msg-sucesso" id="msg-valor-salvo" hidden style="margin:0 0 14px;"></p>
       <div class="stats-grid" id="stats-gerais"></div>
       <div id="turmas-lista"></div>
       <div id="arquivo-secao">
@@ -521,6 +526,13 @@ function calcularAcertos(respostas, historias){
 function calcularNota(acertos, totalHistorias, valorTotal){
   if (!valorTotal) return null;
   return Math.round((acertos/totalHistorias)*valorTotal*10)/10;
+}
+async function buscarValorAtividade(codigoAtividade, valorPadrao){
+  try{
+    const snap = await db.ref('atividades/'+codigoAtividade+'/valorTotal').once('value');
+    const v = snap.val();
+    return (v===null || v===undefined || v==='') ? valorPadrao : Number(v);
+  } catch(e){ return valorPadrao; }
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -865,7 +877,8 @@ async function confirmarEnvio(){
   document.getElementById('confirmacao-envio').hidden=true;
   mostrarTela('tela-carregando');
   const acertos = calcularAcertos(respostasAtuais, atividadeAtual.historias);
-  const nota = calcularNota(acertos, atividadeAtual.historias.length, atividadeAtual.valorTotal);
+  const valorTotal = await buscarValorAtividade(atividadeAtual.codigo, atividadeAtual.valorTotal);
+  const nota = calcularNota(acertos, atividadeAtual.historias.length, valorTotal);
   const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, nota, enviadoEm:Date.now()};
   const chave = turmaSlug(identidade.nome);
   await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
@@ -905,14 +918,6 @@ async function renderResultado(respostas, acertos, nota){
   await renderizarOutrasAtividades('outras-atividades-resultado');
 }
 
-function trocarDeAluno(){
-  pararEscutaLiberado();
-  limparIdentidadeLocal();
-  identidade = {turmaKey:null, turmaNome:null, nome:null};
-  nomeEscolhidoPendente = null;
-  mostrarEscolhaTurma();
-}
-
 /* ===== FLUXO DO PROFESSOR ===== */
 let atividadeSelecionadaProf = ATIVIDADES[0];
 let ultimoSnapshotTurmas = {};
@@ -929,11 +934,33 @@ function entrarProfessor(){
   mostrarTela('tela-professor-painel');
   escutarTodasTurmas(renderPainelProfessor);
   carregarArquivo();
+  carregarValorAtividade();
 }
 function sairProfessor(){
   pararEscutaTurmas();
   mostrarEscolhaTurma();
 }
+
+async function carregarValorAtividade(){
+  document.getElementById('msg-valor-salvo').hidden = true;
+  const cod = atividadeSelecionadaProf.codigo;
+  const atual = await buscarValorAtividade(cod, atividadeSelecionadaProf.valorTotal);
+  document.getElementById('input-valor-atividade').value = atual;
+}
+document.getElementById('btn-salvar-valor-atividade').addEventListener('click', async ()=>{
+  const bruto = document.getElementById('input-valor-atividade').value.replace(',','.').trim();
+  const num = parseFloat(bruto);
+  const msg = document.getElementById('msg-valor-salvo');
+  if (isNaN(num) || num<=0){
+    msg.hidden=false; msg.textContent='Digite um número válido, maior que zero.'; msg.style.color='var(--vermelho)'; return;
+  }
+  try{
+    await db.ref('atividades/'+atividadeSelecionadaProf.codigo+'/valorTotal').set(num);
+    msg.hidden=false; msg.textContent='Valor salvo! Vale a partir das próximas respostas enviadas — quem já respondeu mantém a nota anterior.'; msg.style.color='var(--verde)';
+  } catch(e){
+    msg.hidden=false; msg.textContent='Erro ao salvar: '+e.message; msg.style.color='var(--vermelho)';
+  }
+});
 
 function renderPainelProfessor(turmasRaw){
   ultimoSnapshotTurmas = turmasRaw;
@@ -1020,6 +1047,7 @@ document.getElementById('select-atividade-prof').addEventListener('change', (e)=
   atividadeSelecionadaProf = ATIVIDADES[Number(e.target.value)];
   renderPainelProfessorAtual();
   carregarArquivo();
+  carregarValorAtividade();
 });
 
 /* ---- arquivo ---- */
@@ -1145,16 +1173,29 @@ function abrirModalTurma(tk, t, arquivado){
     return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+pensadores[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
   }).join('');
   const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/atividades/'+ativ.codigo+'/alunos/');
-  const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Nota</th><th>Enviado em</th></tr></thead><tbody>'+
+  const colunaAcao = arquivado ? '' : '<th></th>';
+  const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Nota</th><th>Enviado em</th>'+colunaAcao+'</tr></thead><tbody>'+
     alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+historias.length+'</td>'+
       '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
-      '<td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
+      '<td>'+formatarData(a.enviadoEm)+'</td>'+
+      (arquivado?'':'<td><button type="button" class="link-zerar" data-remover-caminho="'+caminhoBase+a.id+'" data-remover-nome="'+escapeHTML(a.nome)+'">Zerar</button></td>')+
+      '</tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const nomeTurma = alunos[0]?alunos[0].turma:tk;
   abrirModal(nomeTurma+' — '+ativ.codigo+(arquivado?' (arquivada)':''), '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
   document.querySelectorAll('.input-nota').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim();
       await db.ref(e.target.dataset.caminho+'/nota').set(val===''?null:val);
+    });
+  });
+  document.querySelectorAll('[data-remover-caminho]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const nomeAluno = e.target.dataset.removerNome;
+      if (!confirm('Apagar a resposta de '+nomeAluno+' nesta atividade? Ela(e) poderá responder de novo.')) return;
+      await db.ref(e.target.dataset.removerCaminho).remove();
+      const idApagado = e.target.dataset.removerCaminho.split('/').pop();
+      delete t.alunos[idApagado];
+      abrirModalTurma(tk, t, arquivado);
     });
   });
 }
@@ -1211,8 +1252,6 @@ document.getElementById('btn-gerenciar-senhas').addEventListener('click', abrirT
 document.getElementById('btn-voltar-painel-senhas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
 document.getElementById('select-turma-senha').addEventListener('change', carregarListaSenhas);
 document.getElementById('btn-salvar-senhas').addEventListener('click', salvarListaSenhas);
-document.getElementById('link-trocar-aluno-aguardando').addEventListener('click', trocarDeAluno);
-document.getElementById('link-trocar-aluno-resultado').addEventListener('click', trocarDeAluno);
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') fecharModal(); });
 
