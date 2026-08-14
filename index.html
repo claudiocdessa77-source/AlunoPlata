@@ -345,14 +345,6 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         <label for="select-atividade-prof">Atividade</label>
         <select id="select-atividade-prof" class="select-turma"></select>
       </div>
-      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:420px;">
-        <div class="campo" style="margin-bottom:0;flex:1;min-width:160px;">
-          <label for="input-valor-atividade">Valor da atividade (nota máxima)</label>
-          <input type="text" inputmode="decimal" id="input-valor-atividade" placeholder="Ex.: 10">
-        </div>
-        <button class="botao botao-secundario botao-pequeno" id="btn-salvar-valor-atividade" style="margin-bottom:16px;">Salvar</button>
-      </div>
-      <p class="msg-sucesso" id="msg-valor-salvo" hidden style="margin:0 0 14px;"></p>
       <div class="stats-grid" id="stats-gerais"></div>
       <div id="turmas-lista"></div>
       <div id="arquivo-secao">
@@ -526,13 +518,6 @@ function calcularAcertos(respostas, historias){
 function calcularNota(acertos, totalHistorias, valorTotal){
   if (!valorTotal) return null;
   return Math.round((acertos/totalHistorias)*valorTotal*10)/10;
-}
-async function buscarValorAtividade(codigoAtividade, valorPadrao){
-  try{
-    const snap = await db.ref('atividades/'+codigoAtividade+'/valorTotal').once('value');
-    const v = snap.val();
-    return (v===null || v===undefined || v==='') ? valorPadrao : Number(v);
-  } catch(e){ return valorPadrao; }
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -877,8 +862,7 @@ async function confirmarEnvio(){
   document.getElementById('confirmacao-envio').hidden=true;
   mostrarTela('tela-carregando');
   const acertos = calcularAcertos(respostasAtuais, atividadeAtual.historias);
-  const valorTotal = await buscarValorAtividade(atividadeAtual.codigo, atividadeAtual.valorTotal);
-  const nota = calcularNota(acertos, atividadeAtual.historias.length, valorTotal);
+  const nota = calcularNota(acertos, atividadeAtual.historias.length, atividadeAtual.valorTotal);
   const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, nota, enviadoEm:Date.now()};
   const chave = turmaSlug(identidade.nome);
   await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
@@ -934,33 +918,11 @@ function entrarProfessor(){
   mostrarTela('tela-professor-painel');
   escutarTodasTurmas(renderPainelProfessor);
   carregarArquivo();
-  carregarValorAtividade();
 }
 function sairProfessor(){
   pararEscutaTurmas();
   mostrarEscolhaTurma();
 }
-
-async function carregarValorAtividade(){
-  document.getElementById('msg-valor-salvo').hidden = true;
-  const cod = atividadeSelecionadaProf.codigo;
-  const atual = await buscarValorAtividade(cod, atividadeSelecionadaProf.valorTotal);
-  document.getElementById('input-valor-atividade').value = atual;
-}
-document.getElementById('btn-salvar-valor-atividade').addEventListener('click', async ()=>{
-  const bruto = document.getElementById('input-valor-atividade').value.replace(',','.').trim();
-  const num = parseFloat(bruto);
-  const msg = document.getElementById('msg-valor-salvo');
-  if (isNaN(num) || num<=0){
-    msg.hidden=false; msg.textContent='Digite um número válido, maior que zero.'; msg.style.color='var(--vermelho)'; return;
-  }
-  try{
-    await db.ref('atividades/'+atividadeSelecionadaProf.codigo+'/valorTotal').set(num);
-    msg.hidden=false; msg.textContent='Valor salvo! Vale a partir das próximas respostas enviadas — quem já respondeu mantém a nota anterior.'; msg.style.color='var(--verde)';
-  } catch(e){
-    msg.hidden=false; msg.textContent='Erro ao salvar: '+e.message; msg.style.color='var(--vermelho)';
-  }
-});
 
 function renderPainelProfessor(turmasRaw){
   ultimoSnapshotTurmas = turmasRaw;
@@ -1047,7 +1009,6 @@ document.getElementById('select-atividade-prof').addEventListener('change', (e)=
   atividadeSelecionadaProf = ATIVIDADES[Number(e.target.value)];
   renderPainelProfessorAtual();
   carregarArquivo();
-  carregarValorAtividade();
 });
 
 /* ---- arquivo ---- */
