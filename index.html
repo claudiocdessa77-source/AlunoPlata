@@ -37,15 +37,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .lista-selecao{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:14px;padding-right:2px;}
 .item-selecao{text-align:left;padding:12px 14px;border:1.5px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:var(--font-display);font-size:.95rem;cursor:pointer;}
 .item-selecao:hover{background:#F0EDE4;}
+.item-atividade{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
 .cartao-central h1{margin:0 0 4px;font-size:1.5rem;text-transform:uppercase;font-weight:900;}
 .cartao-central .subtitulo{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.05em;margin:0 0 20px;}
 .campo{margin-bottom:16px;}
 .campo label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;}
 .campo input{width:100%;padding:11px 13px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
 .campo input:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
-.chips-sugestao{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .erro-msg{background:#FCEAE8;border:1.5px solid var(--vermelho);color:var(--vermelho);border-radius:8px;padding:9px 12px;font-size:.85rem;font-weight:600;margin-bottom:14px;}
 .link-discreto{display:inline-block;margin-top:18px;font-size:.8rem;color:var(--ink-suave);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font-display);padding:0;}
+
+/* ---- cabeçalho com botão de voltar ao lado do nome da turma ---- */
+.cabecalho-com-voltar{display:flex;align-items:center;gap:10px;margin-bottom:2px;}
+.botao-voltar{background:#fff;border:1.5px solid var(--ink);border-radius:8px;width:34px;height:34px;font-size:1.05rem;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;}
+.botao-voltar:hover{background:#F0EDE4;}
+.cabecalho-com-voltar h1{margin:0;font-size:1.35rem;text-transform:uppercase;font-weight:900;}
 
 .carregando-box{text-align:center;}
 .spinner{width:34px;height:34px;border:4px solid var(--borda);border-top-color:var(--folder);border-radius:50%;margin:0 auto 14px;}
@@ -57,6 +63,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .aguardando-box h2{margin:0 0 10px;font-size:1.3rem;text-transform:uppercase;}
 .aguardando-box p{margin:0 0 10px;}
 .aguardando-nota{font-size:.85rem;color:var(--ink-suave);}
+.bloco-outras-atividades{text-align:left;margin-top:26px;padding-top:18px;border-top:1.5px dashed var(--borda);}
+.bloco-outras-atividades h4{margin:0 0 10px;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-suave);}
 
 /* ---- painéis do quadrinho (reutilizado no desafio e no resultado) ---- */
 #historias-desafio,#historias-resultado{margin-top:28px;display:flex;flex-direction:column;gap:22px;}
@@ -104,9 +112,6 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--folder-escuro);
 footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;}
 
 /* ---- painel do professor ---- */
-.painel-cabecalho{margin-bottom:22px;}
-.painel-cabecalho h1{margin:0 0 4px;font-size:clamp(1.4rem,4vw,2rem);text-transform:uppercase;font-weight:900;}
-.painel-cabecalho .subtitulo{font-family:var(--font-mono);font-size:.8rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.05em;}
 .painel-topo-acoes{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:20px 0 28px;}
 .stat-card{background:var(--papel);border:1.5px solid var(--ink);border-radius:10px;padding:18px;text-align:left;font-family:var(--font-display);cursor:pointer;}
@@ -149,9 +154,9 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .linha-senha-nome{flex:1;font-size:.92rem;}
 .input-linha{width:150px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:6px;font-family:var(--font-mono);font-size:.9rem;background:#fff;color:var(--ink);}
 .lista-senhas{max-height:52vh;overflow-y:auto;margin:14px 0;padding-right:2px;}
-.msg-sucesso{color:var(--verde);font-weight:700;margin-top:10px;}
+.msg-sucesso{font-weight:700;margin-top:10px;}
 
-/* ---- arquivo ---- */
+/* ---- arquivo / código da atividade ---- */
 .codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
 #arquivo-secao{margin-top:30px;}
 .arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -177,8 +182,8 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <!-- ===== TELA: ESCOLHER TURMA (lista vinda do ProfessorHub) ===== -->
 <section id="tela-escolher-turma" class="tela">
   <div class="cartao-central">
-    <h1>Teorias da Administração</h1>
-    <p class="subtitulo">em quadrinhos — desafio de associação</p>
+    <h1>Plataforma do Aluno</h1>
+    <p class="subtitulo">atividades de Gestão de Pessoas</p>
     <p class="rotulo-selecao">Escolha sua turma:</p>
     <div id="lista-turmas-prof" class="lista-selecao"></div>
     <p class="erro-msg" id="erro-turmas" hidden></p>
@@ -186,17 +191,32 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
+<!-- ===== TELA: ESCOLHER ATIVIDADE ===== -->
+<section id="tela-escolher-atividade" class="tela">
+  <div class="cartao-central">
+    <div class="cabecalho-com-voltar">
+      <button class="botao-voltar" id="btn-voltar-turma" type="button" aria-label="Voltar">←</button>
+      <h1 id="titulo-turma-atividade"></h1>
+    </div>
+    <p class="subtitulo">escolha a atividade</p>
+    <div id="lista-atividades" class="lista-selecao" style="max-height:none;"></div>
+    <p class="erro-msg" id="erro-atividades" hidden></p>
+  </div>
+</section>
+
 <!-- ===== TELA: ESCOLHER NOME (lista de alunos da turma escolhida) ===== -->
 <section id="tela-escolher-nome" class="tela">
   <div class="cartao-central">
-    <h1 id="titulo-turma-escolhida"></h1>
+    <div class="cabecalho-com-voltar">
+      <button class="botao-voltar" id="btn-voltar-atividade" type="button" aria-label="Voltar">←</button>
+      <h1 id="titulo-turma-escolhida"></h1>
+    </div>
     <p class="subtitulo">encontre seu nome na lista</p>
     <div class="campo">
       <input type="text" id="filtro-nome" autocomplete="off" placeholder="Digite para filtrar…">
     </div>
     <div id="lista-alunos-prof" class="lista-selecao"></div>
     <p class="erro-msg" id="erro-alunos" hidden></p>
-    <button class="link-discreto" id="link-trocar-turma" type="button">← Escolher outra turma</button>
   </div>
 </section>
 
@@ -238,9 +258,9 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
     <header class="cabecalho">
-      <h1>Teorias da Administração</h1>
-      <p class="subtitulo">em quadrinhos — desafio de associação</p>
-      <p class="instrucao">Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).</p>
+      <h1 id="titulo-desafio"></h1>
+      <p class="subtitulo" id="subtitulo-desafio"></p>
+      <p class="instrucao" id="instrucao-desafio"></p>
       <div id="aviso-desafio" hidden></div>
     </header>
     <main id="historias-desafio"></main>
@@ -254,7 +274,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         <button class="botao botao-secundario botao-pequeno" id="btn-cancelar-envio">Revisar respostas</button>
       </div>
     </div>
-    <footer>Atividade elaborada para apoiar o estudo de Teorias da Administração na disciplina de Gestão de Pessoas.</footer>
+    <footer>Atividade elaborada para apoiar o estudo de Gestão de Pessoas.</footer>
   </div>
 </section>
 
@@ -266,6 +286,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
     <p id="aguardando-texto"></p>
     <p class="aguardando-nota">Esta página atualiza sozinha assim que a correção for liberada — não é preciso atualizar manualmente.</p>
     <button class="link-discreto" id="link-trocar-aluno-aguardando" type="button">Não é você? Trocar de aluno</button>
+    <div id="outras-atividades-aguardando" class="bloco-outras-atividades"></div>
   </div>
 </section>
 
@@ -274,13 +295,14 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
     <header class="cabecalho">
-      <h1>Teorias da Administração</h1>
-      <p class="subtitulo">resultado da sua atividade</p>
+      <h1 id="titulo-resultado"></h1>
+      <p class="subtitulo" id="subtitulo-resultado"></p>
       <div id="pontuacao-resultado"></div>
     </header>
     <main id="historias-resultado"></main>
+    <div id="outras-atividades-resultado" class="bloco-outras-atividades" style="max-width:none;"></div>
     <footer>
-      Atividade elaborada para apoiar o estudo de Teorias da Administração na disciplina de Gestão de Pessoas.<br>
+      Atividade elaborada para apoiar o estudo de Gestão de Pessoas.<br>
       <button class="link-discreto" id="link-trocar-aluno-resultado" type="button">Não é você? Trocar de aluno</button>
     </footer>
   </div>
@@ -290,7 +312,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <section id="tela-professor-login" class="tela">
   <div class="cartao-central">
     <h1>Painel do Professor</h1>
-    <p class="subtitulo">Teorias da Administração</p>
+    <p class="subtitulo">Plataforma do Aluno</p>
     <div class="campo">
       <label for="input-senha">Senha</label>
       <input type="password" id="input-senha" autocomplete="off">
@@ -310,13 +332,16 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
       <div class="painel-topo-acoes">
         <div>
           <h1 style="margin:0;">Painel do Professor</h1>
-          <p class="subtitulo" style="margin:4px 0 0;">Teorias da Administração — acompanhamento das turmas</p>
-          <p class="codigo-atividade" id="codigo-atividade-label"></p>
+          <p class="subtitulo" style="margin:4px 0 0;">acompanhamento das turmas</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="botao botao-secundario botao-pequeno" id="btn-gerenciar-senhas">Senhas dos alunos</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
         </div>
+      </div>
+      <div class="campo" style="margin-top:18px;max-width:420px;">
+        <label for="select-atividade-prof">Atividade</label>
+        <select id="select-atividade-prof" class="select-turma"></select>
       </div>
       <div class="stats-grid" id="stats-gerais"></div>
       <div id="turmas-lista"></div>
@@ -340,7 +365,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
       <div class="painel-topo-acoes">
         <div>
           <h1 style="margin:0;">Senhas dos Alunos</h1>
-          <p class="subtitulo" style="margin:4px 0 0;">data de nascimento usada para abrir a atividade</p>
+          <p class="subtitulo" style="margin:4px 0 0;">data de nascimento usada para abrir as atividades</p>
         </div>
         <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-senhas">← Voltar ao painel</button>
       </div>
@@ -348,7 +373,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         <label for="select-turma-senha">Turma</label>
         <select id="select-turma-senha" class="select-turma"></select>
       </div>
-      <p style="font-size:.85rem;color:var(--ink-suave);margin:0;">Digite só os números da data de nascimento (ex.: 15032008). Deixe em branco para não exigir senha desse aluno.</p>
+      <p style="font-size:.85rem;color:var(--ink-suave);margin:0;">Digite só os números da data de nascimento (ex.: 15032008). A mesma senha vale para todas as atividades do aluno. Deixe em branco para não exigir senha desse aluno.</p>
       <div id="lista-senhas-alunos" class="lista-senhas"></div>
       <div class="acoes">
         <button class="botao botao-primario" id="btn-salvar-senhas">Salvar senhas</button>
@@ -376,9 +401,6 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <script>
 /* =========================================================
    CONFIGURAÇÃO — EDITE ANTES DE PUBLICAR
-   1) Crie um projeto no Firebase Console (console.firebase.google.com)
-   2) Ative o Realtime Database e cole a config abaixo
-   3) Troque a senha do professor
    ========================================================= */
 const CONFIG = {
   firebase: {
@@ -390,8 +412,6 @@ const CONFIG = {
     messagingSenderId: "157684184707",
     appId: "1:157684184707:web:f72ea53f31ea24bb710db6"
   },
-  // Projeto do ProfessorHub (professorfacil.vercel.app) — usado só para LER turmas/alunos.
-  // Pegue em: console.firebase.google.com → projeto do ProfessorHub → Configurações → Seus apps.
   firebaseProfessorHub: {
     apiKey: "AIzaSyCI8OrHATX3rLL_KQMJ67o3pWV5s-g0dTw",
     authDomain: "professorhub-af113.firebaseapp.com",
@@ -400,13 +420,11 @@ const CONFIG = {
     messagingSenderId: "532542873762",
     appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
   },
-  // Código curto desta atividade — aparece no painel e é gravado junto quando uma turma é arquivada.
-  codigoAtividade: "TA-2026-1",
   senhaProfessor: "Lore_2001"
 };
 
-/* ===== DADOS: PENSADORES, HISTÓRIAS, ÍCONES ===== */
-const PENSADORES = {
+/* ===== DADOS: PENSADORES, HISTÓRIAS, ÍCONES (conteúdo da atividade ATIV001) ===== */
+const PENSADORES_ATIV001 = {
   taylor:{nome:"Frederick Taylor",teoria:"Administração Científica",cor:"#C1620B",
     explicacao:"As pistas — cronômetro, tempo, “o método certo” e recompensa pela produção — remetem à Administração Científica de Taylor: estudo de tempos e movimentos, padronização de tarefas e ênfase na eficiência do trabalho."},
   fayol:{nome:"Henri Fayol",teoria:"Teoria Clássica da Administração",cor:"#2A4D8F",
@@ -419,7 +437,7 @@ const PENSADORES = {
     explicacao:"As pistas — a progressão em degraus, das necessidades básicas ao pertencimento e reconhecimento, até a realização plena no topo — remetem à pirâmide de Maslow, que ordena as necessidades humanas como base explicativa da motivação."}
 };
 
-const HISTORIAS=[
+const HISTORIAS_ATIV001=[
   {num:1,pensadorId:"taylor",paineis:[
     {icone:"cronometro",texto:"Vamos cronometrar cada etapa do processo."},
     {icone:"regua",texto:"Com o método certo, produzimos mais em menos tempo!"},
@@ -447,6 +465,20 @@ const HISTORIAS=[
   ]}
 ];
 
+/* ===== ATIVIDADES — cada nova atividade do semestre entra aqui como um novo item ===== */
+const ATIVIDADES = [
+  {
+    codigo: "ATIV00114082026",
+    numero: 1,
+    dataAtividade: "14082026",
+    titulo: "Teorias da Administração",
+    subtitulo: "em quadrinhos — desafio de associação",
+    instrucao: "Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).",
+    pensadores: PENSADORES_ATIV001,
+    historias: HISTORIAS_ATIV001
+  }
+];
+
 const ICONES={
   cronometro:'<circle cx="24" cy="26" r="14"/><line x1="24" y1="26" x2="24" y2="16"/><line x1="24" y1="26" x2="30" y2="29"/><line x1="24" y1="12" x2="24" y2="6"/><line x1="19" y1="6" x2="29" y2="6"/><line x1="34" y1="16" x2="38" y2="12"/>',
   regua:'<rect x="8" y="10" width="32" height="24" rx="2"/><line x1="8" y1="18" x2="40" y2="18"/><line x1="14" y1="10" x2="14" y2="18"/><line x1="20" y1="10" x2="20" y2="18"/><line x1="26" y1="10" x2="26" y2="18"/><line x1="32" y1="10" x2="32" y2="18"/><line x1="14" y1="24" x2="34" y2="24"/><line x1="14" y1="29" x2="28" y2="29"/>',
@@ -464,8 +496,10 @@ const ICONES={
   escada2:'<rect x="4" y="30" width="11" height="10" fill="currentColor"/><rect x="18.5" y="18" width="11" height="22" fill="currentColor"/><rect x="33" y="6" width="11" height="34"/>',
   escada3:'<rect x="4" y="30" width="11" height="10" fill="currentColor"/><rect x="18.5" y="18" width="11" height="22" fill="currentColor"/><rect x="33" y="6" width="11" height="34" fill="currentColor"/>'
 };
-const ORDEM_CHIPS=["fayol","maslow","mayo","taylor","weber"];
-function svg(nome){ return '<svg class="icone-svg" viewBox="0 0 48 48">'+ICONES[nome]+'</svg>'; }
+function svg(nome){ return '<svg class="icone-svg" viewBox="0 0 48 48">'+(ICONES[nome]||'')+'</svg>'; }
+function ordemChips(pensadores){
+  return Object.keys(pensadores).sort((a,b)=>pensadores[a].nome.localeCompare(pensadores[b].nome,'pt-BR'));
+}
 
 /* ===== UTILITÁRIOS ===== */
 function escapeHTML(str){ const d=document.createElement('div'); d.textContent = str==null?'':String(str); return d.innerHTML; }
@@ -473,14 +507,10 @@ function turmaSlug(nome){
   return (nome||'').trim().toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[.#$\[\]\/]/g,'-')
-    .replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'turma';
+    .replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'x';
 }
-function gerarId(){
-  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-  return 'a'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
-}
-function calcularAcertos(respostas){
-  let n=0; HISTORIAS.forEach(h=>{ if(respostas[h.num]===h.pensadorId) n++; }); return n;
+function calcularAcertos(respostas, historias){
+  let n=0; historias.forEach(h=>{ if(respostas[h.num]===h.pensadorId) n++; }); return n;
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -500,8 +530,6 @@ function initFirebase(){
   db = firebase.database();
   return firebase.auth().signInAnonymously();
 }
-
-/* Segunda instância — só para LER turmas/alunos do ProfessorHub (Firestore) */
 let dbProf;
 function initFirebaseProfessorHub(){
   const appProf = firebase.initializeApp(CONFIG.firebaseProfessorHub, 'professorhub');
@@ -522,7 +550,7 @@ async function buscarTurmasDoProfessorHub(){
 }
 async function buscarAlunosDaTurmaProfessorHub(turmaIds){
   const grupos = [];
-  for (let i=0;i<turmaIds.length;i+=30) grupos.push(turmaIds.slice(i,i+30)); // limite do 'in' do Firestore
+  for (let i=0;i<turmaIds.length;i+=30) grupos.push(turmaIds.slice(i,i+30));
   const resultados = await Promise.all(grupos.map(g=>dbProf.collection('alunos').where('turmaId','in',g).get()));
   const vistos = new Set();
   const alunos = [];
@@ -534,27 +562,32 @@ async function buscarAlunosDaTurmaProfessorHub(turmaIds){
   alunos.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   return alunos;
 }
-async function buscarAlunoPorNome(turmaKey, nome){
-  const snap = await db.ref('turmas/'+turmaKey+'/alunos').once('value');
-  const alunos = snap.val() || {};
-  const alvo = nome.trim().toLowerCase();
-  for (const id in alunos){ if((alunos[id].nome||'').trim().toLowerCase()===alvo) return {id,...alunos[id]}; }
-  return null;
-}
-async function buscarAlunoPorId(turmaKey, alunoId){
-  const snap = await db.ref('turmas/'+turmaKey+'/alunos/'+alunoId).once('value');
-  const v = snap.val();
-  return v ? {id:alunoId,...v} : null;
-}
-async function salvarSubmissao(turmaKey, alunoId, dados){ await db.ref('turmas/'+turmaKey+'/alunos/'+alunoId).set(dados); }
-async function buscarLiberado(turmaKey){ const snap = await db.ref('turmas/'+turmaKey+'/liberado').once('value'); return !!snap.val(); }
-async function definirLiberado(turmaKey, valor){
-  await db.ref('turmas/'+turmaKey+'/liberado').set(valor);
-  await db.ref('turmas/'+turmaKey+'/liberadoEm').set(valor?Date.now():null);
-}
-async function zerarTurma(turmaKey){ await db.ref('turmas/'+turmaKey+'/alunos').remove(); }
 
-/* ---- senha (data de nascimento) por aluno, guardada no próprio banco do AlunoPlata ---- */
+async function buscarSubmissaoAtividade(turmaKey, codigoAtividade, chaveAluno){
+  const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/alunos/'+chaveAluno).once('value');
+  return snap.val() || null;
+}
+async function salvarSubmissaoAtividade(turmaKey, codigoAtividade, chaveAluno, dados){
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/alunos/'+chaveAluno).set(dados);
+}
+async function buscarLiberadoAtividade(turmaKey, codigoAtividade){
+  const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/liberado').once('value');
+  return !!snap.val();
+}
+async function definirLiberadoAtividade(turmaKey, codigoAtividade, valor){
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/liberado').set(valor);
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/liberadoEm').set(valor?Date.now():null);
+}
+async function zerarAtividadeDaTurma(turmaKey, codigoAtividade){
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/alunos').remove();
+}
+async function arquivarTurma(turmaKey, codigoAtividade, dadosAtividadeTurma){
+  const chaveArquivo = turmaKey+'__'+codigoAtividade+'__'+Date.now();
+  const dados = Object.assign({}, dadosAtividadeTurma, {codigoAtividade, turmaKeyOriginal:turmaKey, arquivadoEm:Date.now()});
+  await db.ref('arquivo/'+chaveArquivo).set(dados);
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade).remove();
+}
+
 async function buscarSenhaAluno(turmaKey, chaveAluno){
   const snap = await db.ref('senhas/'+turmaKey+'/'+chaveAluno).once('value');
   const v = snap.val();
@@ -568,22 +601,10 @@ async function salvarSenhasDaTurma(turmaKey, atualizacoes){
   if (Object.keys(atualizacoes).length) await db.ref('senhas/'+turmaKey).update(atualizacoes);
 }
 
-/* ---- arquivo ---- */
-async function arquivarTurma(turmaKey, dadosTurma){
-  const chaveArquivo = turmaKey+'__'+Date.now();
-  const dados = Object.assign({}, dadosTurma, {
-    codigoAtividade: CONFIG.codigoAtividade,
-    turmaKeyOriginal: turmaKey,
-    arquivadoEm: Date.now()
-  });
-  await db.ref('arquivo/'+chaveArquivo).set(dados);
-  await db.ref('turmas/'+turmaKey).remove();
-}
-
 let refLiberado=null, cbLiberado=null;
-function escutarLiberado(turmaKey, cb){
+function escutarLiberadoAtividade(turmaKey, codigoAtividade, cb){
   pararEscutaLiberado();
-  refLiberado = db.ref('turmas/'+turmaKey+'/liberado');
+  refLiberado = db.ref('turmas/'+turmaKey+'/atividades/'+codigoAtividade+'/liberado');
   cbLiberado = (snap)=>cb(!!snap.val());
   refLiberado.on('value', cbLiberado);
 }
@@ -599,27 +620,35 @@ function escutarTodasTurmas(cb){
 function pararEscutaTurmas(){ if(refTurmas&&cbTurmas){ refTurmas.off('value',cbTurmas);} refTurmas=null; cbTurmas=null; }
 
 /* ===== FLUXO DO ALUNO ===== */
-let sessao = {turmaKey:null, turmaNome:null, alunoId:null, nome:null};
+let identidade = {turmaKey:null, turmaNome:null, nome:null}; // identidade verificada (independe da atividade)
+let turmaEscolhidaTemp = null; // {nome, ids} — turma em navegação, antes/depois de confirmar identidade
+let atividadeAtual = null; // atividade sendo respondida/vista agora
+let nomeEscolhidoPendente = null;
+let alunosCache = [];
 let respostasAtuais = {};
 
-function salvarSessaoLocal(){ localStorage.setItem('ta_sessao', JSON.stringify(sessao)); }
-function carregarSessaoLocal(){ try{ const r=localStorage.getItem('ta_sessao'); return r?JSON.parse(r):null; }catch(e){ return null; } }
-function limparSessaoLocal(){ localStorage.removeItem('ta_sessao'); }
+function salvarIdentidadeLocal(){ localStorage.setItem('ta_identidade', JSON.stringify(identidade)); }
+function carregarIdentidadeLocal(){ try{ const r=localStorage.getItem('ta_identidade'); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function limparIdentidadeLocal(){ localStorage.removeItem('ta_identidade'); }
 
 async function mostrarEscolhaTurma(){
+  pararEscutaLiberado();
+  identidade = {turmaKey:null, turmaNome:null, nome:null};
+  limparIdentidadeLocal();
   mostrarTela('tela-carregando');
   try{
     const turmas = await buscarTurmasDoProfessorHub();
     const lista = document.getElementById('lista-turmas-prof');
     const erro = document.getElementById('erro-turmas');
     if (!turmas.length){
-      erro.hidden=false;
-      erro.textContent='Nenhuma turma encontrada no ProfessorHub. Avise o professor.';
-      lista.innerHTML='';
+      erro.hidden=false; erro.textContent='Nenhuma turma encontrada no ProfessorHub. Avise o professor.'; lista.innerHTML='';
     } else {
       erro.hidden=true;
       lista.innerHTML = turmas.map((t,i)=>'<button type="button" class="item-selecao" data-i="'+i+'">'+escapeHTML(t.nome)+'</button>').join('');
-      lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>mostrarEscolhaNome(turmas[Number(btn.dataset.i)])));
+      lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>{
+        turmaEscolhidaTemp = turmas[Number(btn.dataset.i)];
+        mostrarEscolhaAtividade();
+      }));
     }
     mostrarTela('tela-escolher-turma');
   } catch(e){
@@ -628,14 +657,48 @@ async function mostrarEscolhaTurma(){
   }
 }
 
-let turmaProfEscolhida = null;
-let alunosCache = [];
-async function mostrarEscolhaNome(turma){
-  turmaProfEscolhida = turma; // {nome, ids}
+async function mostrarEscolhaAtividade(){
+  document.getElementById('titulo-turma-atividade').textContent = turmaEscolhidaTemp.nome;
+  mostrarTela('tela-carregando');
+  const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
+  const identificado = identidade.turmaKey===turmaKey && identidade.nome;
+  const chave = identificado ? turmaSlug(identidade.nome) : null;
+  const lista = document.getElementById('lista-atividades');
+  const linhas = [];
+  for (const a of ATIVIDADES){
+    let badge = '';
+    if (identificado){
+      try{
+        const dados = await buscarSubmissaoAtividade(turmaKey, a.codigo, chave);
+        if (!dados) badge = '<span class="badge-pendente">Ainda não respondida</span>';
+        else{
+          const liberado = await buscarLiberadoAtividade(turmaKey, a.codigo);
+          badge = liberado ? '<span class="badge-liberado">Concluída — '+dados.acertos+'/'+a.historias.length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):'')+'</span>' : '<span class="badge-pendente">Aguardando correção</span>';
+        }
+      } catch(e){ badge = '<span class="badge-pendente">—</span>'; }
+    }
+    linhas.push('<button type="button" class="item-selecao item-atividade" data-codigo="'+a.codigo+'"><span>'+escapeHTML(a.titulo)+' <span class="codigo-atividade">'+a.codigo+'</span></span>'+badge+'</button>');
+  }
+  lista.innerHTML = linhas.join('');
+  lista.querySelectorAll('.item-atividade').forEach(btn=>btn.addEventListener('click',()=>escolherAtividade(btn.dataset.codigo)));
+  mostrarTela('tela-escolher-atividade');
+}
+
+function escolherAtividade(codigo){
+  atividadeAtual = ATIVIDADES.find(a=>a.codigo===codigo);
+  const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
+  if (identidade.turmaKey===turmaKey && identidade.nome){
+    entrarNaAtividade();
+  } else {
+    mostrarEscolhaNome();
+  }
+}
+
+async function mostrarEscolhaNome(){
   mostrarTela('tela-carregando');
   try{
-    alunosCache = await buscarAlunosDaTurmaProfessorHub(turma.ids);
-    document.getElementById('titulo-turma-escolhida').textContent = turma.nome;
+    alunosCache = await buscarAlunosDaTurmaProfessorHub(turmaEscolhidaTemp.ids);
+    document.getElementById('titulo-turma-escolhida').textContent = turmaEscolhidaTemp.nome;
     document.getElementById('filtro-nome').value = '';
     renderizarListaAlunos(alunosCache);
     mostrarTela('tela-escolher-nome');
@@ -648,15 +711,12 @@ async function mostrarEscolhaNome(turma){
 function renderizarListaAlunos(alunos){
   const lista = document.getElementById('lista-alunos-prof');
   const erro = document.getElementById('erro-alunos');
-  if (!alunos.length){
-    erro.hidden=false; erro.textContent='Nenhum nome encontrado.'; lista.innerHTML=''; return;
-  }
+  if (!alunos.length){ erro.hidden=false; erro.textContent='Nenhum nome encontrado.'; lista.innerHTML=''; return; }
   erro.hidden=true;
   lista.innerHTML = alunos.map(a=>'<button type="button" class="item-selecao" data-nome="'+escapeHTML(a.nome)+'">'+escapeHTML(a.nome)+'</button>').join('');
   lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>selecionarNomeEPedirSenha(btn.dataset.nome)));
 }
 
-let nomeEscolhidoPendente = null;
 function selecionarNomeEPedirSenha(nome){
   nomeEscolhidoPendente = nome;
   document.getElementById('titulo-nome-escolhido').textContent = nome;
@@ -669,51 +729,92 @@ function selecionarNomeEPedirSenha(nome){
 async function confirmarSenhaAluno(){
   const digitado = document.getElementById('input-senha-aluno').value.replace(/\D/g,'');
   const erro = document.getElementById('erro-senha-aluno');
-  const turmaKey = turmaSlug(turmaProfEscolhida.nome);
+  const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   const chaveAluno = turmaSlug(nomeEscolhidoPendente);
   mostrarTela('tela-carregando');
   let senhaSalva;
   try{
     senhaSalva = await buscarSenhaAluno(turmaKey, chaveAluno);
   } catch(e){
-    mostrarTela('tela-senha');
-    erro.hidden=false; erro.textContent='Erro ao conferir a senha: '+e.message; return;
+    mostrarTela('tela-senha'); erro.hidden=false; erro.textContent='Erro ao conferir a senha: '+e.message; return;
   }
   if (senhaSalva === null){
-    mostrarTela('tela-senha');
-    erro.hidden=false; erro.textContent='Sua senha ainda não foi cadastrada pelo professor. Avise-o antes de continuar.';
-    return;
+    mostrarTela('tela-senha'); erro.hidden=false; erro.textContent='Sua senha ainda não foi cadastrada pelo professor. Avise-o antes de continuar.'; return;
   }
   if (!digitado || digitado !== senhaSalva){
-    mostrarTela('tela-senha');
-    erro.hidden=false; erro.textContent='Data incorreta. Tente novamente.';
-    return;
+    mostrarTela('tela-senha'); erro.hidden=false; erro.textContent='Data incorreta. Tente novamente.'; return;
   }
-  await escolherAlunoEContinuar(nomeEscolhidoPendente);
+  identidade = {turmaKey, turmaNome:turmaEscolhidaTemp.nome, nome:nomeEscolhidoPendente};
+  salvarIdentidadeLocal();
+  await entrarNaAtividade();
 }
 
-async function escolherAlunoEContinuar(nome){
-  const turmaNome = turmaProfEscolhida.nome;
+async function entrarNaAtividade(){
   mostrarTela('tela-carregando');
-  const turmaKey = turmaSlug(turmaNome);
-  const existente = await buscarAlunoPorNome(turmaKey, nome);
+  const chave = turmaSlug(identidade.nome);
+  aplicarTextoAtividade();
+  const existente = await buscarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave);
   if (existente){
-    sessao = {turmaKey, turmaNome, alunoId:existente.id, nome:existente.nome};
-    salvarSessaoLocal();
-    await entrarFluxoPosEnvio();
-    return;
+    const liberado = await buscarLiberadoAtividade(identidade.turmaKey, atividadeAtual.codigo);
+    if (liberado){
+      await renderResultado(existente.respostas, existente.acertos, existente.nota);
+      mostrarTela('tela-resultado');
+    } else {
+      document.getElementById('aguardando-texto').textContent = 'Sua resposta foi registrada. Assim que o(a) professor(a) liberar a correção de "'+atividadeAtual.titulo+'" para a turma "'+identidade.turmaNome+'", seu resultado aparecerá aqui.';
+      await renderizarOutrasAtividades('outras-atividades-aguardando');
+      mostrarTela('tela-aguardando');
+      escutarLiberadoAtividade(identidade.turmaKey, atividadeAtual.codigo, async (liberadoAgora)=>{
+        if (liberadoAgora){
+          pararEscutaLiberado();
+          const dados = await buscarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave);
+          await renderResultado(dados.respostas, dados.acertos, dados.nota);
+          mostrarTela('tela-resultado');
+        }
+      });
+    }
+  } else {
+    respostasAtuais = {};
+    renderHistoriasDesafio();
+    mostrarTela('tela-desafio');
   }
-  sessao = {turmaKey, turmaNome, alunoId:gerarId(), nome};
-  salvarSessaoLocal();
-  respostasAtuais = {};
-  renderHistoriasDesafio();
-  mostrarTela('tela-desafio');
+}
+
+function aplicarTextoAtividade(){
+  document.getElementById('titulo-desafio').textContent = atividadeAtual.titulo;
+  document.getElementById('subtitulo-desafio').textContent = atividadeAtual.subtitulo;
+  document.getElementById('instrucao-desafio').textContent = atividadeAtual.instrucao;
+  document.getElementById('titulo-resultado').textContent = atividadeAtual.titulo;
+  document.getElementById('subtitulo-resultado').textContent = 'resultado — '+atividadeAtual.codigo;
+}
+
+async function renderizarOutrasAtividades(idContainer){
+  const container = document.getElementById(idContainer);
+  const outras = ATIVIDADES.filter(a=>a.codigo!==atividadeAtual.codigo);
+  if (!outras.length){ container.innerHTML=''; return; }
+  const chave = turmaSlug(identidade.nome);
+  const linhas = [];
+  for (const a of outras){
+    let statusTxt = 'Ainda não respondida', cls='badge-pendente';
+    try{
+      const dados = await buscarSubmissaoAtividade(identidade.turmaKey, a.codigo, chave);
+      if (dados){
+        const liberado = await buscarLiberadoAtividade(identidade.turmaKey, a.codigo);
+        if (liberado){ statusTxt = 'Concluída — '+dados.acertos+'/'+a.historias.length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):''); cls='badge-liberado'; }
+        else statusTxt = 'Aguardando correção';
+      }
+    } catch(e){ statusTxt='Erro ao verificar'; }
+    linhas.push('<button type="button" class="item-selecao item-atividade" data-codigo="'+a.codigo+'"><span>'+escapeHTML(a.titulo)+'</span><span class="'+cls+'">'+statusTxt+'</span></button>');
+  }
+  container.innerHTML = '<h4>Outras atividades</h4>'+linhas.join('');
+  container.querySelectorAll('.item-atividade').forEach(btn=>btn.addEventListener('click',()=>escolherAtividade(btn.dataset.codigo)));
 }
 
 function renderHistoriasDesafio(){
   const main = document.getElementById('historias-desafio');
   main.innerHTML='';
-  HISTORIAS.forEach(h=>{
+  const pensadores = atividadeAtual.pensadores;
+  const ordem = ordemChips(pensadores);
+  atividadeAtual.historias.forEach(h=>{
     const card=document.createElement('section');
     card.className='historia-card';
     const numLabel=String(h.num).padStart(2,'0');
@@ -721,7 +822,7 @@ function renderHistoriasDesafio(){
       '<div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
       '<div class="paineis-grid">'+h.paineis.map(p=>('<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>')).join('')+'</div>'+
       '<div class="pergunta"><p>Quem inspirou esta história?</p><div class="chips" role="group" aria-label="Selecione o pensador da história '+numLabel+'">'+
-        ORDEM_CHIPS.map(id=>('<button type="button" class="chip" data-historia="'+h.num+'" data-pensador="'+id+'">'+PENSADORES[id].nome.split(' ').slice(-1)[0]+'</button>')).join('')+
+        ordem.map(id=>('<button type="button" class="chip" data-historia="'+h.num+'" data-pensador="'+id+'">'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>')).join('')+
       '</div></div>';
     main.appendChild(card);
   });
@@ -737,7 +838,7 @@ function renderHistoriasDesafio(){
 }
 
 function pedirConfirmacaoEnvio(){
-  const faltando = HISTORIAS.filter(h=>!respostasAtuais[h.num]).map(h=>String(h.num).padStart(2,'0'));
+  const faltando = atividadeAtual.historias.filter(h=>!respostasAtuais[h.num]).map(h=>String(h.num).padStart(2,'0'));
   const aviso = document.getElementById('aviso-desafio');
   if (faltando.length){
     aviso.hidden=false; aviso.textContent='Responda todas as histórias antes de enviar. Faltam: '+faltando.join(', ')+'.'; return;
@@ -753,37 +854,20 @@ function cancelarEnvio(){
 async function confirmarEnvio(){
   document.getElementById('confirmacao-envio').hidden=true;
   mostrarTela('tela-carregando');
-  const acertos = calcularAcertos(respostasAtuais);
-  const dados = {nome:sessao.nome, turma:sessao.turmaNome, respostas:respostasAtuais, acertos, enviadoEm:Date.now()};
-  await salvarSubmissao(sessao.turmaKey, sessao.alunoId, dados);
-  await entrarFluxoPosEnvio();
+  const acertos = calcularAcertos(respostasAtuais, atividadeAtual.historias);
+  const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, enviadoEm:Date.now()};
+  const chave = turmaSlug(identidade.nome);
+  await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
+  await entrarNaAtividade();
 }
 
-async function entrarFluxoPosEnvio(){
-  const liberado = await buscarLiberado(sessao.turmaKey);
-  if (liberado){
-    const aluno = await buscarAlunoPorId(sessao.turmaKey, sessao.alunoId);
-    renderResultado(aluno.respostas, aluno.acertos, aluno.nota);
-    mostrarTela('tela-resultado');
-  } else {
-    document.getElementById('aguardando-texto').textContent = 'Sua resposta foi registrada. Assim que o(a) professor(a) liberar a correção da turma "'+sessao.turmaNome+'", seu resultado aparecerá aqui.';
-    mostrarTela('tela-aguardando');
-    escutarLiberado(sessao.turmaKey, async (liberadoAgora)=>{
-      if (liberadoAgora){
-        pararEscutaLiberado();
-        const aluno = await buscarAlunoPorId(sessao.turmaKey, sessao.alunoId);
-        renderResultado(aluno.respostas, aluno.acertos, aluno.nota);
-        mostrarTela('tela-resultado');
-      }
-    });
-  }
-}
-
-function renderResultado(respostas, acertos, nota){
+async function renderResultado(respostas, acertos, nota){
   const main=document.getElementById('historias-resultado');
   main.innerHTML='';
-  HISTORIAS.forEach(h=>{
-    const pensador=PENSADORES[h.pensadorId];
+  const pensadores = atividadeAtual.pensadores;
+  const ordem = ordemChips(pensadores);
+  atividadeAtual.historias.forEach(h=>{
+    const pensador=pensadores[h.pensadorId];
     const escolha=respostas[h.num];
     const certo=escolha===h.pensadorId;
     const numLabel=String(h.num).padStart(2,'0');
@@ -795,36 +879,42 @@ function renderResultado(respostas, acertos, nota){
       '<div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
       '<div class="paineis-grid">'+h.paineis.map(p=>('<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>')).join('')+'</div>'+
       '<div class="pergunta"><p>Sua resposta:</p><div class="chips">'+
-        ORDEM_CHIPS.map(id=>{
+        ordem.map(id=>{
           let cls='chip';
           if (id===h.pensadorId && certo) cls+=' acerto';
           else if (id===escolha && !certo) cls+=' erro';
           else if (id===h.pensadorId && !certo) cls+=' resposta-certa';
-          return '<button type="button" class="'+cls+'" disabled>'+PENSADORES[id].nome.split(' ').slice(-1)[0]+'</button>';
+          return '<button type="button" class="'+cls+'" disabled>'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>';
         }).join('')+
       '</div></div>'+
       '<div class="revelacao"><div class="ficha-pensador"><h3>'+pensador.nome+' — '+pensador.teoria+'</h3><p>'+pensador.explicacao+'</p></div></div>';
     main.appendChild(card);
   });
-  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+HISTORIAS.length+' histórias.'+(nota!=null && nota!=='' ? ' Nota: '+nota+'.' : '');
+  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+atividadeAtual.historias.length+' histórias.'+(nota!=null && nota!=='' ? ' Nota: '+nota+'.' : '');
+  await renderizarOutrasAtividades('outras-atividades-resultado');
 }
 
 function trocarDeAluno(){
   pararEscutaLiberado();
-  limparSessaoLocal();
-  sessao = {turmaKey:null, turmaNome:null, alunoId:null, nome:null};
+  limparIdentidadeLocal();
+  identidade = {turmaKey:null, turmaNome:null, nome:null};
   nomeEscolhidoPendente = null;
   mostrarEscolhaTurma();
 }
 
 /* ===== FLUXO DO PROFESSOR ===== */
+let atividadeSelecionadaProf = ATIVIDADES[0];
+let ultimoSnapshotTurmas = {};
+
 function entrarProfessor(){
   const senha = document.getElementById('input-senha').value;
   const erro = document.getElementById('erro-senha');
   if (senha !== CONFIG.senhaProfessor){ erro.hidden=false; return; }
   erro.hidden=true;
   document.getElementById('input-senha').value='';
-  document.getElementById('codigo-atividade-label').textContent = 'Código da atividade: '+CONFIG.codigoAtividade;
+  const sel = document.getElementById('select-atividade-prof');
+  sel.innerHTML = ATIVIDADES.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+  sel.value = String(ATIVIDADES.indexOf(atividadeSelecionadaProf));
   mostrarTela('tela-professor-painel');
   escutarTodasTurmas(renderPainelProfessor);
   carregarArquivo();
@@ -834,21 +924,34 @@ function sairProfessor(){
   mostrarEscolhaTurma();
 }
 
-function renderPainelProfessor(turmas){
+function renderPainelProfessor(turmasRaw){
+  ultimoSnapshotTurmas = turmasRaw;
+  renderPainelProfessorAtual();
+}
+
+function renderPainelProfessorAtual(){
+  const cod = atividadeSelecionadaProf.codigo;
+  const historias = atividadeSelecionadaProf.historias;
+  const pensadores = atividadeSelecionadaProf.pensadores;
+  const turmas = {};
+  Object.entries(ultimoSnapshotTurmas).forEach(([tk,t])=>{
+    if (t.atividades && t.atividades[cod]) turmas[tk] = t.atividades[cod];
+  });
+
   let totalAlunos=0, somaAcertos=0;
-  const porHistoriaGeral={}; HISTORIAS.forEach(h=>porHistoriaGeral[h.num]={certo:0,total:0});
+  const porHistoriaGeral={}; historias.forEach(h=>porHistoriaGeral[h.num]={certo:0,total:0});
   const turmaKeys = Object.keys(turmas);
   turmaKeys.forEach(tk=>{
     const alunos = turmas[tk].alunos || {};
     Object.values(alunos).forEach(a=>{
       totalAlunos++; somaAcertos += (a.acertos||0);
-      HISTORIAS.forEach(h=>{
+      historias.forEach(h=>{
         porHistoriaGeral[h.num].total++;
         if (a.respostas && a.respostas[h.num]===h.pensadorId) porHistoriaGeral[h.num].certo++;
       });
     });
   });
-  const mediaGeral = totalAlunos? Math.round((somaAcertos/(totalAlunos*HISTORIAS.length))*100):0;
+  const mediaGeral = totalAlunos? Math.round((somaAcertos/(totalAlunos*historias.length))*100):0;
   const pendentes = turmaKeys.filter(tk=>!turmas[tk].liberado).length;
 
   const statsGrid = document.getElementById('stats-gerais');
@@ -856,21 +959,21 @@ function renderPainelProfessor(turmas){
     '<button type="button" class="stat-card" id="stat-total-respostas"><span class="stat-num">'+totalAlunos+'</span><span class="stat-label">respostas recebidas</span></button>'+
     '<button type="button" class="stat-card" id="stat-media-geral"><span class="stat-num">'+mediaGeral+'%</span><span class="stat-label">acerto médio geral</span></button>'+
     '<div class="stat-card stat-card-info"><span class="stat-num">'+pendentes+'</span><span class="stat-label">turma(s) aguardando liberação</span></div>';
-  document.getElementById('stat-total-respostas').addEventListener('click',()=>abrirModalTodosAlunos(turmas));
+  document.getElementById('stat-total-respostas').addEventListener('click',()=>abrirModalTodosAlunos(turmas, historias));
   document.getElementById('stat-media-geral').addEventListener('click',()=>{
-    const html = HISTORIAS.map(h=>{
+    const html = historias.map(h=>{
       const d=porHistoriaGeral[h.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
-      return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+' — '+PENSADORES[h.pensadorId].nome+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+PENSADORES[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'% ('+d.certo+'/'+d.total+')</span></div>';
+      return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+' — '+pensadores[h.pensadorId].nome+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+pensadores[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'% ('+d.certo+'/'+d.total+')</span></div>';
     }).join('');
     abrirModal('Acerto por história — todas as turmas', html);
   });
 
   const lista = document.getElementById('turmas-lista');
-  if (!turmaKeys.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma resposta recebida ainda.</p>'; return; }
+  if (!turmaKeys.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma resposta recebida ainda para esta atividade.</p>'; return; }
   lista.innerHTML = turmaKeys.map(tk=>{
     const t=turmas[tk]; const alunos=t.alunos||{}; const n=Object.keys(alunos).length;
     const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
-    const media = n?Math.round((soma/(n*HISTORIAS.length))*100):0;
+    const media = n?Math.round((soma/(n*historias.length))*100):0;
     const nomeTurma = n?Object.values(alunos)[0].turma:tk;
     return '<div class="turma-card" data-turma="'+tk+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
@@ -883,17 +986,17 @@ function renderPainelProfessor(turmas){
 
   lista.querySelectorAll('[data-acao="liberar"]').forEach(b=>b.addEventListener('click', async (e)=>{
     const tk = e.target.closest('.turma-card').dataset.turma;
-    await definirLiberado(tk, !turmas[tk].liberado);
+    await definirLiberadoAtividade(tk, cod, !turmas[tk].liberado);
   }));
   lista.querySelectorAll('[data-acao="zerar"]').forEach(b=>b.addEventListener('click', async (e)=>{
     const tk = e.target.closest('.turma-card').dataset.turma;
-    if (confirm('Isso apaga todas as respostas desta turma. Confirmar?')) await zerarTurma(tk);
+    if (confirm('Isso apaga todas as respostas desta turma para esta atividade. Confirmar?')) await zerarAtividadeDaTurma(tk, cod);
   }));
   lista.querySelectorAll('[data-acao="arquivar"]').forEach(b=>b.addEventListener('click', async (e)=>{
     const tk = e.target.closest('.turma-card').dataset.turma;
     const n = Object.keys(turmas[tk].alunos||{}).length;
-    if (confirm('Arquivar esta turma? As '+n+' resposta(s) saem do painel principal e vão para o Arquivo, com o código '+CONFIG.codigoAtividade+'. Isso não apaga os dados.')){
-      await arquivarTurma(tk, turmas[tk]);
+    if (confirm('Arquivar esta turma nesta atividade? As '+n+' resposta(s) saem do painel principal e vão para o Arquivo, com o código '+cod+'. Isso não apaga os dados.')){
+      await arquivarTurma(tk, cod, turmas[tk]);
       await carregarArquivo();
     }
   }));
@@ -902,6 +1005,11 @@ function renderPainelProfessor(turmas){
     abrirModalTurma(tk, turmas[tk]);
   }));
 }
+document.getElementById('select-atividade-prof').addEventListener('change', (e)=>{
+  atividadeSelecionadaProf = ATIVIDADES[Number(e.target.value)];
+  renderPainelProfessorAtual();
+  carregarArquivo();
+});
 
 /* ---- arquivo ---- */
 document.getElementById('arquivo-toggle').addEventListener('click', ()=>{
@@ -984,7 +1092,7 @@ async function salvarListaSenhas(){
   const inputs = document.querySelectorAll('#lista-senhas-alunos .input-linha');
   const msg = document.getElementById('msg-senhas-salvas');
   if (!inputs.length){
-    msg.hidden = false; msg.textContent = 'A lista não carregou — nada foi salvo. Escolha a turma novamente.'; msg.style.color = 'var(--vermelho)';
+    msg.hidden=false; msg.textContent='A lista não carregou — nada foi salvo. Escolha a turma novamente.'; msg.style.color='var(--vermelho)';
     return;
   }
   const turmaKey = turmaSlug(turma.nome);
@@ -992,9 +1100,9 @@ async function salvarListaSenhas(){
   inputs.forEach(inp=>{ atualizacoes[inp.dataset.chave] = inp.value.replace(/\D/g,'') || null; });
   try{
     await salvarSenhasDaTurma(turmaKey, atualizacoes);
-    msg.hidden = false; msg.textContent = 'Senhas salvas!'; msg.style.color = 'var(--verde)';
+    msg.hidden=false; msg.textContent='Senhas salvas!'; msg.style.color='var(--verde)';
   } catch(e){
-    msg.hidden = false; msg.textContent = 'Erro ao salvar: '+e.message; msg.style.color = 'var(--vermelho)';
+    msg.hidden=false; msg.textContent='Erro ao salvar: '+e.message; msg.style.color='var(--vermelho)';
   }
 }
 
@@ -1005,31 +1113,33 @@ function abrirModal(titulo, conteudoHtml){
 }
 function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
 
-function abrirModalTodosAlunos(turmas){
+function abrirModalTodosAlunos(turmas, historias){
   let linhas=[];
   Object.values(turmas).forEach(t=>{ Object.values(t.alunos||{}).forEach(a=>linhas.push(a)); });
   linhas.sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
   const html = linhas.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Turma</th><th>Acertos</th><th>Enviado em</th></tr></thead><tbody>'+
-    linhas.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+escapeHTML(a.turma)+'</td><td>'+a.acertos+'/'+HISTORIAS.length+'</td><td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+
+    linhas.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+escapeHTML(a.turma)+'</td><td>'+a.acertos+'/'+historias.length+'</td><td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+
     '</tbody></table>') : '<p class="vazio-msg">Nenhuma resposta ainda.</p>';
   abrirModal('Todas as respostas ('+linhas.length+')', html);
 }
 
 function abrirModalTurma(tk, t, arquivado){
+  const ativ = arquivado ? (ATIVIDADES.find(a=>a.codigo===t.codigoAtividade) || atividadeSelecionadaProf) : atividadeSelecionadaProf;
+  const historias = ativ.historias, pensadores = ativ.pensadores;
   const alunos = Object.entries(t.alunos||{}).map(([id,dados])=>Object.assign({id},dados)).sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
-  const porHistoria={}; HISTORIAS.forEach(h=>porHistoria[h.num]={certo:0,total:0});
-  alunos.forEach(a=>HISTORIAS.forEach(h=>{ porHistoria[h.num].total++; if(a.respostas && a.respostas[h.num]===h.pensadorId) porHistoria[h.num].certo++; }));
-  const barrasHtml = HISTORIAS.map(h=>{
+  const porHistoria={}; historias.forEach(h=>porHistoria[h.num]={certo:0,total:0});
+  alunos.forEach(a=>historias.forEach(h=>{ porHistoria[h.num].total++; if(a.respostas && a.respostas[h.num]===h.pensadorId) porHistoria[h.num].certo++; }));
+  const barrasHtml = historias.map(h=>{
     const d=porHistoria[h.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
-    return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+PENSADORES[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
+    return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+pensadores[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
   }).join('');
-  const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/alunos/');
+  const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/atividades/'+ativ.codigo+'/alunos/');
   const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Nota</th><th>Enviado em</th></tr></thead><tbody>'+
-    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+HISTORIAS.length+'</td>'+
+    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+historias.length+'</td>'+
       '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
       '<td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const nomeTurma = alunos[0]?alunos[0].turma:tk;
-  abrirModal(nomeTurma+' — detalhes'+(arquivado?' (arquivada)':''), '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
+  abrirModal(nomeTurma+' — '+ativ.codigo+(arquivado?' (arquivada)':''), '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
   document.querySelectorAll('.input-nota').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim();
@@ -1050,24 +1160,26 @@ async function iniciar(){
   try{
     await initFirebaseProfessorHub();
   } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao ProfessorHub: '+e.message+'. Verifique CONFIG.firebaseProfessorHub no início do arquivo (a config do projeto do ProfessorHub ainda precisa ser colada ali).';
+    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao ProfessorHub: '+e.message+'. Verifique CONFIG.firebaseProfessorHub no início do arquivo.';
     mostrarTela('tela-erro');
     return;
   }
   const params = new URLSearchParams(location.search);
   if (params.get('prof')==='1'){ mostrarTela('tela-professor-login'); return; }
 
-  const salvo = carregarSessaoLocal();
-  if (salvo && salvo.turmaKey && salvo.alunoId){
-    mostrarTela('tela-carregando');
-    const aluno = await buscarAlunoPorId(salvo.turmaKey, salvo.alunoId);
-    if (aluno){ sessao = salvo; await entrarFluxoPosEnvio(); return; }
+  const salvo = carregarIdentidadeLocal();
+  if (salvo && salvo.turmaKey && salvo.nome){
+    identidade = salvo;
+    turmaEscolhidaTemp = {nome: salvo.turmaNome, ids: []};
+    await mostrarEscolhaAtividade();
+    return;
   }
   await mostrarEscolhaTurma();
 }
 
+document.getElementById('btn-voltar-turma').addEventListener('click', mostrarEscolhaTurma);
+document.getElementById('btn-voltar-atividade').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-enviar').addEventListener('click', pedirConfirmacaoEnvio);
-document.getElementById('link-trocar-turma').addEventListener('click', mostrarEscolhaTurma);
 document.getElementById('filtro-nome').addEventListener('input', (e)=>{
   const termo = e.target.value.trim().toLowerCase();
   renderizarListaAlunos(alunosCache.filter(a=>a.nome.toLowerCase().includes(termo)));
