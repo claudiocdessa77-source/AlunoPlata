@@ -37,6 +37,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .lista-selecao{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:14px;padding-right:2px;}
 .item-selecao{text-align:left;padding:12px 14px;border:1.5px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:var(--font-display);font-size:.95rem;cursor:pointer;}
 .item-selecao:hover{background:#F0EDE4;}
+.item-selecao.selecionado{background:var(--ink);color:#fff;}
+.item-selecao:disabled{cursor:default;opacity:1;}
+.item-selecao.acerto{background:var(--verde);border-color:var(--verde);color:#fff;}
+.item-selecao.erro{background:var(--vermelho);border-color:var(--vermelho);color:#fff;}
+.item-selecao.resposta-certa{border-color:var(--verde);color:var(--verde);background:#fff;}
+.pergunta-titulo{margin:0 0 10px;font-size:1rem;}
+.pergunta-enunciado{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.9rem;margin:0 0 12px;}
+.pergunta-questao{margin:0 0 12px;font-size:.95rem;}
 .item-atividade{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
 .cartao-central h1{margin:0 0 4px;font-size:1.5rem;text-transform:uppercase;font-weight:900;}
 .cartao-central .subtitulo{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.05em;margin:0 0 20px;}
@@ -468,6 +476,64 @@ const HISTORIAS_ATIV001=[
 ];
 
 /* ===== ATIVIDADES — cada nova atividade do semestre entra aqui como um novo item ===== */
+const PERGUNTAS_ATIV002 = [
+  {numero:1, titulo:"Conceito Básico de Gestão de Pessoas",
+    enunciado:"A Gestão de Pessoas pode ser entendida como um conjunto de práticas que busca desenvolver o potencial humano dentro das organizações.",
+    pergunta:"Qual alternativa representa corretamente os pilares da Gestão de Pessoas?",
+    opcoes:[{l:"A",t:"Contratar + Punir + Fiscalizar + Demitir"},{l:"B",t:"Atrair + Desenvolver + Motivar + Reter Talentos"},{l:"C",t:"Produzir + Vender + Lucrar + Expandir"},{l:"D",t:"Planejar + Comprar + Produzir + Distribuir"},{l:"E",t:"Controlar + Advertir + Avaliar + Demitir"}],
+    correta:"B", explicacao:"Atrair, desenvolver, motivar e reter talentos são os quatro pilares clássicos da Gestão de Pessoas."},
+  {numero:2, titulo:"Situação-Problema",
+    enunciado:"A empresa Alfa possui alta rotatividade de funcionários. Muitos colaboradores pedem demissão poucos meses após serem contratados. A pesquisa interna mostrou que não recebem treinamento, não têm oportunidades de crescimento e raramente recebem reconhecimento.",
+    pergunta:"Diante desse cenário, qual benefício da Gestão de Pessoas está sendo mais prejudicado?",
+    opcoes:[{l:"A",t:"Aumento da produtividade"},{l:"B",t:"Melhor clima organizacional"},{l:"C",t:"Redução da rotatividade"},{l:"D",t:"Controle financeiro"},{l:"E",t:"Marketing empresarial"}],
+    correta:"C", explicacao:"Falta de treinamento, crescimento e reconhecimento leva diretamente ao aumento da rotatividade — é exatamente esse benefício que está comprometido."},
+  {numero:3, titulo:"Diálogo em Quadrinhos",
+    enunciado:"Carlos: “Nossa empresa investe em treinamento e desenvolvimento para todos os colaboradores.” Ana: “Aqui os funcionários participam de cursos, recebem feedback e possuem plano de carreira.”",
+    pergunta:"Com base no diálogo, qual prática de Gestão de Pessoas está sendo destacada?",
+    opcoes:[{l:"A",t:"Controle disciplinar"},{l:"B",t:"Desenvolvimento de pessoas"},{l:"C",t:"Folha de pagamento"},{l:"D",t:"Demissão por desempenho"},{l:"E",t:"Fiscalização do trabalho"}],
+    correta:"B", explicacao:"Treinamento, cursos, feedback e plano de carreira são todos elementos do desenvolvimento de pessoas."},
+  {numero:4, titulo:"Evolução da Gestão de Pessoas",
+    enunciado:"Tabela: Departamento Pessoal → Controle de documentos; Recursos Humanos → Administração de funcionários; Gestão de Pessoas → Desenvolvimento de talentos.",
+    pergunta:"A principal mudança observada na evolução da área de RH foi:",
+    opcoes:[{l:"A",t:"A substituição de pessoas por máquinas."},{l:"B",t:"O foco exclusivo em salários."},{l:"C",t:"A valorização das pessoas como diferencial estratégico."},{l:"D",t:"A eliminação dos processos de recrutamento."},{l:"E",t:"O fim dos treinamentos corporativos."}],
+    correta:"C", explicacao:"A tabela mostra uma evolução de controle burocrático para desenvolvimento de talentos, refletindo a valorização estratégica das pessoas."},
+  {numero:5, titulo:"Estudo de Caso",
+    enunciado:"Uma escola apresenta os seguintes problemas: professores desmotivados, falta de capacitação, conflitos frequentes entre equipes e alto índice de faltas.",
+    pergunta:"Qual seria o impacto mais provável dessa situação?",
+    opcoes:[{l:"A",t:"Aumento da qualidade do ensino"},{l:"B",t:"Crescimento da satisfação dos alunos"},{l:"C",t:"Melhoria do clima organizacional"},{l:"D",t:"Queda na qualidade dos resultados"},{l:"E",t:"Aumento da inovação"}],
+    correta:"D", explicacao:"Desmotivação, falta de capacitação, conflitos e faltas tendem a comprometer diretamente a qualidade dos resultados."},
+  {numero:6, titulo:"Diálogo em Quadrinhos — Employee Experience",
+    enunciado:"João: “Recebi equipamentos adequados, treinamento e apoio da empresa desde o primeiro dia.” Marina: “Aqui também temos programas de bem-estar e horários flexíveis.”",
+    pergunta:"O diálogo exemplifica qual tendência atual do RH?",
+    opcoes:[{l:"A",t:"Demissão estratégica"},{l:"B",t:"Employee Experience"},{l:"C",t:"Controle de frequência"},{l:"D",t:"Terceirização"},{l:"E",t:"Recrutamento externo"}],
+    correta:"B", explicacao:"Boa experiência desde o onboarding, apoio, bem-estar e flexibilidade são a definição de Employee Experience."},
+  {numero:7, titulo:"Inteligência Artificial no RH",
+    enunciado:"Atualmente, diversas empresas utilizam Inteligência Artificial para apoiar atividades de Recursos Humanos.",
+    pergunta:"Qual das opções abaixo representa uma aplicação da IA no RH?",
+    opcoes:[{l:"A",t:"Produção industrial automatizada"},{l:"B",t:"Construção de prédios"},{l:"C",t:"Triagem inicial de currículos"},{l:"D",t:"Transporte de mercadorias"},{l:"E",t:"Controle de estoque físico"}],
+    correta:"C", explicacao:"A triagem inicial de currículos é uma das aplicações mais comuns de IA dentro da área de Recursos Humanos."},
+  {numero:8, titulo:"Interpretação de Situação",
+    enunciado:"Uma empresa decidiu criar um programa de apoio psicológico, flexibilizar horários e promover campanhas sobre qualidade de vida.",
+    pergunta:"Essa ação está mais relacionada a qual tendência moderna da Gestão de Pessoas?",
+    opcoes:[{l:"A",t:"Marketing Digital"},{l:"B",t:"Saúde Mental e Bem-Estar"},{l:"C",t:"Controle Financeiro"},{l:"D",t:"Logística Empresarial"},{l:"E",t:"Auditoria Interna"}],
+    correta:"B", explicacao:"Apoio psicológico, flexibilidade de horários e qualidade de vida são ações típicas de programas de saúde mental e bem-estar."},
+  {numero:9, titulo:"Análise Crítica",
+    enunciado:"“Uma empresa pode comprar máquinas, computadores e tecnologia. Porém, não consegue comprar comprometimento, criatividade e dedicação.”",
+    pergunta:"A frase acima sugere que:",
+    opcoes:[{l:"A",t:"A tecnologia substitui completamente as pessoas."},{l:"B",t:"O sucesso organizacional depende exclusivamente do capital financeiro."},{l:"C",t:"Pessoas engajadas são um diferencial competitivo."},{l:"D",t:"Equipamentos são mais importantes que os colaboradores."},{l:"E",t:"O RH não influencia os resultados empresariais."}],
+    correta:"C", explicacao:"A frase contrasta o que se compra (tecnologia) com o que não se compra (comprometimento e criatividade), reforçando pessoas engajadas como diferencial competitivo."},
+  {numero:10, titulo:"Questão Desafiadora",
+    enunciado:"Diretor: “Nosso faturamento caiu. Vamos investir apenas em máquinas e reduzir os treinamentos.” Gerente de RH: “Talvez devêssemos fortalecer o desenvolvimento das pessoas para melhorar os resultados.”",
+    pergunta:"Considerando os conceitos estudados em aula, a posição da gerente de RH é adequada porque:",
+    opcoes:[{l:"A",t:"O treinamento não interfere no desempenho organizacional."},{l:"B",t:"Pessoas qualificadas tendem a aumentar a produtividade e os resultados."},{l:"C",t:"Máquinas eliminam a necessidade de colaboradores."},{l:"D",t:"O RH é responsável apenas por admissões e demissões."},{l:"E",t:"O desenvolvimento humano não gera retorno para as empresas."}],
+    correta:"B", explicacao:"Investir no desenvolvimento das pessoas tende a aumentar produtividade e resultados — é essa a lógica por trás da posição da gerente de RH."},
+  {numero:11, titulo:"Bônus — Nível Difícil",
+    enunciado:"A empresa Beta utiliza Inteligência Artificial para selecionar currículos. O RH percebeu que muitos candidatos qualificados estavam sendo descartados automaticamente pelo sistema.",
+    pergunta:"Qual deve ser a postura mais adequada da Gestão de Pessoas?",
+    opcoes:[{l:"A",t:"Confiar totalmente na tecnologia."},{l:"B",t:"Encerrar todos os processos seletivos."},{l:"C",t:"Utilizar a IA como apoio, mantendo a análise humana das decisões."},{l:"D",t:"Contratar apenas candidatos indicados."},{l:"E",t:"Eliminar as entrevistas."}],
+    correta:"C", explicacao:"O uso equilibrado — IA como apoio, com checagem humana — evita descartar bons candidatos por falhas do sistema automatizado."}
+];
+
 const ATIVIDADES = [
   {
     codigo: "ATIV00114082026",
@@ -477,8 +543,20 @@ const ATIVIDADES = [
     subtitulo: "em quadrinhos — desafio de associação",
     instrucao: "Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).",
     valorTotal: 1,
+    tipo: "quadrinho",
     pensadores: PENSADORES_ATIV001,
     historias: HISTORIAS_ATIV001
+  },
+  {
+    codigo: "ATIV00214082026",
+    numero: 2,
+    dataAtividade: "14082026",
+    titulo: "Noções de Gestão de Pessoas",
+    subtitulo: "questionário — 10 questões + bônus",
+    instrucao: "Este questionário foi respondido no papel, em sala. Confira aqui a alternativa (A a E) que você marcou em cada questão e envie — o resultado será liberado pelo(a) professor(a).",
+    valorTotal: 10,
+    tipo: "multipla-escolha",
+    perguntas: PERGUNTAS_ATIV002
   }
 ];
 
@@ -512,12 +590,17 @@ function turmaSlug(nome){
     .replace(/[.#$\[\]\/]/g,'-')
     .replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'x';
 }
-function calcularAcertos(respostas, historias){
-  let n=0; historias.forEach(h=>{ if(respostas[h.num]===h.pensadorId) n++; }); return n;
+function itensAtividade(atividade){
+  if (atividade.tipo === 'multipla-escolha') return atividade.perguntas.map(p=>({num:p.numero, correta:p.correta}));
+  return atividade.historias.map(h=>({num:h.num, correta:h.pensadorId}));
 }
-function calcularNota(acertos, totalHistorias, valorTotal){
+function calcularAcertos(respostas, atividade){
+  const itens = itensAtividade(atividade);
+  let n=0; itens.forEach(it=>{ if(respostas[it.num]===it.correta) n++; }); return n;
+}
+function calcularNota(acertos, totalItens, valorTotal){
   if (!valorTotal) return null;
-  return Math.round((acertos/totalHistorias)*valorTotal*10)/10;
+  return Math.round((acertos/totalItens)*valorTotal*10)/10;
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -680,7 +763,7 @@ async function mostrarEscolhaAtividade(){
         if (!dados) badge = '<span class="badge-pendente">Ainda não respondida</span>';
         else{
           const liberado = await buscarLiberadoAtividade(turmaKey, a.codigo);
-          badge = liberado ? '<span class="badge-liberado">Concluída — '+dados.acertos+'/'+a.historias.length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):'')+'</span>' : '<span class="badge-pendente">Aguardando correção</span>';
+          badge = liberado ? '<span class="badge-liberado">Concluída — '+dados.acertos+'/'+itensAtividade(a).length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):'')+'</span>' : '<span class="badge-pendente">Aguardando correção</span>';
         }
       } catch(e){ badge = '<span class="badge-pendente">—</span>'; }
     }
@@ -806,7 +889,7 @@ async function renderizarOutrasAtividades(idContainer){
       const dados = await buscarSubmissaoAtividade(identidade.turmaKey, a.codigo, chave);
       if (dados){
         const liberado = await buscarLiberadoAtividade(identidade.turmaKey, a.codigo);
-        if (liberado){ statusTxt = 'Concluída — '+dados.acertos+'/'+a.historias.length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):''); cls='badge-liberado'; }
+        if (liberado){ statusTxt = 'Concluída — '+dados.acertos+'/'+itensAtividade(a).length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):''); cls='badge-liberado'; }
         else statusTxt = 'Aguardando correção';
       }
     } catch(e){ statusTxt='Erro ao verificar'; }
@@ -819,6 +902,7 @@ async function renderizarOutrasAtividades(idContainer){
 function renderHistoriasDesafio(){
   const main = document.getElementById('historias-desafio');
   main.innerHTML='';
+  if (atividadeAtual.tipo === 'multipla-escolha'){ renderPerguntasDesafio(main); return; }
   const pensadores = atividadeAtual.pensadores;
   const ordem = ordemChips(pensadores);
   atividadeAtual.historias.forEach(h=>{
@@ -844,11 +928,39 @@ function renderHistoriasDesafio(){
   });
 }
 
+function renderPerguntasDesafio(main){
+  atividadeAtual.perguntas.forEach(p=>{
+    const card=document.createElement('section');
+    card.className='historia-card';
+    const numLabel=String(p.numero).padStart(2,'0');
+    card.innerHTML =
+      '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+      '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+      '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>'+
+      '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+      '<div class="lista-selecao" style="max-height:none;">'+
+        p.opcoes.map(o=>('<button type="button" class="item-selecao" data-pergunta="'+p.numero+'" data-opcao="'+o.l+'">'+o.l+') '+escapeHTML(o.t)+'</button>')).join('')+
+      '</div>';
+    main.appendChild(card);
+  });
+  main.querySelectorAll('.item-selecao').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      respostasAtuais[Number(btn.dataset.pergunta)] = btn.dataset.opcao;
+      document.querySelectorAll('.item-selecao[data-pergunta="'+btn.dataset.pergunta+'"]').forEach(b=>b.classList.toggle('selecionado', b===btn));
+      document.getElementById('aviso-desafio').hidden = true;
+      document.getElementById('confirmacao-envio').hidden = true;
+      document.getElementById('btn-enviar').hidden = false;
+    });
+  });
+}
+
 function pedirConfirmacaoEnvio(){
-  const faltando = atividadeAtual.historias.filter(h=>!respostasAtuais[h.num]).map(h=>String(h.num).padStart(2,'0'));
+  const itens = itensAtividade(atividadeAtual);
+  const faltando = itens.filter(it=>!respostasAtuais[it.num]).map(it=>String(it.num).padStart(2,'0'));
   const aviso = document.getElementById('aviso-desafio');
+  const termo = atividadeAtual.tipo==='multipla-escolha' ? 'questões' : 'histórias';
   if (faltando.length){
-    aviso.hidden=false; aviso.textContent='Responda todas as histórias antes de enviar. Faltam: '+faltando.join(', ')+'.'; return;
+    aviso.hidden=false; aviso.textContent='Responda todas as '+termo+' antes de enviar. Faltam: '+faltando.join(', ')+'.'; return;
   }
   aviso.hidden=true;
   document.getElementById('confirmacao-envio').hidden=false;
@@ -861,8 +973,9 @@ function cancelarEnvio(){
 async function confirmarEnvio(){
   document.getElementById('confirmacao-envio').hidden=true;
   mostrarTela('tela-carregando');
-  const acertos = calcularAcertos(respostasAtuais, atividadeAtual.historias);
-  const nota = calcularNota(acertos, atividadeAtual.historias.length, atividadeAtual.valorTotal);
+  const totalItens = itensAtividade(atividadeAtual).length;
+  const acertos = calcularAcertos(respostasAtuais, atividadeAtual);
+  const nota = calcularNota(acertos, totalItens, atividadeAtual.valorTotal);
   const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, nota, enviadoEm:Date.now()};
   const chave = turmaSlug(identidade.nome);
   await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
@@ -872,34 +985,68 @@ async function confirmarEnvio(){
 async function renderResultado(respostas, acertos, nota){
   const main=document.getElementById('historias-resultado');
   main.innerHTML='';
-  const pensadores = atividadeAtual.pensadores;
-  const ordem = ordemChips(pensadores);
-  atividadeAtual.historias.forEach(h=>{
-    const pensador=pensadores[h.pensadorId];
-    const escolha=respostas[h.num];
-    const certo=escolha===h.pensadorId;
-    const numLabel=String(h.num).padStart(2,'0');
-    const card=document.createElement('section');
-    card.className='historia-card revelado';
-    card.style.setProperty('--cor-tema', pensador.cor);
+  if (atividadeAtual.tipo === 'multipla-escolha'){
+    renderPerguntasResultado(main, respostas);
+  } else {
+    const pensadores = atividadeAtual.pensadores;
+    const ordem = ordemChips(pensadores);
+    atividadeAtual.historias.forEach(h=>{
+      const pensador=pensadores[h.pensadorId];
+      const escolha=respostas[h.num];
+      const certo=escolha===h.pensadorId;
+      const numLabel=String(h.num).padStart(2,'0');
+      const card=document.createElement('section');
+      card.className='historia-card revelado';
+      card.style.setProperty('--cor-tema', pensador.cor);
+      card.innerHTML =
+        '<div class="carimbo">'+(certo?'Deferido':'Indeferido')+'</div>'+
+        '<div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
+        '<div class="paineis-grid">'+h.paineis.map(p=>('<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>')).join('')+'</div>'+
+        '<div class="pergunta"><p>Sua resposta:</p><div class="chips">'+
+          ordem.map(id=>{
+            let cls='chip';
+            if (id===h.pensadorId && certo) cls+=' acerto';
+            else if (id===escolha && !certo) cls+=' erro';
+            else if (id===h.pensadorId && !certo) cls+=' resposta-certa';
+            return '<button type="button" class="'+cls+'" disabled>'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>';
+          }).join('')+
+        '</div></div>'+
+        '<div class="revelacao"><div class="ficha-pensador"><h3>'+pensador.nome+' — '+pensador.teoria+'</h3><p>'+pensador.explicacao+'</p></div></div>';
+      main.appendChild(card);
+    });
+  }
+  const totalItens = itensAtividade(atividadeAtual).length;
+  const termo = atividadeAtual.tipo==='multipla-escolha' ? 'questões' : 'histórias';
+  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+totalItens+' '+termo+'.'+(nota!=null && nota!=='' ? ' Nota: '+nota+'.' : '');
+  await renderizarOutrasAtividades('outras-atividades-resultado');
+}
+
+function renderPerguntasResultado(main, respostas){
+  atividadeAtual.perguntas.forEach(p=>{
+    const escolha = respostas[p.numero];
+    const certo = escolha === p.correta;
+    const numLabel = String(p.numero).padStart(2,'0');
+    const card = document.createElement('section');
+    card.className = 'historia-card revelado';
+    card.style.setProperty('--cor-tema', '#A87F45');
     card.innerHTML =
       '<div class="carimbo">'+(certo?'Deferido':'Indeferido')+'</div>'+
-      '<div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
-      '<div class="paineis-grid">'+h.paineis.map(p=>('<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>')).join('')+'</div>'+
-      '<div class="pergunta"><p>Sua resposta:</p><div class="chips">'+
-        ordem.map(id=>{
-          let cls='chip';
-          if (id===h.pensadorId && certo) cls+=' acerto';
-          else if (id===escolha && !certo) cls+=' erro';
-          else if (id===h.pensadorId && !certo) cls+=' resposta-certa';
-          return '<button type="button" class="'+cls+'" disabled>'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>';
+      '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+      '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+      '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>'+
+      '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+      '<div class="lista-selecao" style="max-height:none;">'+
+        p.opcoes.map(o=>{
+          let cls='item-selecao';
+          if (o.l===p.correta && certo) cls+=' acerto';
+          else if (o.l===escolha && !certo) cls+=' erro';
+          else if (o.l===p.correta && !certo) cls+=' resposta-certa';
+          return '<button type="button" class="'+cls+'" disabled>'+o.l+') '+escapeHTML(o.t)+'</button>';
         }).join('')+
-      '</div></div>'+
-      '<div class="revelacao"><div class="ficha-pensador"><h3>'+pensador.nome+' — '+pensador.teoria+'</h3><p>'+pensador.explicacao+'</p></div></div>';
+      '</div>'+
+      '<div class="revelacao"><p>'+escapeHTML(p.explicacao)+'</p></div>';
     main.appendChild(card);
   });
-  document.getElementById('pontuacao-resultado').textContent = 'Você acertou '+acertos+' de '+atividadeAtual.historias.length+' histórias.'+(nota!=null && nota!=='' ? ' Nota: '+nota+'.' : '');
-  await renderizarOutrasAtividades('outras-atividades-resultado');
 }
 
 /* ===== FLUXO DO PROFESSOR ===== */
@@ -931,41 +1078,42 @@ function renderPainelProfessor(turmasRaw){
 
 function renderPainelProfessorAtual(){
   const cod = atividadeSelecionadaProf.codigo;
-  const historias = atividadeSelecionadaProf.historias;
-  const pensadores = atividadeSelecionadaProf.pensadores;
+  const itens = itensAtividade(atividadeSelecionadaProf);
   const turmas = {};
   Object.entries(ultimoSnapshotTurmas).forEach(([tk,t])=>{
     if (t.atividades && t.atividades[cod]) turmas[tk] = t.atividades[cod];
   });
 
   let totalAlunos=0, somaAcertos=0;
-  const porHistoriaGeral={}; historias.forEach(h=>porHistoriaGeral[h.num]={certo:0,total:0});
+  const porItemGeral={}; itens.forEach(it=>porItemGeral[it.num]={certo:0,total:0});
   const turmaKeys = Object.keys(turmas);
   turmaKeys.forEach(tk=>{
     const alunos = turmas[tk].alunos || {};
     Object.values(alunos).forEach(a=>{
       totalAlunos++; somaAcertos += (a.acertos||0);
-      historias.forEach(h=>{
-        porHistoriaGeral[h.num].total++;
-        if (a.respostas && a.respostas[h.num]===h.pensadorId) porHistoriaGeral[h.num].certo++;
+      itens.forEach(it=>{
+        porItemGeral[it.num].total++;
+        if (a.respostas && a.respostas[it.num]===it.correta) porItemGeral[it.num].certo++;
       });
     });
   });
-  const mediaGeral = totalAlunos? Math.round((somaAcertos/(totalAlunos*historias.length))*100):0;
+  const mediaGeral = totalAlunos? Math.round((somaAcertos/(totalAlunos*itens.length))*100):0;
   const pendentes = turmaKeys.filter(tk=>!turmas[tk].liberado).length;
+  const rotuloGeral = atividadeSelecionadaProf.tipo==='multipla-escolha' ? 'Acerto por questão' : 'Acerto por história';
 
   const statsGrid = document.getElementById('stats-gerais');
   statsGrid.innerHTML =
     '<button type="button" class="stat-card" id="stat-total-respostas"><span class="stat-num">'+totalAlunos+'</span><span class="stat-label">respostas recebidas</span></button>'+
     '<button type="button" class="stat-card" id="stat-media-geral"><span class="stat-num">'+mediaGeral+'%</span><span class="stat-label">acerto médio geral</span></button>'+
     '<div class="stat-card stat-card-info"><span class="stat-num">'+pendentes+'</span><span class="stat-label">turma(s) aguardando liberação</span></div>';
-  document.getElementById('stat-total-respostas').addEventListener('click',()=>abrirModalTodosAlunos(turmas, historias));
+  document.getElementById('stat-total-respostas').addEventListener('click',()=>abrirModalTodosAlunos(turmas, itens.length));
   document.getElementById('stat-media-geral').addEventListener('click',()=>{
-    const html = historias.map(h=>{
-      const d=porHistoriaGeral[h.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
-      return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+' — '+pensadores[h.pensadorId].nome+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+pensadores[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'% ('+d.certo+'/'+d.total+')</span></div>';
+    const html = itens.map(it=>{
+      const d=porItemGeral[it.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
+      const {label, cor} = itemLabelCor(atividadeSelecionadaProf, it);
+      return '<div class="linha-barra"><span class="linha-barra-label">'+label+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+cor+'"></div></div><span class="linha-barra-valor">'+pct+'% ('+d.certo+'/'+d.total+')</span></div>';
     }).join('');
-    abrirModal('Acerto por história — todas as turmas', html);
+    abrirModal(rotuloGeral+' — todas as turmas', html);
   });
 
   const lista = document.getElementById('turmas-lista');
@@ -973,7 +1121,7 @@ function renderPainelProfessorAtual(){
   lista.innerHTML = turmaKeys.map(tk=>{
     const t=turmas[tk]; const alunos=t.alunos||{}; const n=Object.keys(alunos).length;
     const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
-    const media = n?Math.round((soma/(n*historias.length))*100):0;
+    const media = n?Math.round((soma/(n*itens.length))*100):0;
     const nomeTurma = n?Object.values(alunos)[0].turma:tk;
     return '<div class="turma-card" data-turma="'+tk+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
@@ -1113,36 +1261,47 @@ function abrirModal(titulo, conteudoHtml){
 }
 function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
 
-function abrirModalTodosAlunos(turmas, historias){
+function itemLabelCor(atividade, item){
+  if (atividade.tipo === 'multipla-escolha'){
+    const p = atividade.perguntas.find(x=>x.numero===item.num);
+    return {label:'Questão '+String(item.num).padStart(2,'0')+' — '+p.titulo, cor:'#A87F45'};
+  }
+  const pensador = atividade.pensadores[item.correta];
+  return {label:'História '+String(item.num).padStart(2,'0')+' — '+pensador.nome, cor:pensador.cor};
+}
+
+function abrirModalTodosAlunos(turmas, totalItens){
   let linhas=[];
   Object.values(turmas).forEach(t=>{ Object.values(t.alunos||{}).forEach(a=>linhas.push(a)); });
   linhas.sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
   const html = linhas.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Turma</th><th>Acertos</th><th>Enviado em</th></tr></thead><tbody>'+
-    linhas.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+escapeHTML(a.turma)+'</td><td>'+a.acertos+'/'+historias.length+'</td><td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+
+    linhas.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+escapeHTML(a.turma)+'</td><td>'+a.acertos+'/'+totalItens+'</td><td>'+formatarData(a.enviadoEm)+'</td></tr>').join('')+
     '</tbody></table>') : '<p class="vazio-msg">Nenhuma resposta ainda.</p>';
   abrirModal('Todas as respostas ('+linhas.length+')', html);
 }
 
 function abrirModalTurma(tk, t, arquivado){
   const ativ = arquivado ? (ATIVIDADES.find(a=>a.codigo===t.codigoAtividade) || atividadeSelecionadaProf) : atividadeSelecionadaProf;
-  const historias = ativ.historias, pensadores = ativ.pensadores;
+  const itens = itensAtividade(ativ);
   const alunos = Object.entries(t.alunos||{}).map(([id,dados])=>Object.assign({id},dados)).sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
-  const porHistoria={}; historias.forEach(h=>porHistoria[h.num]={certo:0,total:0});
-  alunos.forEach(a=>historias.forEach(h=>{ porHistoria[h.num].total++; if(a.respostas && a.respostas[h.num]===h.pensadorId) porHistoria[h.num].certo++; }));
-  const barrasHtml = historias.map(h=>{
-    const d=porHistoria[h.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
-    return '<div class="linha-barra"><span class="linha-barra-label">História '+String(h.num).padStart(2,'0')+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+pensadores[h.pensadorId].cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
+  const porItem={}; itens.forEach(it=>porItem[it.num]={certo:0,total:0});
+  alunos.forEach(a=>itens.forEach(it=>{ porItem[it.num].total++; if(a.respostas && a.respostas[it.num]===it.correta) porItem[it.num].certo++; }));
+  const rotuloGeral = ativ.tipo==='multipla-escolha' ? 'Acerto por questão' : 'Acerto por história';
+  const barrasHtml = itens.map(it=>{
+    const d=porItem[it.num]; const pct=d.total?Math.round((d.certo/d.total)*100):0;
+    const {label, cor} = itemLabelCor(ativ, it);
+    return '<div class="linha-barra"><span class="linha-barra-label">'+label+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
   }).join('');
   const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/atividades/'+ativ.codigo+'/alunos/');
   const colunaAcao = arquivado ? '' : '<th></th>';
   const tabelaHtml = alunos.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Acertos</th><th>Nota</th><th>Enviado em</th>'+colunaAcao+'</tr></thead><tbody>'+
-    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+historias.length+'</td>'+
+    alunos.map(a=>'<tr><td>'+escapeHTML(a.nome)+'</td><td>'+a.acertos+'/'+itens.length+'</td>'+
       '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
       '<td>'+formatarData(a.enviadoEm)+'</td>'+
       (arquivado?'':'<td><button type="button" class="link-zerar" data-remover-caminho="'+caminhoBase+a.id+'" data-remover-nome="'+escapeHTML(a.nome)+'">Zerar</button></td>')+
       '</tr>').join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const nomeTurma = alunos[0]?alunos[0].turma:tk;
-  abrirModal(nomeTurma+' — '+ativ.codigo+(arquivado?' (arquivada)':''), '<h4>Acerto por história</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
+  abrirModal(nomeTurma+' — '+ativ.codigo+(arquivado?' (arquivada)':''), '<h4>'+rotuloGeral+'</h4>'+barrasHtml+'<h4>Alunos</h4>'+tabelaHtml);
   document.querySelectorAll('.input-nota').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim();
