@@ -427,6 +427,10 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         </div>
         <button class="botao botao-primario botao-pequeno" id="btn-criar-turma" style="margin-bottom:16px;">Criar turma</button>
       </div>
+      <div style="margin-top:10px;">
+        <button class="botao botao-secundario botao-pequeno" id="btn-importar-professorhub">Importar do ProfessorHub</button>
+        <p class="msg-sucesso" id="msg-importacao" hidden></p>
+      </div>
       <div id="lista-turmas-cadastro" style="margin-top:20px;"></div>
     </div>
   </div>
@@ -495,6 +499,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <script>
 /* =========================================================
@@ -509,6 +514,15 @@ const CONFIG = {
     storageBucket: "alunoplata.firebasestorage.app",
     messagingSenderId: "157684184707",
     appId: "1:157684184707:web:f72ea53f31ea24bb710db6"
+  },
+  // Usada só pelo botão "Importar do ProfessorHub" no módulo Turmas — não é mais usada no restante do sistema.
+  firebaseProfessorHub: {
+    apiKey: "AIzaSyCI8OrHATX3rLL_KQMJ67o3pWV5s-g0dTw",
+    authDomain: "professorhub-af113.firebaseapp.com",
+    projectId: "professorhub-af113",
+    storageBucket: "professorhub-af113.firebasestorage.app",
+    messagingSenderId: "532542873762",
+    appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
   },
   senhaProfessor: "Lore_2001"
 };
@@ -695,6 +709,66 @@ function initFirebase(){
   firebase.initializeApp(CONFIG.firebase);
   db = firebase.database();
   return firebase.auth().signInAnonymously();
+}
+
+/* ---- Conexão sob demanda com o ProfessorHub — só para o botão "Importar" no módulo Turmas ---- */
+let dbProf = null;
+let profHubIniciado = false;
+async function garantirFirebaseProfessorHub(){
+  if (profHubIniciado) return;
+  const appProf = firebase.initializeApp(CONFIG.firebaseProfessorHub, 'professorhub');
+  dbProf = appProf.firestore();
+  await appProf.auth().signInAnonymously();
+  profHubIniciado = true;
+}
+async function buscarTurmasDoProfessorHub(){
+  const turmasSnap = await dbProf.collection('turmas').get();
+  const porNome = {};
+  turmasSnap.docs.forEach(d=>{
+    const nome = d.data().nome || '(sem nome)';
+    if (!porNome[nome]) porNome[nome] = [];
+    porNome[nome].push(d.id);
+  });
+  return Object.entries(porNome).map(([nome,ids])=>({nome, ids}));
+}
+async function buscarAlunosDaTurmaProfessorHub(turmaIds){
+  const grupos = [];
+  for (let i=0;i<turmaIds.length;i+=30) grupos.push(turmaIds.slice(i,i+30));
+  const resultados = await Promise.all(grupos.map(g=>dbProf.collection('alunos').where('turmaId','in',g).get()));
+  const vistos = new Set();
+  const alunos = [];
+  resultados.forEach(snap=>snap.docs.forEach(d=>{
+    const nome = d.data().nome || '(sem nome)';
+    const chave = nome.trim().toLowerCase();
+    if (!vistos.has(chave)){ vistos.add(chave); alunos.push({nome}); }
+  }));
+  return alunos;
+}
+async function importarDoProfessorHub(){
+  await garantirFirebaseProfessorHub();
+  const turmasPH = await buscarTurmasDoProfessorHub();
+  let turmasNativas = await buscarTurmasCadastradas();
+  let turmasNovas = 0, alunosNovos = 0;
+  for (const tph of turmasPH){
+    let nativa = turmasNativas.find(t=>t.nome.trim().toLowerCase()===tph.nome.trim().toLowerCase());
+    let turmaId;
+    if (nativa){
+      turmaId = nativa.id;
+    } else {
+      turmaId = await criarTurmaCadastrada(tph.nome);
+      turmasNovas++;
+      nativa = {id:turmaId, nome:tph.nome, alunos:{}};
+      turmasNativas.push(nativa);
+    }
+    const alunosPH = await buscarAlunosDaTurmaProfessorHub(tph.ids);
+    const existentes = new Set(Object.values(nativa.alunos||{}).map(a=>a.nome.trim().toLowerCase()));
+    const novosNomes = alunosPH.filter(a=>!existentes.has(a.nome.trim().toLowerCase())).map(a=>a.nome);
+    if (novosNomes.length){
+      await adicionarAlunosATurma(turmaId, novosNomes);
+      alunosNovos += novosNomes.length;
+    }
+  }
+  return {totalTurmasProfessorHub:turmasPH.length, turmasNovas, alunosNovos};
 }
 
 /* ---- Turmas cadastradas (nativo — substitui a leitura do ProfessorHub) ---- */
@@ -1451,6 +1525,22 @@ document.getElementById('btn-criar-turma').addEventListener('click', async ()=>{
   await criarTurmaCadastrada(nome);
   document.getElementById('input-nova-turma').value = '';
   await recarregarTurmasModulo();
+});
+document.getElementById('btn-importar-professorhub').addEventListener('click', async ()=>{
+  const msg = document.getElementById('msg-importacao');
+  const btn = document.getElementById('btn-importar-professorhub');
+  btn.disabled = true;
+  msg.hidden=false; msg.style.color='var(--ink-suave)'; msg.textContent='Importando do ProfessorHub… pode levar alguns segundos.';
+  try{
+    const r = await importarDoProfessorHub();
+    msg.style.color='var(--verde)';
+    msg.textContent='Pronto! '+r.totalTurmasProfessorHub+' turma(s) verificadas no ProfessorHub — '+r.turmasNovas+' turma(s) nova(s) e '+r.alunosNovos+' aluno(s) novo(s) adicionados aqui.';
+    await recarregarTurmasModulo();
+  } catch(e){
+    msg.style.color='var(--vermelho)';
+    msg.textContent='Erro ao importar: '+e.message;
+  }
+  btn.disabled = false;
 });
 
 /* ---- módulo Atividades ---- */
