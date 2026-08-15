@@ -838,22 +838,41 @@ const ATIVIDADES_ANTERIORES = [
   {codigo:"ATIV00114082026", numero:1, modeloConteudo:"teorias-administracao", valorTotal:1},
   {codigo:"ATIV00214082026", numero:2, modeloConteudo:"nocoes-gestao-pessoas", valorTotal:10}
 ];
+async function contarRespostasNoBanco(codigo){
+  const snap = await db.ref('turmas').once('value');
+  const todasTurmas = snap.val() || {};
+  const porTurma = [];
+  let total = 0;
+  Object.entries(todasTurmas).forEach(([tk,t])=>{
+    const alunos = t && t.atividades && t.atividades[codigo] ? (t.atividades[codigo].alunos||{}) : {};
+    const n = Object.keys(alunos).length;
+    if (n>0){ porTurma.push({turmaKey:tk, nomeTurma: Object.values(alunos)[0].turma || tk, n}); total += n; }
+  });
+  return {total, porTurma};
+}
 async function restaurarAtividadesAnteriores(){
   const existentes = await buscarAtividadesCadastradas();
   const turmasNativas = await buscarTurmasCadastradas();
+  const nomesNativosSlug = new Set(turmasNativas.map(t=>turmaSlug(t.nome)));
   const todasTurmasIds = {};
   turmasNativas.forEach(t=>{ todasTurmasIds[t.id]=true; });
   let criadas = 0;
+  const relatorio = [];
   for (const a of ATIVIDADES_ANTERIORES){
-    if (existentes.find(e=>e.codigo===a.codigo)) continue;
-    const ref = db.ref('atividadesCadastradas').push();
-    await ref.set({
-      codigo:a.codigo, numero:a.numero, modeloConteudo:a.modeloConteudo, valorTotal:a.valorTotal,
-      turmasIds: todasTurmasIds, ativa:true, criadaEm:Date.now()
-    });
-    criadas++;
+    if (!existentes.find(e=>e.codigo===a.codigo)){
+      const ref = db.ref('atividadesCadastradas').push();
+      await ref.set({
+        codigo:a.codigo, numero:a.numero, modeloConteudo:a.modeloConteudo, valorTotal:a.valorTotal,
+        turmasIds: todasTurmasIds, ativa:true, criadaEm:Date.now()
+      });
+      criadas++;
+    }
+    const contagem = await contarRespostasNoBanco(a.codigo);
+    const semTurmaNativa = contagem.porTurma.filter(pt=>!nomesNativosSlug.has(pt.turmaKey));
+    const modelo = MODELOS_CONTEUDO[a.modeloConteudo];
+    relatorio.push({titulo:modelo.titulo, codigo:a.codigo, total:contagem.total, porTurma:contagem.porTurma, semTurmaNativa});
   }
-  return {criadas, totalTurmas: turmasNativas.length};
+  return {criadas, totalTurmas: turmasNativas.length, relatorio};
 }
 
 function construirAtividadeEfetiva(registro){
@@ -1505,12 +1524,20 @@ function renderListaTurmasCadastro(turmas){
     const n = Object.keys(t.alunos||{}).length;
     return '<div class="turma-card" data-turma-id="'+t.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(t.nome)+'</h3>'+
-      '<button type="button" class="botao-texto" data-acao="gerenciar">Gerenciar alunos →</button></div>'+
+      '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="gerenciar">Gerenciar alunos →</button>'+
+      '<button type="button" class="link-zerar" data-acao="excluir-turma">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) cadastrado(s)</span></div></div>';
   }).join('');
   lista.querySelectorAll('[data-acao="gerenciar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.turmaId;
     abrirModalGerenciarTurma(id);
+  }));
+  lista.querySelectorAll('[data-acao="excluir-turma"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const id = e.target.closest('.turma-card').dataset.turmaId;
+    const turma = turmas.find(t=>t.id===id);
+    if (!confirm('Excluir a turma "'+turma.nome+'" e os alunos cadastrados nela? As respostas já enviadas não são apagadas — ficam guardadas no banco.')) return;
+    await removerTurmaCadastrada(id);
+    await recarregarTurmasModulo();
   }));
 }
 function abrirModalGerenciarTurma(turmaId){
@@ -1604,12 +1631,22 @@ function renderListaAtividadesCadastro(){
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
-      '<button type="button" class="botao-texto" data-acao="editar">Editar →</button></div>'+
+      '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
+      '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">'+nTurmas+' turma(s) com acesso</span></div></div>';
   }).join('');
   lista.querySelectorAll('[data-acao="editar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     abrirModalEditarAtividade(id);
+  }));
+  lista.querySelectorAll('[data-acao="excluir-atividade"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const id = e.target.closest('.turma-card').dataset.ativId;
+    const reg = atividadesCacheModulo.find(a=>a.id===id);
+    const modelo = MODELOS_CONTEUDO[reg.modeloConteudo];
+    if (!confirm('Excluir o cadastro de "'+(modelo?modelo.titulo:reg.codigo)+'"? As respostas já enviadas pelos alunos NÃO são apagadas — ficam guardadas e voltam a aparecer se você cadastrar de novo com o código '+reg.codigo+'.')) return;
+    await db.ref('atividadesCadastradas/'+id).remove();
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    renderListaAtividadesCadastro();
   }));
 }
 function abrirModalEditarAtividade(id){
@@ -1639,13 +1676,21 @@ document.getElementById('btn-restaurar-atividades').addEventListener('click', as
   const msg = document.getElementById('msg-restauracao');
   const btn = document.getElementById('btn-restaurar-atividades');
   btn.disabled = true;
-  msg.hidden=false; msg.style.color='var(--ink-suave)'; msg.textContent='Restaurando…';
+  msg.hidden=false; msg.style.color='var(--ink-suave)'; msg.textContent='Vasculhando o banco…';
   try{
     const r = await restaurarAtividadesAnteriores();
     msg.style.color='var(--verde)';
-    msg.textContent = r.criadas
-      ? r.criadas+' atividade(s) restaurada(s), associada(s) às '+r.totalTurmas+' turma(s) cadastradas no momento.'
-      : 'As atividades anteriores já estavam cadastradas — nada para restaurar.';
+    const totalGeral = r.relatorio.reduce((s,x)=>s+x.total,0);
+    msg.textContent = (r.criadas ? r.criadas+' atividade(s) cadastrada(s) agora. ' : '')+totalGeral+' resposta(s) de aluno encontradas no total — veja o detalhe.';
+    const html = r.relatorio.map(item=>{
+      const linhasTurma = item.porTurma.length ? item.porTurma.map(pt=>
+        '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(pt.nomeTurma)+'</span><span class="linha-barra-valor" style="flex:1;text-align:left;">'+pt.n+' aluno(s)'+(item.semTurmaNativa.find(x=>x.turmaKey===pt.turmaKey)?' — <strong style="color:var(--vermelho);">sem turma cadastrada com esse nome</strong>':'')+'</span></div>'
+      ).join('') : '<p class="vazio-msg">Nenhuma resposta encontrada para este código.</p>';
+      return '<h4>'+escapeHTML(item.titulo)+' — '+item.codigo+' ('+item.total+' resposta(s))</h4>'+linhasTurma;
+    }).join('');
+    const avisoOrfaos = r.relatorio.some(i=>i.semTurmaNativa.length) ?
+      '<p style="margin-top:16px;font-size:.85rem;">As turmas marcadas em vermelho têm respostas salvas mas nenhuma turma cadastrada com o mesmo nome — crie uma turma com esse nome exato no módulo Turmas para os alunos conseguirem acessar o resultado.</p>' : '';
+    abrirModal('Respostas encontradas no banco', html+avisoOrfaos);
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
   } catch(e){
