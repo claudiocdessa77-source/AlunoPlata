@@ -50,8 +50,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .cartao-central .subtitulo{font-family:var(--font-mono);font-size:.78rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.05em;margin:0 0 20px;}
 .campo{margin-bottom:16px;}
 .campo label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;}
-.campo input{width:100%;padding:11px 13px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
-.campo input:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
+.campo input,.campo textarea{width:100%;padding:11px 13px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
+.campo input:focus-visible,.campo textarea:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
 .erro-msg{background:#FCEAE8;border:1.5px solid var(--vermelho);color:var(--vermelho);border-radius:8px;padding:9px 12px;font-size:.85rem;font-weight:600;margin-bottom:14px;}
 .link-discreto{display:inline-block;margin-top:18px;font-size:.8rem;color:var(--ink-suave);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font-display);padding:0;}
 
@@ -110,7 +110,7 @@ button:focus-visible,.chip:focus-visible{outline:3px solid var(--folder-escuro);
 .botao-primario{background:var(--ink);color:#fff;}
 .botao-secundario{background:#fff;color:var(--ink);}
 .botao-pequeno{padding:7px 14px;font-size:.78rem;}
-.botao-texto{background:none;border:none;color:var(--folder-escuro);text-decoration:underline;text-transform:none;letter-spacing:0;font-weight:700;padding:4px 0;}
+.botao-texto{background:none;border:none;color:var(--folder-escuro);text-decoration:underline;text-transform:none;letter-spacing:0;font-weight:700;padding:4px 0;cursor:pointer;font-family:var(--font-display);font-size:.85rem;}
 #aviso-desafio{margin-top:16px;background:#FCEFDC;border:1.5px solid var(--folder);border-radius:8px;padding:10px 14px;font-size:.9rem;font-weight:600;}
 #pontuacao-resultado{margin-top:16px;background:var(--ink);color:#fff;border-radius:8px;padding:12px 16px;font-family:var(--font-mono);font-weight:700;letter-spacing:.03em;}
 .confirmacao-envio{margin-top:16px;background:#FCEFDC;border:1.5px solid var(--folder);border-radius:8px;padding:14px;}
@@ -134,7 +134,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .turma-card-topo h3{margin:0;font-size:1.05rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .badge-liberado{font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;background:var(--verde);color:#fff;padding:3px 9px;border-radius:12px;}
 .badge-pendente{font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;background:var(--folder);color:#fff;padding:3px 9px;border-radius:12px;}
-.turma-card-botoes{display:flex;gap:10px;align-items:center;}
+.turma-card-botoes{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .link-zerar{background:none;border:none;color:var(--vermelho);text-decoration:underline;font-size:.78rem;cursor:pointer;font-family:var(--font-display);}
 .turma-card-stats{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:12px;}
 .stat-mini{font-size:.85rem;color:var(--ink-suave);}
@@ -159,10 +159,13 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 /* ---- senha por data de nascimento / gestão de senhas ---- */
 .select-turma{width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
 .linha-senha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--borda);}
+.linha-aluno-turma{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--borda);}
 .linha-senha-nome{flex:1;font-size:.92rem;}
 .input-linha{width:150px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:6px;font-family:var(--font-mono);font-size:.9rem;background:#fff;color:var(--ink);}
 .lista-senhas{max-height:52vh;overflow-y:auto;margin:14px 0;padding-right:2px;}
 .msg-sucesso{font-weight:700;margin-top:10px;}
+.linha-checkbox{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--borda);cursor:pointer;font-size:.92rem;}
+.linha-checkbox input{width:18px;height:18px;flex-shrink:0;}
 
 /* ---- arquivo / código da atividade ---- */
 .codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
@@ -173,6 +176,11 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .arquivo-card:hover{background:#F0EDE4;}
 .arquivo-card .stat-mini{color:var(--ink-suave);font-size:.82rem;}
 
+/* ---- relatórios ---- */
+.tabela-relatorio{width:100%;border-collapse:collapse;margin-bottom:26px;}
+.tabela-relatorio th,.tabela-relatorio td{border:1px solid #999;padding:9px 10px;text-align:left;font-size:.92rem;}
+.relatorio-turma-titulo{margin:22px 0 8px;font-size:1.05rem;}
+
 @media (max-width:640px){
   .paineis-grid{grid-template-columns:1fr;}
   .cabecalho,.cartao-central{padding:22px 18px 18px;}
@@ -180,6 +188,10 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   .linha-barra-label{flex-basis:120px;font-size:.76rem;}
 }
 @media print{
+  .no-print{display:none !important;}
+  body.imprimindo-relatorio *{visibility:hidden;}
+  body.imprimindo-relatorio .relatorio-imprimivel,body.imprimindo-relatorio .relatorio-imprimivel *{visibility:visible;}
+  body.imprimindo-relatorio .relatorio-imprimivel{position:absolute;top:0;left:0;width:100%;padding:10px;}
   .acoes,.chip,.painel-topo-acoes,footer{display:none;}
   body{padding:0;background:#fff;}
 }
@@ -187,7 +199,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 </head>
 <body>
 
-<!-- ===== TELA: ESCOLHER TURMA (lista vinda do ProfessorHub) ===== -->
+<!-- ===== TELA: ESCOLHER TURMA ===== -->
 <section id="tela-escolher-turma" class="tela">
   <div class="cartao-central">
     <h1>Plataforma do Aluno</h1>
@@ -212,7 +224,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: ESCOLHER NOME (lista de alunos da turma escolhida) ===== -->
+<!-- ===== TELA: ESCOLHER NOME ===== -->
 <section id="tela-escolher-nome" class="tela">
   <div class="cartao-central">
     <div class="cabecalho-com-voltar">
@@ -228,7 +240,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: SENHA (data de nascimento, evita abrir a atividade de outro aluno) ===== -->
+<!-- ===== TELA: SENHA ===== -->
 <section id="tela-senha" class="tela">
   <div class="cartao-central">
     <h1 id="titulo-nome-escolhido"></h1>
@@ -252,7 +264,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: ERRO DE CONEXÃO ===== -->
+<!-- ===== TELA: ERRO ===== -->
 <section id="tela-erro" class="tela">
   <div class="cartao-central">
     <h1>Não foi possível conectar</h1>
@@ -261,7 +273,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: DESAFIO (ALUNO RESPONDE) ===== -->
+<!-- ===== TELA: DESAFIO ===== -->
 <section id="tela-desafio" class="tela">
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
@@ -286,7 +298,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: AGUARDANDO LIBERAÇÃO ===== -->
+<!-- ===== TELA: AGUARDANDO ===== -->
 <section id="tela-aguardando" class="tela">
   <div class="cartao-central aguardando-box">
     <svg class="icone-aguardando" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="15"/><path d="M24 17v9l7 5"/><path d="M17 6h14M20 6v4M28 6v4"/></svg>
@@ -298,7 +310,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: RESULTADO (ALUNO) ===== -->
+<!-- ===== TELA: RESULTADO ===== -->
 <section id="tela-resultado" class="tela">
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
@@ -345,6 +357,9 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
           <p class="subtitulo" style="margin:4px 0 0;">acompanhamento das turmas</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="botao botao-secundario botao-pequeno" id="btn-modulo-turmas">Turmas</button>
+          <button class="botao botao-secundario botao-pequeno" id="btn-modulo-atividades">Atividades</button>
+          <button class="botao botao-secundario botao-pequeno" id="btn-modulo-relatorios">Relatórios</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-gerenciar-senhas">Senhas dos alunos</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
         </div>
@@ -367,7 +382,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== TELA: GESTÃO DE SENHAS (professor) ===== -->
+<!-- ===== TELA: GESTÃO DE SENHAS ===== -->
 <section id="tela-professor-senhas" class="tela">
   <div class="pagina-larga">
     <div class="aba-processo">Painel do Professor · Gestão de Pessoas</div>
@@ -393,7 +408,81 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
   </div>
 </section>
 
-<!-- ===== MODAL (drill-down) ===== -->
+<!-- ===== TELA: MÓDULO TURMAS ===== -->
+<section id="tela-professor-turmas" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo">Painel do Professor · Gestão de Pessoas</div>
+    <div class="cabecalho">
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Turmas</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">cadastre turmas e associe alunos</p>
+        </div>
+        <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-turmas">← Voltar ao painel</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;max-width:480px;margin-top:18px;">
+        <div class="campo" style="margin-bottom:0;flex:1;min-width:200px;">
+          <label for="input-nova-turma">Nova turma</label>
+          <input type="text" id="input-nova-turma" placeholder="Ex.: RH 2A">
+        </div>
+        <button class="botao botao-primario botao-pequeno" id="btn-criar-turma" style="margin-bottom:16px;">Criar turma</button>
+      </div>
+      <div id="lista-turmas-cadastro" style="margin-top:20px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TELA: MÓDULO ATIVIDADES ===== -->
+<section id="tela-professor-atividades" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo">Painel do Professor · Gestão de Pessoas</div>
+    <div class="cabecalho">
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Atividades</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">cadastre atividades e associe a turmas</p>
+        </div>
+        <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-atividades">← Voltar ao painel</button>
+      </div>
+      <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
+      <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
+      <div class="campo" style="max-width:420px;">
+        <label for="select-modelo-conteudo">Conteúdo</label>
+        <select id="select-modelo-conteudo" class="select-turma"></select>
+      </div>
+      <div class="campo" style="max-width:200px;">
+        <label for="input-valor-nova-atividade">Valor (nota máxima)</label>
+        <input type="text" inputmode="decimal" id="input-valor-nova-atividade" placeholder="Ex.: 10">
+      </div>
+      <div class="campo">
+        <label>Turmas com acesso</label>
+        <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
+      </div>
+      <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
+      <p class="msg-sucesso" id="msg-atividade-cadastrada" hidden></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TELA: MÓDULO RELATÓRIOS ===== -->
+<section id="tela-professor-relatorios" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo no-print">Painel do Professor · Gestão de Pessoas</div>
+    <div class="cabecalho no-print">
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Relatórios</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">gere e imprima listas para uso em sala</p>
+        </div>
+        <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-relatorios">← Voltar ao painel</button>
+      </div>
+      <div id="lista-tipos-relatorio" class="lista-selecao" style="max-height:none;margin-top:18px;"></div>
+    </div>
+    <div id="relatorio-conteudo" style="margin-top:20px;"></div>
+  </div>
+</section>
+
+<!-- ===== MODAL ===== -->
 <div class="modal-overlay" id="modal-overlay" hidden>
   <div class="modal-caixa">
     <button class="modal-fechar" id="modal-fechar" aria-label="Fechar">×</button>
@@ -406,7 +495,6 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <script>
 /* =========================================================
@@ -422,18 +510,10 @@ const CONFIG = {
     messagingSenderId: "157684184707",
     appId: "1:157684184707:web:f72ea53f31ea24bb710db6"
   },
-  firebaseProfessorHub: {
-    apiKey: "AIzaSyCI8OrHATX3rLL_KQMJ67o3pWV5s-g0dTw",
-    authDomain: "professorhub-af113.firebaseapp.com",
-    projectId: "professorhub-af113",
-    storageBucket: "professorhub-af113.firebasestorage.app",
-    messagingSenderId: "532542873762",
-    appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
-  },
   senhaProfessor: "Lore_2001"
 };
 
-/* ===== DADOS: PENSADORES, HISTÓRIAS, ÍCONES (conteúdo da atividade ATIV001) ===== */
+/* ===== CONTEÚDO: TEORIAS DA ADMINISTRAÇÃO (quadrinho) ===== */
 const PENSADORES_ATIV001 = {
   taylor:{nome:"Frederick Taylor",teoria:"Administração Científica",cor:"#C1620B",
     explicacao:"As pistas — cronômetro, tempo, “o método certo” e recompensa pela produção — remetem à Administração Científica de Taylor: estudo de tempos e movimentos, padronização de tarefas e ênfase na eficiência do trabalho."},
@@ -475,7 +555,7 @@ const HISTORIAS_ATIV001=[
   ]}
 ];
 
-/* ===== ATIVIDADES — cada nova atividade do semestre entra aqui como um novo item ===== */
+/* ===== CONTEÚDO: NOÇÕES DE GESTÃO DE PESSOAS (múltipla escolha) ===== */
 const PERGUNTAS_ATIV002 = [
   {numero:1, titulo:"Conceito Básico de Gestão de Pessoas",
     enunciado:"A Gestão de Pessoas pode ser entendida como um conjunto de práticas que busca desenvolver o potencial humano dentro das organizações.",
@@ -534,31 +614,26 @@ const PERGUNTAS_ATIV002 = [
     correta:"C", explicacao:"O uso equilibrado — IA como apoio, com checagem humana — evita descartar bons candidatos por falhas do sistema automatizado."}
 ];
 
-const ATIVIDADES = [
-  {
-    codigo: "ATIV00114082026",
-    numero: 1,
-    dataAtividade: "14082026",
-    titulo: "Teorias da Administração",
-    subtitulo: "em quadrinhos — desafio de associação",
-    instrucao: "Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).",
-    valorTotal: 1,
-    tipo: "quadrinho",
+/* ===== MODELOS DE CONTEÚDO — cada novo modelo entra aqui quando eu monto o conteúdo a seu pedido =====
+   O módulo Atividades, no painel, usa esta lista para você "cadastrar" instâncias (código, valor, turmas) sem
+   precisar escrever as perguntas/histórias em si. */
+const MODELOS_CONTEUDO = {
+  "teorias-administracao": {
+    tipo:"quadrinho",
+    titulo:"Teorias da Administração",
+    subtitulo:"em quadrinhos — desafio de associação",
+    instrucao:"Leia as cinco histórias abaixo. Cada uma foi inspirada por um pensador clássico da Administração. Identifique, pelas falas e pelas pistas de cada quadro, qual pensador inspirou cada história. Depois de enviar, sua resposta ficará registrada e o resultado será liberado pelo(a) professor(a).",
     pensadores: PENSADORES_ATIV001,
     historias: HISTORIAS_ATIV001
   },
-  {
-    codigo: "ATIV00214082026",
-    numero: 2,
-    dataAtividade: "14082026",
-    titulo: "Noções de Gestão de Pessoas",
-    subtitulo: "questionário — 10 questões + bônus",
-    instrucao: "Este questionário foi respondido no papel, em sala. Confira aqui a alternativa (A a E) que você marcou em cada questão e envie — o resultado será liberado pelo(a) professor(a).",
-    valorTotal: 10,
-    tipo: "multipla-escolha",
+  "nocoes-gestao-pessoas": {
+    tipo:"multipla-escolha",
+    titulo:"Noções de Gestão de Pessoas",
+    subtitulo:"questionário — 10 questões + bônus",
+    instrucao:"Este questionário foi respondido no papel, em sala. Confira aqui a alternativa (A a E) que você marcou em cada questão e envie — o resultado será liberado pelo(a) professor(a).",
     perguntas: PERGUNTAS_ATIV002
   }
-];
+};
 
 const ICONES={
   cronometro:'<circle cx="24" cy="26" r="14"/><line x1="24" y1="26" x2="24" y2="16"/><line x1="24" y1="26" x2="30" y2="29"/><line x1="24" y1="12" x2="24" y2="6"/><line x1="19" y1="6" x2="29" y2="6"/><line x1="34" y1="16" x2="38" y2="12"/>',
@@ -610,6 +685,7 @@ function formatarData(ts){
 function mostrarTela(id){
   document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
   document.getElementById(id).classList.add('ativa');
+  document.body.classList.remove('imprimindo-relatorio');
   window.scrollTo(0,0);
 }
 
@@ -620,37 +696,69 @@ function initFirebase(){
   db = firebase.database();
   return firebase.auth().signInAnonymously();
 }
-let dbProf;
-function initFirebaseProfessorHub(){
-  const appProf = firebase.initializeApp(CONFIG.firebaseProfessorHub, 'professorhub');
-  dbProf = appProf.firestore();
-  return appProf.auth().signInAnonymously();
+
+/* ---- Turmas cadastradas (nativo — substitui a leitura do ProfessorHub) ---- */
+async function buscarTurmasCadastradas(){
+  const snap = await db.ref('turmasCadastradas').once('value');
+  const dados = snap.val() || {};
+  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, alunos:t.alunos||{}}))
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
-async function buscarTurmasDoProfessorHub(){
-  const turmasSnap = await dbProf.collection('turmas').get();
-  const porNome = {};
-  turmasSnap.docs.forEach(d=>{
-    const nome = d.data().nome || '(sem nome)';
-    if (!porNome[nome]) porNome[nome] = [];
-    porNome[nome].push(d.id);
+async function criarTurmaCadastrada(nome){
+  const ref = db.ref('turmasCadastradas').push();
+  await ref.set({nome, criadaEm:Date.now()});
+  return ref.key;
+}
+async function adicionarAlunosATurma(turmaId, nomes){
+  const atualizacoes = {};
+  nomes.forEach(nome=>{
+    if (!nome.trim()) return;
+    const key = db.ref('turmasCadastradas/'+turmaId+'/alunos').push().key;
+    atualizacoes[key] = {nome: nome.trim()};
   });
-  const turmas = Object.entries(porNome).map(([nome,ids])=>({nome, ids}));
-  turmas.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  return turmas;
+  if (Object.keys(atualizacoes).length) await db.ref('turmasCadastradas/'+turmaId+'/alunos').update(atualizacoes);
 }
-async function buscarAlunosDaTurmaProfessorHub(turmaIds){
-  const grupos = [];
-  for (let i=0;i<turmaIds.length;i+=30) grupos.push(turmaIds.slice(i,i+30));
-  const resultados = await Promise.all(grupos.map(g=>dbProf.collection('alunos').where('turmaId','in',g).get()));
-  const vistos = new Set();
-  const alunos = [];
-  resultados.forEach(snap=>snap.docs.forEach(d=>{
-    const nome = d.data().nome || '(sem nome)';
-    const chave = nome.trim().toLowerCase();
-    if (!vistos.has(chave)){ vistos.add(chave); alunos.push({id:d.id, nome}); }
-  }));
-  alunos.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  return alunos;
+async function removerAlunoDaTurma(turmaId, alunoId){
+  await db.ref('turmasCadastradas/'+turmaId+'/alunos/'+alunoId).remove();
+}
+async function removerTurmaCadastrada(turmaId){
+  await db.ref('turmasCadastradas/'+turmaId).remove();
+}
+
+/* ---- Atividades cadastradas (nativo) ---- */
+async function buscarAtividadesCadastradas(){
+  const snap = await db.ref('atividadesCadastradas').once('value');
+  const dados = snap.val() || {};
+  return Object.entries(dados).map(([id,a])=>Object.assign({id}, a)).sort((a,b)=>(a.numero||0)-(b.numero||0));
+}
+async function proximoNumeroAtividade(){
+  const lista = await buscarAtividadesCadastradas();
+  return lista.length ? Math.max(...lista.map(a=>a.numero||0))+1 : 1;
+}
+function gerarCodigoAtividade(numero){
+  const hoje = new Date();
+  const dd = String(hoje.getDate()).padStart(2,'0');
+  const mm = String(hoje.getMonth()+1).padStart(2,'0');
+  const yyyy = hoje.getFullYear();
+  return 'ATIV'+String(numero).padStart(3,'0')+dd+mm+yyyy;
+}
+async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds){
+  const numero = await proximoNumeroAtividade();
+  const codigo = gerarCodigoAtividade(numero);
+  const ref = db.ref('atividadesCadastradas').push();
+  await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, ativa:true, criadaEm:Date.now()});
+  return ref.key;
+}
+async function atualizarAtividadeCadastrada(id, dados){
+  await db.ref('atividadesCadastradas/'+id).update(dados);
+}
+function construirAtividadeEfetiva(registro){
+  const modelo = MODELOS_CONTEUDO[registro.modeloConteudo];
+  if (!modelo) return null;
+  return Object.assign({}, modelo, {
+    codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
+    id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false
+  });
 }
 
 async function buscarSubmissaoAtividade(turmaKey, codigoAtividade, chaveAluno){
@@ -710,9 +818,10 @@ function escutarTodasTurmas(cb){
 function pararEscutaTurmas(){ if(refTurmas&&cbTurmas){ refTurmas.off('value',cbTurmas);} refTurmas=null; cbTurmas=null; }
 
 /* ===== FLUXO DO ALUNO ===== */
-let identidade = {turmaKey:null, turmaNome:null, nome:null}; // identidade verificada (independe da atividade)
-let turmaEscolhidaTemp = null; // {nome, ids} — turma em navegação, antes/depois de confirmar identidade
-let atividadeAtual = null; // atividade sendo respondida/vista agora
+let identidade = {turmaKey:null, turmaNome:null, nome:null};
+let turmaEscolhidaTemp = null; // {id, nome, alunos}
+let atividadesDisponiveisTemp = []; // atividades efetivas disponíveis para a turma escolhida
+let atividadeAtual = null;
 let nomeEscolhidoPendente = null;
 let alunosCache = [];
 let respostasAtuais = {};
@@ -727,22 +836,22 @@ async function mostrarEscolhaTurma(){
   limparIdentidadeLocal();
   mostrarTela('tela-carregando');
   try{
-    const turmas = await buscarTurmasDoProfessorHub();
+    const turmas = await buscarTurmasCadastradas();
     const lista = document.getElementById('lista-turmas-prof');
     const erro = document.getElementById('erro-turmas');
     if (!turmas.length){
-      erro.hidden=false; erro.textContent='Nenhuma turma encontrada no ProfessorHub. Avise o professor.'; lista.innerHTML='';
+      erro.hidden=false; erro.textContent='Nenhuma turma cadastrada ainda. Avise o professor.'; lista.innerHTML='';
     } else {
       erro.hidden=true;
-      lista.innerHTML = turmas.map((t,i)=>'<button type="button" class="item-selecao" data-i="'+i+'">'+escapeHTML(t.nome)+'</button>').join('');
+      lista.innerHTML = turmas.map(t=>'<button type="button" class="item-selecao" data-id="'+t.id+'">'+escapeHTML(t.nome)+'</button>').join('');
       lista.querySelectorAll('.item-selecao').forEach(btn=>btn.addEventListener('click',()=>{
-        turmaEscolhidaTemp = turmas[Number(btn.dataset.i)];
+        turmaEscolhidaTemp = turmas.find(t=>t.id===btn.dataset.id);
         mostrarEscolhaAtividade();
       }));
     }
     mostrarTela('tela-escolher-turma');
   } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas no ProfessorHub: '+e.message;
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas: '+e.message;
     mostrarTela('tela-erro');
   }
 }
@@ -754,28 +863,42 @@ async function mostrarEscolhaAtividade(){
   const identificado = identidade.turmaKey===turmaKey && identidade.nome;
   const chave = identificado ? turmaSlug(identidade.nome) : null;
   const lista = document.getElementById('lista-atividades');
-  const linhas = [];
-  for (const a of ATIVIDADES){
-    let badge = '';
-    if (identificado){
-      try{
-        const dados = await buscarSubmissaoAtividade(turmaKey, a.codigo, chave);
-        if (!dados) badge = '<span class="badge-pendente">Ainda não respondida</span>';
-        else{
-          const liberado = await buscarLiberadoAtividade(turmaKey, a.codigo);
-          badge = liberado ? '<span class="badge-liberado">Concluída — '+dados.acertos+'/'+itensAtividade(a).length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):'')+'</span>' : '<span class="badge-pendente">Aguardando correção</span>';
+  const erro = document.getElementById('erro-atividades');
+  try{
+    const registros = await buscarAtividadesCadastradas();
+    const disponiveis = registros.filter(r=>r.ativa!==false && r.turmasIds && turmaEscolhidaTemp.id && r.turmasIds[turmaEscolhidaTemp.id]);
+    atividadesDisponiveisTemp = disponiveis.map(construirAtividadeEfetiva).filter(Boolean);
+    if (!atividadesDisponiveisTemp.length){
+      erro.hidden=false; erro.textContent='Nenhuma atividade disponível para esta turma no momento.'; lista.innerHTML='';
+    } else {
+      erro.hidden=true;
+      const linhas=[];
+      for (const a of atividadesDisponiveisTemp){
+        let badge = '';
+        if (identificado){
+          try{
+            const dados = await buscarSubmissaoAtividade(turmaKey, a.codigo, chave);
+            if (!dados) badge = '<span class="badge-pendente">Ainda não respondida</span>';
+            else{
+              const liberado = await buscarLiberadoAtividade(turmaKey, a.codigo);
+              badge = liberado ? '<span class="badge-liberado">Concluída — '+dados.acertos+'/'+itensAtividade(a).length+(dados.nota!=null&&dados.nota!==''?(' · nota '+dados.nota):'')+'</span>' : '<span class="badge-pendente">Aguardando correção</span>';
+            }
+          } catch(e){ badge = '<span class="badge-pendente">—</span>'; }
         }
-      } catch(e){ badge = '<span class="badge-pendente">—</span>'; }
+        linhas.push('<button type="button" class="item-selecao item-atividade" data-codigo="'+a.codigo+'"><span>'+escapeHTML(a.titulo)+' <span class="codigo-atividade">'+a.codigo+'</span></span>'+badge+'</button>');
+      }
+      lista.innerHTML = linhas.join('');
+      lista.querySelectorAll('.item-atividade').forEach(btn=>btn.addEventListener('click',()=>escolherAtividade(btn.dataset.codigo)));
     }
-    linhas.push('<button type="button" class="item-selecao item-atividade" data-codigo="'+a.codigo+'"><span>'+escapeHTML(a.titulo)+' <span class="codigo-atividade">'+a.codigo+'</span></span>'+badge+'</button>');
+    mostrarTela('tela-escolher-atividade');
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar atividades: '+e.message;
+    mostrarTela('tela-erro');
   }
-  lista.innerHTML = linhas.join('');
-  lista.querySelectorAll('.item-atividade').forEach(btn=>btn.addEventListener('click',()=>escolherAtividade(btn.dataset.codigo)));
-  mostrarTela('tela-escolher-atividade');
 }
 
 function escolherAtividade(codigo){
-  atividadeAtual = ATIVIDADES.find(a=>a.codigo===codigo);
+  atividadeAtual = atividadesDisponiveisTemp.find(a=>a.codigo===codigo);
   const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   if (identidade.turmaKey===turmaKey && identidade.nome){
     entrarNaAtividade();
@@ -784,18 +907,13 @@ function escolherAtividade(codigo){
   }
 }
 
-async function mostrarEscolhaNome(){
-  mostrarTela('tela-carregando');
-  try{
-    alunosCache = await buscarAlunosDaTurmaProfessorHub(turmaEscolhidaTemp.ids);
-    document.getElementById('titulo-turma-escolhida').textContent = turmaEscolhidaTemp.nome;
-    document.getElementById('filtro-nome').value = '';
-    renderizarListaAlunos(alunosCache);
-    mostrarTela('tela-escolher-nome');
-  } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao buscar alunos no ProfessorHub: '+e.message;
-    mostrarTela('tela-erro');
-  }
+function mostrarEscolhaNome(){
+  const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  alunosCache = alunos;
+  document.getElementById('titulo-turma-escolhida').textContent = turmaEscolhidaTemp.nome;
+  document.getElementById('filtro-nome').value = '';
+  renderizarListaAlunos(alunosCache);
+  mostrarTela('tela-escolher-nome');
 }
 
 function renderizarListaAlunos(alunos){
@@ -879,7 +997,7 @@ function aplicarTextoAtividade(){
 
 async function renderizarOutrasAtividades(idContainer){
   const container = document.getElementById(idContainer);
-  const outras = ATIVIDADES.filter(a=>a.codigo!==atividadeAtual.codigo);
+  const outras = atividadesDisponiveisTemp.filter(a=>a.codigo!==atividadeAtual.codigo);
   if (!outras.length){ container.innerHTML=''; return; }
   const chave = turmaSlug(identidade.nome);
   const linhas = [];
@@ -1050,19 +1168,29 @@ function renderPerguntasResultado(main, respostas){
 }
 
 /* ===== FLUXO DO PROFESSOR ===== */
-let atividadeSelecionadaProf = ATIVIDADES[0];
+let atividadeSelecionadaProf = null;
+let atividadesEfetivasProf = [];
 let ultimoSnapshotTurmas = {};
 
-function entrarProfessor(){
+async function entrarProfessor(){
   const senha = document.getElementById('input-senha').value;
   const erro = document.getElementById('erro-senha');
   if (senha !== CONFIG.senhaProfessor){ erro.hidden=false; return; }
   erro.hidden=true;
   document.getElementById('input-senha').value='';
+  mostrarTela('tela-carregando');
+  const registros = await buscarAtividadesCadastradas();
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
   const sel = document.getElementById('select-atividade-prof');
-  sel.innerHTML = ATIVIDADES.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
-  sel.value = String(ATIVIDADES.indexOf(atividadeSelecionadaProf));
+  if (!atividadesEfetivasProf.length){
+    sel.innerHTML = '<option value="">Nenhuma atividade cadastrada</option>';
+    atividadeSelecionadaProf = null;
+  } else {
+    sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+    atividadeSelecionadaProf = atividadesEfetivasProf[0];
+  }
   mostrarTela('tela-professor-painel');
+  if (!atividadeSelecionadaProf){ document.getElementById('stats-gerais').innerHTML=''; document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
   escutarTodasTurmas(renderPainelProfessor);
   carregarArquivo();
 }
@@ -1077,6 +1205,7 @@ function renderPainelProfessor(turmasRaw){
 }
 
 function renderPainelProfessorAtual(){
+  if (!atividadeSelecionadaProf) return;
   const cod = atividadeSelecionadaProf.codigo;
   const itens = itensAtividade(atividadeSelecionadaProf);
   const turmas = {};
@@ -1154,7 +1283,7 @@ function renderPainelProfessorAtual(){
   }));
 }
 document.getElementById('select-atividade-prof').addEventListener('change', (e)=>{
-  atividadeSelecionadaProf = ATIVIDADES[Number(e.target.value)];
+  atividadeSelecionadaProf = atividadesEfetivasProf[Number(e.target.value)];
   renderPainelProfessorAtual();
   carregarArquivo();
 });
@@ -1191,14 +1320,14 @@ async function carregarArquivo(){
   }));
 }
 
-/* ---- gestão de senhas ---- */
+/* ---- gestão de senhas (agora sobre turmas nativas) ---- */
 let turmasCacheSenha = [];
 async function abrirTelaSenhas(){
   mostrarTela('tela-carregando');
   try{
-    turmasCacheSenha = await buscarTurmasDoProfessorHub();
+    turmasCacheSenha = await buscarTurmasCadastradas();
   } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas no ProfessorHub: '+e.message;
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar turmas: '+e.message;
     mostrarTela('tela-erro');
     return;
   }
@@ -1207,7 +1336,7 @@ async function abrirTelaSenhas(){
   document.getElementById('msg-senhas-salvas').hidden = true;
   mostrarTela('tela-professor-senhas');
   if (turmasCacheSenha.length) await carregarListaSenhas();
-  else document.getElementById('lista-senhas-alunos').innerHTML = '<p class="vazio-msg">Nenhuma turma encontrada no ProfessorHub.</p>';
+  else document.getElementById('lista-senhas-alunos').innerHTML = '<p class="vazio-msg">Nenhuma turma cadastrada ainda.</p>';
 }
 
 async function carregarListaSenhas(){
@@ -1218,7 +1347,7 @@ async function carregarListaSenhas(){
   if (!turma){ lista.innerHTML=''; return; }
   lista.innerHTML = '<p class="vazio-msg">Carregando…</p>';
   try{
-    const alunos = await buscarAlunosDaTurmaProfessorHub(turma.ids);
+    const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     const turmaKey = turmaSlug(turma.nome);
     const senhasSalvas = await buscarSenhasDaTurma(turmaKey);
     if (!alunos.length){ lista.innerHTML = '<p class="vazio-msg">Nenhum aluno nesta turma.</p>'; return; }
@@ -1254,12 +1383,181 @@ async function salvarListaSenhas(){
   }
 }
 
-function abrirModal(titulo, conteudoHtml){
-  document.getElementById('modal-titulo').textContent = titulo;
-  document.getElementById('modal-conteudo').innerHTML = conteudoHtml;
-  document.getElementById('modal-overlay').hidden = false;
+/* ---- módulo Turmas ---- */
+let turmasCacheModulo = [];
+async function recarregarTurmasModulo(){
+  turmasCacheModulo = await buscarTurmasCadastradas();
+  renderListaTurmasCadastro(turmasCacheModulo);
 }
-function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
+async function abrirTelaTurmas(){
+  mostrarTela('tela-carregando');
+  await recarregarTurmasModulo();
+  mostrarTela('tela-professor-turmas');
+}
+function renderListaTurmasCadastro(turmas){
+  const lista = document.getElementById('lista-turmas-cadastro');
+  if (!turmas.length){ lista.innerHTML = '<p class="vazio-msg">Nenhuma turma cadastrada ainda.</p>'; return; }
+  lista.innerHTML = turmas.map(t=>{
+    const n = Object.keys(t.alunos||{}).length;
+    return '<div class="turma-card" data-turma-id="'+t.id+'">'+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(t.nome)+'</h3>'+
+      '<button type="button" class="botao-texto" data-acao="gerenciar">Gerenciar alunos →</button></div>'+
+      '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) cadastrado(s)</span></div></div>';
+  }).join('');
+  lista.querySelectorAll('[data-acao="gerenciar"]').forEach(b=>b.addEventListener('click',(e)=>{
+    const id = e.target.closest('.turma-card').dataset.turmaId;
+    abrirModalGerenciarTurma(id);
+  }));
+}
+function abrirModalGerenciarTurma(turmaId){
+  const turma = turmasCacheModulo.find(t=>t.id===turmaId);
+  if (!turma) return;
+  const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const listaAlunosHtml = alunos.length ? alunos.map(a=>
+    '<div class="linha-aluno-turma"><span class="linha-senha-nome">'+escapeHTML(a.nome)+'</span>'+
+    '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></div>'
+  ).join('') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
+  const html =
+    '<div class="lista-senhas">'+listaAlunosHtml+'</div>'+
+    '<h4>Adicionar alunos (um nome por linha)</h4>'+
+    '<div class="campo"><textarea id="textarea-novos-alunos" rows="6" placeholder="Cole ou digite um nome por linha"></textarea></div>'+
+    '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-adicionar-alunos">Adicionar</button>'+
+    '<button type="button" class="link-zerar" id="btn-excluir-turma">Excluir turma</button></div>';
+  abrirModal(turma.nome, html);
+  document.getElementById('btn-adicionar-alunos').addEventListener('click', async ()=>{
+    const nomes = document.getElementById('textarea-novos-alunos').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!nomes.length) return;
+    await adicionarAlunosATurma(turmaId, nomes);
+    await recarregarTurmasModulo();
+    abrirModalGerenciarTurma(turmaId);
+  });
+  document.querySelectorAll('[data-remover-aluno]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await removerAlunoDaTurma(turmaId, e.target.dataset.removerAluno);
+      await recarregarTurmasModulo();
+      abrirModalGerenciarTurma(turmaId);
+    });
+  });
+  document.getElementById('btn-excluir-turma').addEventListener('click', async ()=>{
+    if (!confirm('Excluir a turma "'+turma.nome+'" e os '+alunos.length+' aluno(s) cadastrados nela? Isso não apaga respostas já enviadas.')) return;
+    await removerTurmaCadastrada(turmaId);
+    fecharModal();
+    await recarregarTurmasModulo();
+  });
+}
+document.getElementById('btn-criar-turma').addEventListener('click', async ()=>{
+  const nome = document.getElementById('input-nova-turma').value.trim();
+  if (!nome) return;
+  await criarTurmaCadastrada(nome);
+  document.getElementById('input-nova-turma').value = '';
+  await recarregarTurmasModulo();
+});
+
+/* ---- módulo Atividades ---- */
+let turmasCacheAtiv = [];
+let atividadesCacheModulo = [];
+function renderCheckboxesTurmas(containerId, turmas, selecionadas){
+  const el = document.getElementById(containerId);
+  if (!turmas.length){ el.innerHTML = '<p class="vazio-msg">Cadastre turmas no módulo Turmas primeiro.</p>'; return; }
+  el.innerHTML = turmas.map(t=>
+    '<label class="linha-checkbox"><input type="checkbox" value="'+t.id+'" '+(selecionadas&&selecionadas[t.id]?'checked':'')+'><span>'+escapeHTML(t.nome)+'</span></label>'
+  ).join('');
+}
+async function abrirTelaAtividades(){
+  mostrarTela('tela-carregando');
+  turmasCacheAtiv = await buscarTurmasCadastradas();
+  atividadesCacheModulo = await buscarAtividadesCadastradas();
+  const selModelo = document.getElementById('select-modelo-conteudo');
+  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
+  renderListaAtividadesCadastro();
+  document.getElementById('input-valor-nova-atividade').value = '';
+  document.getElementById('msg-atividade-cadastrada').hidden = true;
+  mostrarTela('tela-professor-atividades');
+}
+function renderListaAtividadesCadastro(){
+  const lista = document.getElementById('lista-atividades-cadastro');
+  if (!atividadesCacheModulo.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
+  lista.innerHTML = atividadesCacheModulo.map(a=>{
+    const modelo = MODELOS_CONTEUDO[a.modeloConteudo];
+    const nTurmas = Object.keys(a.turmasIds||{}).length;
+    return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
+      '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
+      '<button type="button" class="botao-texto" data-acao="editar">Editar →</button></div>'+
+      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">'+nTurmas+' turma(s) com acesso</span></div></div>';
+  }).join('');
+  lista.querySelectorAll('[data-acao="editar"]').forEach(b=>b.addEventListener('click',(e)=>{
+    const id = e.target.closest('.turma-card').dataset.ativId;
+    abrirModalEditarAtividade(id);
+  }));
+}
+function abrirModalEditarAtividade(id){
+  const registro = atividadesCacheModulo.find(a=>a.id===id);
+  if (!registro) return;
+  const modelo = MODELOS_CONTEUDO[registro.modeloConteudo];
+  const html =
+    '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa (aparece para os alunos)</label>'+
+    '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-atividade">Salvar</button></div>';
+  abrirModal((modelo?modelo.titulo:'Atividade')+' — '+registro.codigo, html);
+  renderCheckboxesTurmas('modal-checkboxes-turmas', turmasCacheAtiv, registro.turmasIds);
+  document.getElementById('btn-salvar-edicao-atividade').addEventListener('click', async ()=>{
+    const valorDigitado = parseFloat(document.getElementById('modal-input-valor').value.replace(',','.'));
+    const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
+    const ativa = document.getElementById('modal-checkbox-ativa').checked;
+    const turmasIds = {};
+    document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+    await atualizarAtividadeCadastrada(registro.id, {valorTotal, ativa, turmasIds});
+    fecharModal();
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    renderListaAtividadesCadastro();
+  });
+}
+document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
+  const modeloConteudo = document.getElementById('select-modelo-conteudo').value;
+  const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
+  const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
+  const turmasIds = {};
+  document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds);
+  document.getElementById('input-valor-nova-atividade').value = '';
+  const msg = document.getElementById('msg-atividade-cadastrada');
+  msg.hidden=false; msg.textContent='Atividade cadastrada!'; msg.style.color='var(--verde)';
+  atividadesCacheModulo = await buscarAtividadesCadastradas();
+  renderListaAtividadesCadastro();
+});
+
+/* ---- módulo Relatórios ---- */
+async function abrirTelaRelatorios(){
+  document.getElementById('relatorio-conteudo').innerHTML = '';
+  const lista = document.getElementById('lista-tipos-relatorio');
+  lista.innerHTML = '<button type="button" class="item-selecao" id="btn-relatorio-nascimento">Lista de turmas — espaço para data de nascimento</button>';
+  document.getElementById('btn-relatorio-nascimento').addEventListener('click', gerarRelatorioNascimento);
+  mostrarTela('tela-professor-relatorios');
+}
+async function gerarRelatorioNascimento(){
+  const turmas = await buscarTurmasCadastradas();
+  const container = document.getElementById('relatorio-conteudo');
+  if (!turmas.length){ container.innerHTML = '<p class="vazio-msg">Nenhuma turma cadastrada ainda.</p>'; return; }
+  let html = '<div class="relatorio-imprimivel"><button type="button" class="botao botao-primario no-print" id="btn-imprimir-relatorio" style="margin:0 0 20px;">Imprimir</button>';
+  turmas.forEach(t=>{
+    const alunos = Object.values(t.alunos||{}).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    html += '<h3 class="relatorio-turma-titulo">Turma: '+escapeHTML(t.nome)+'</h3>';
+    if (!alunos.length){ html += '<p class="vazio-msg">Nenhum aluno cadastrado.</p>'; return; }
+    html += '<table class="tabela-relatorio"><thead><tr><th>Nome</th><th>Data de nascimento</th></tr></thead><tbody>';
+    alunos.forEach(a=>{ html += '<tr><td>'+escapeHTML(a.nome)+'</td><td>&nbsp;</td></tr>'; });
+    html += '</tbody></table>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+  document.getElementById('btn-imprimir-relatorio').addEventListener('click', ()=>{
+    document.body.classList.add('imprimindo-relatorio');
+    window.print();
+  });
+}
+window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-relatorio'));
 
 function itemLabelCor(atividade, item){
   if (atividade.tipo === 'multipla-escolha'){
@@ -1280,8 +1578,15 @@ function abrirModalTodosAlunos(turmas, totalItens){
   abrirModal('Todas as respostas ('+linhas.length+')', html);
 }
 
+function abrirModal(titulo, conteudoHtml){
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-conteudo').innerHTML = conteudoHtml;
+  document.getElementById('modal-overlay').hidden = false;
+}
+function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
+
 function abrirModalTurma(tk, t, arquivado){
-  const ativ = arquivado ? (ATIVIDADES.find(a=>a.codigo===t.codigoAtividade) || atividadeSelecionadaProf) : atividadeSelecionadaProf;
+  const ativ = arquivado ? (atividadesEfetivasProf.find(a=>a.codigo===t.codigoAtividade) || atividadeSelecionadaProf) : atividadeSelecionadaProf;
   const itens = itensAtividade(ativ);
   const alunos = Object.entries(t.alunos||{}).map(([id,dados])=>Object.assign({id},dados)).sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
   const porItem={}; itens.forEach(it=>porItem[it.num]={certo:0,total:0});
@@ -1325,14 +1630,7 @@ async function iniciar(){
   try{
     await initFirebase();
   } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao banco do AlunoPlata: '+e.message+'. Verifique CONFIG.firebase no início do arquivo.';
-    mostrarTela('tela-erro');
-    return;
-  }
-  try{
-    await initFirebaseProfessorHub();
-  } catch(e){
-    document.getElementById('erro-texto').textContent = 'Erro ao conectar ao ProfessorHub: '+e.message+'. Verifique CONFIG.firebaseProfessorHub no início do arquivo.';
+    document.getElementById('erro-texto').textContent = 'Erro ao conectar: '+e.message+'. Verifique CONFIG.firebase no início do arquivo.';
     mostrarTela('tela-erro');
     return;
   }
@@ -1342,9 +1640,16 @@ async function iniciar(){
   const salvo = carregarIdentidadeLocal();
   if (salvo && salvo.turmaKey && salvo.nome){
     identidade = salvo;
-    turmaEscolhidaTemp = {nome: salvo.turmaNome, ids: []};
-    await mostrarEscolhaAtividade();
-    return;
+    try{
+      const turmas = await buscarTurmasCadastradas();
+      turmaEscolhidaTemp = turmas.find(t=>turmaSlug(t.nome)===salvo.turmaKey) || {id:null, nome:salvo.turmaNome, alunos:{}};
+      await mostrarEscolhaAtividade();
+      return;
+    } catch(e){
+      document.getElementById('erro-texto').textContent = 'Erro ao restaurar sessão: '+e.message;
+      mostrarTela('tela-erro');
+      return;
+    }
   }
   await mostrarEscolhaTurma();
 }
@@ -1372,6 +1677,27 @@ document.getElementById('btn-gerenciar-senhas').addEventListener('click', abrirT
 document.getElementById('btn-voltar-painel-senhas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
 document.getElementById('select-turma-senha').addEventListener('change', carregarListaSenhas);
 document.getElementById('btn-salvar-senhas').addEventListener('click', salvarListaSenhas);
+document.getElementById('btn-modulo-turmas').addEventListener('click', abrirTelaTurmas);
+document.getElementById('btn-voltar-painel-turmas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
+document.getElementById('btn-modulo-atividades').addEventListener('click', abrirTelaAtividades);
+document.getElementById('btn-voltar-painel-atividades').addEventListener('click', async ()=>{
+  mostrarTela('tela-carregando');
+  const registros = await buscarAtividadesCadastradas();
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
+  const sel = document.getElementById('select-atividade-prof');
+  const codAtual = atividadeSelecionadaProf ? atividadeSelecionadaProf.codigo : null;
+  if (!atividadesEfetivasProf.length){ sel.innerHTML='<option value="">Nenhuma atividade cadastrada</option>'; atividadeSelecionadaProf=null; }
+  else {
+    sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+    const idxMantido = atividadesEfetivasProf.findIndex(a=>a.codigo===codAtual);
+    atividadeSelecionadaProf = atividadesEfetivasProf[idxMantido>=0?idxMantido:0];
+    sel.value = String(idxMantido>=0?idxMantido:0);
+  }
+  mostrarTela('tela-professor-painel');
+  if (atividadeSelecionadaProf){ renderPainelProfessorAtual(); } else { document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
+});
+document.getElementById('btn-modulo-relatorios').addEventListener('click', abrirTelaRelatorios);
+document.getElementById('btn-voltar-painel-relatorios').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') fecharModal(); });
 
