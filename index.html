@@ -448,6 +448,10 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
         </div>
         <button class="botao botao-secundario botao-pequeno" id="btn-voltar-painel-atividades">← Voltar ao painel</button>
       </div>
+      <div style="margin-top:14px;">
+        <button class="botao botao-secundario botao-pequeno" id="btn-restaurar-atividades">Restaurar atividades anteriores</button>
+        <p class="msg-sucesso" id="msg-restauracao" hidden></p>
+      </div>
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
       <div class="campo" style="max-width:420px;">
@@ -826,6 +830,32 @@ async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds){
 async function atualizarAtividadeCadastrada(id, dados){
   await db.ref('atividadesCadastradas/'+id).update(dados);
 }
+
+/* Atividades que existiam antes do módulo Atividades (mesmos códigos de então) — restaurar
+   recria o registro de cadastro com o MESMO código, para reconectar com respostas já enviadas
+   por alunos, que continuam salvas em turmas/{turmaKey}/atividades/{codigo}/... */
+const ATIVIDADES_ANTERIORES = [
+  {codigo:"ATIV00114082026", numero:1, modeloConteudo:"teorias-administracao", valorTotal:1},
+  {codigo:"ATIV00214082026", numero:2, modeloConteudo:"nocoes-gestao-pessoas", valorTotal:10}
+];
+async function restaurarAtividadesAnteriores(){
+  const existentes = await buscarAtividadesCadastradas();
+  const turmasNativas = await buscarTurmasCadastradas();
+  const todasTurmasIds = {};
+  turmasNativas.forEach(t=>{ todasTurmasIds[t.id]=true; });
+  let criadas = 0;
+  for (const a of ATIVIDADES_ANTERIORES){
+    if (existentes.find(e=>e.codigo===a.codigo)) continue;
+    const ref = db.ref('atividadesCadastradas').push();
+    await ref.set({
+      codigo:a.codigo, numero:a.numero, modeloConteudo:a.modeloConteudo, valorTotal:a.valorTotal,
+      turmasIds: todasTurmasIds, ativa:true, criadaEm:Date.now()
+    });
+    criadas++;
+  }
+  return {criadas, totalTurmas: turmasNativas.length};
+}
+
 function construirAtividadeEfetiva(registro){
   const modelo = MODELOS_CONTEUDO[registro.modeloConteudo];
   if (!modelo) return null;
@@ -1605,6 +1635,25 @@ function abrirModalEditarAtividade(id){
     renderListaAtividadesCadastro();
   });
 }
+document.getElementById('btn-restaurar-atividades').addEventListener('click', async ()=>{
+  const msg = document.getElementById('msg-restauracao');
+  const btn = document.getElementById('btn-restaurar-atividades');
+  btn.disabled = true;
+  msg.hidden=false; msg.style.color='var(--ink-suave)'; msg.textContent='Restaurando…';
+  try{
+    const r = await restaurarAtividadesAnteriores();
+    msg.style.color='var(--verde)';
+    msg.textContent = r.criadas
+      ? r.criadas+' atividade(s) restaurada(s), associada(s) às '+r.totalTurmas+' turma(s) cadastradas no momento.'
+      : 'As atividades anteriores já estavam cadastradas — nada para restaurar.';
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    renderListaAtividadesCadastro();
+  } catch(e){
+    msg.style.color='var(--vermelho)';
+    msg.textContent='Erro ao restaurar: '+e.message;
+  }
+  btn.disabled = false;
+});
 document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
   const modeloConteudo = document.getElementById('select-modelo-conteudo').value;
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
