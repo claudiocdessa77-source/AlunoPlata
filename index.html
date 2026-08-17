@@ -169,6 +169,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 
 /* ---- arquivo / código da atividade ---- */
 .codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
+.pill-turma{display:inline-block;background:var(--bg);border:1px solid var(--borda);border-radius:12px;padding:2px 10px;font-size:.78rem;color:var(--ink-suave);margin:2px 5px 2px 0;}
 code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-radius:4px;font-size:.85em;}
 #arquivo-secao{margin-top:30px;}
 .arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -476,7 +477,8 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
           <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Criar novo conteúdo colando HTML (sem precisar pedir pra mim)</h2>
         </div>
         <div id="html-import-corpo" hidden style="margin-top:14px;">
-          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Escreva à mão ou peça pra uma IA gerar um texto nesse formato — depois cole abaixo. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole qualquer HTML de atividade ou questionário</strong> — mesmo que não siga um formato específico (por exemplo, um arquivo gerado por uma IA de imagem/texto, com o visual e a estrutura que quiser). A plataforma tenta entender sozinha o que for preciso, usando IA por trás dos panos.</p>
+          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se preferir um caminho mais rápido e sem depender de interpretação, este modelo de texto simples funciona na hora, sem IA. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
           <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
 &lt;titulo&gt;Nome da atividade&lt;/titulo&gt;
 &lt;subtitulo&gt;questionário — 3 questões&lt;/subtitulo&gt;
@@ -497,7 +499,7 @@ Texto do caso/contexto, aparece uma vez no topo.
 &lt;/atividade&gt;</pre>
           <div class="campo">
             <label for="textarea-html-atividade">Cole aqui</label>
-            <textarea id="textarea-html-atividade" rows="10" placeholder="Cole o texto no formato acima..."></textarea>
+            <textarea id="textarea-html-atividade" rows="10" placeholder="Cole qualquer HTML de atividade, do jeito que estiver..."></textarea>
           </div>
           <div class="acoes">
             <button class="botao botao-secundario botao-pequeno" id="btn-pre-visualizar-html">Pré-visualizar</button>
@@ -800,6 +802,53 @@ function parsearAtividadeHTML(texto){
     return {numero:i+1, titulo:tema, enunciado, pergunta:perguntaTxt, opcoes, correta, explicacao};
   });
   return {tipo:'multipla-escolha', titulo, subtitulo: subtitulo || ('questionário — '+perguntas.length+' questões'), instrucao: caso, perguntas};
+}
+
+/* Alternativa flexível: quando o texto colado NÃO segue o formato simples acima, manda para a IA
+   interpretar (funciona com qualquer HTML de atividade/questionário, seja qual for a estrutura). */
+async function interpretarHTMLComIA(textoColado){
+  const promptSistema = 'Você recebe o código-fonte de um arquivo HTML de uma atividade ou questionário educacional — pode ter qualquer estrutura, CSS e JavaScript, de qualquer origem. Sua tarefa é EXTRAIR o conteúdo pedagógico dele e devolver APENAS um JSON válido, sem nenhum texto antes ou depois, sem marcação markdown, no formato exato abaixo:\n\n'+
+    '{"titulo":"título da atividade","subtitulo":"resumo curto, tipo \'questionário — N questões\'","caso":"todo o texto de contexto/caso que aparece uma vez, no início (string vazia se não houver)","perguntas":[{"tema":"título curto dessa questão","enunciado":"lembrete curto do caso específico dessa questão, se fizer sentido (pode ser vazio)","pergunta":"o texto da pergunta em si","opcoes":[{"letra":"A","texto":"..."},{"letra":"B","texto":"..."}],"correta":"a letra da alternativa correta","explicacao":"por que essa é a resposta certa"}]}\n\n'+
+    'Regras importantes: preserve o texto original das perguntas e alternativas o máximo possível, sem resumir nem reescrever o conteúdo pedagógico — apenas extraia. Se o HTML já indicar qual alternativa é a correta (variável isAnswer, correta, isCorrect, classe indicando acerto, etc.), use exatamente essa, sem inventar. Extraia TODAS as questões encontradas, na ordem em que aparecem. Se já houver uma explicação/justificativa no HTML para cada questão, use-a; senão, escreva uma breve e correta. Responda APENAS com o JSON.';
+
+  let resp;
+  try{
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: promptSistema,
+        messages:[{role:'user', content: textoColado.slice(0,60000)}]
+      })
+    });
+  } catch(e){ throw new Error('Não consegui contatar a IA para interpretar esse HTML: '+e.message); }
+  if (!resp.ok) throw new Error('A IA não conseguiu processar esse HTML (erro '+resp.status+'). Tente novamente.');
+  const data = await resp.json();
+  const textoResposta = (data.content||[]).map(b=>b.text||'').join('');
+  let json;
+  try{ json = JSON.parse(textoResposta.replace(/```json|```/g,'').trim()); }
+  catch(e){ throw new Error('A IA não devolveu um formato reconhecível. Tente novamente, ou use o modelo de texto simples acima.'); }
+  if (!json.titulo || !Array.isArray(json.perguntas) || !json.perguntas.length){
+    throw new Error('Não consegui identificar título e perguntas nesse HTML. Confira se o arquivo realmente tem um questionário, ou use o modelo de texto simples acima.');
+  }
+  json.perguntas.forEach((p,i)=>{
+    if (!p.pergunta || !Array.isArray(p.opcoes) || p.opcoes.length<2 || !p.correta){
+      throw new Error('A questão '+(i+1)+' ficou incompleta na extração — tente novamente.');
+    }
+  });
+  return {
+    tipo:'multipla-escolha',
+    titulo: json.titulo,
+    subtitulo: json.subtitulo || ('questionário — '+json.perguntas.length+' questões'),
+    instrucao: json.caso || '',
+    perguntas: json.perguntas.map((p,i)=>({
+      numero:i+1, titulo:p.tema||('Questão '+(i+1)), enunciado:p.enunciado||'',
+      pergunta:p.pergunta, opcoes:(p.opcoes||[]).map(o=>({l:(o.letra||'').toUpperCase().trim(), t:o.texto})),
+      correta:(p.correta||'').toUpperCase().trim(), explicacao:p.explicacao||''
+    }))
+  };
 }
 
 const ICONES={
@@ -1792,13 +1841,19 @@ function renderListaAtividadesCadastro(){
   if (!atividadesCacheModulo.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
   lista.innerHTML = atividadesCacheModulo.map(a=>{
     const modelo = MODELOS_CONTEUDO_RUNTIME[a.modeloConteudo];
-    const nTurmas = Object.keys(a.turmasIds||{}).length;
+    const nomesTurmas = Object.keys(a.turmasIds||{})
+      .map(tid=>{ const t = turmasCacheAtiv.find(x=>x.id===tid); return t ? t.nome : null; })
+      .filter(Boolean).sort((x,y)=>x.localeCompare(y,'pt-BR'));
+    const turmasHtml = nomesTurmas.length
+      ? nomesTurmas.map(n=>'<span class="pill-turma">'+escapeHTML(n)+'</span>').join('')
+      : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
-      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">'+nTurmas+' turma(s) com acesso</span></div></div>';
+      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span></div>'+
+      '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
   lista.querySelectorAll('[data-acao="editar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
@@ -1886,23 +1941,39 @@ document.getElementById('html-import-toggle').addEventListener('click', ()=>{
 });
 
 let conteudoParseadoTemp = null;
-document.getElementById('btn-pre-visualizar-html').addEventListener('click', ()=>{
+document.getElementById('btn-pre-visualizar-html').addEventListener('click', async ()=>{
   const erro = document.getElementById('erro-html-atividade');
   const preview = document.getElementById('preview-html-atividade');
   const btnSalvar = document.getElementById('btn-salvar-conteudo-html');
+  const btnPreview = document.getElementById('btn-pre-visualizar-html');
   erro.hidden = true; preview.innerHTML = ''; btnSalvar.hidden = true; conteudoParseadoTemp = null;
+  const texto = document.getElementById('textarea-html-atividade').value;
+  if (!texto.trim()){ erro.hidden=false; erro.textContent='Cole um HTML antes de pré-visualizar.'; return; }
+  let resultado = null;
+  let usouIA = false;
   try{
-    const texto = document.getElementById('textarea-html-atividade').value;
-    if (!texto.trim()) throw new Error('Cole o texto no formato do exemplo antes de pré-visualizar.');
-    const resultado = parsearAtividadeHTML(texto);
-    conteudoParseadoTemp = resultado;
-    preview.innerHTML = '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
-      '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
-      '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
-    btnSalvar.hidden = false;
+    resultado = parsearAtividadeHTML(texto);
   } catch(e){
-    erro.hidden = false; erro.textContent = e.message;
+    // não bateu com o formato simples — tenta interpretar com IA, que aceita qualquer HTML
+    usouIA = true;
+    btnPreview.disabled = true;
+    preview.innerHTML = '<p class="vazio-msg">Não é o formato simples — interpretando o HTML com IA, pode levar alguns segundos…</p>';
+    try{
+      resultado = await interpretarHTMLComIA(texto);
+    } catch(e2){
+      preview.innerHTML = '';
+      erro.hidden = false; erro.textContent = e2.message;
+      btnPreview.disabled = false;
+      return;
+    }
+    btnPreview.disabled = false;
   }
+  conteudoParseadoTemp = resultado;
+  preview.innerHTML = (usouIA ? '<p style="font-size:.8rem;color:var(--ink-suave);margin-bottom:8px;">Interpretado com IA — confira se ficou correto antes de salvar.</p>' : '') +
+    '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
+    '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
+    '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
+  btnSalvar.hidden = false;
 });
 document.getElementById('btn-salvar-conteudo-html').addEventListener('click', async ()=>{
   if (!conteudoParseadoTemp) return;
