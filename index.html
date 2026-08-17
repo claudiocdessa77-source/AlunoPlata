@@ -442,10 +442,11 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         </div>
         <button class="botao botao-primario botao-pequeno" id="btn-criar-turma" style="margin-bottom:16px;">Criar turma</button>
       </div>
-      <div style="margin-top:10px;">
+      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <button class="botao botao-secundario botao-pequeno" id="btn-importar-professorhub">Importar do ProfessorHub</button>
-        <p class="msg-sucesso" id="msg-importacao" hidden></p>
+        <button class="botao botao-secundario botao-pequeno" id="btn-aplicar-disciplinas">Aplicar disciplinas conhecidas</button>
       </div>
+      <p class="msg-sucesso" id="msg-importacao" hidden></p>
       <div id="lista-turmas-cadastro" style="margin-top:20px;"></div>
     </div>
   </div>
@@ -971,8 +972,9 @@ function montarConteudoImpressaoAtividade(atividade, dados){
   }
   return html;
 }
-function imprimirAtividadeRespondida(turmaNome, nomeAluno, atividade, dados){
-  document.getElementById('imp-disciplina').textContent = atividade.disciplina || '—';
+async function imprimirAtividadeRespondida(turmaNome, nomeAluno, atividade, dados){
+  const disciplinaTurma = await buscarDisciplinaPorTurmaNome(turmaNome);
+  document.getElementById('imp-disciplina').textContent = disciplinaTurma || atividade.disciplina || '—';
   document.getElementById('imp-turma').textContent = turmaNome;
   document.getElementById('imp-data').textContent = formatarDataCodigo(atividade.dataAtividade);
   document.getElementById('imp-estudante').textContent = nomeAluno;
@@ -1063,13 +1065,44 @@ async function importarDoProfessorHub(){
 async function buscarTurmasCadastradas(){
   const snap = await db.ref('turmasCadastradas').once('value');
   const dados = snap.val() || {};
-  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, alunos:t.alunos||{}}))
+  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, disciplina:t.disciplina||'', alunos:t.alunos||{}}))
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
 async function criarTurmaCadastrada(nome){
   const ref = db.ref('turmasCadastradas').push();
   await ref.set({nome, criadaEm:Date.now()});
   return ref.key;
+}
+async function definirDisciplinaDaTurma(turmaId, disciplina){
+  await db.ref('turmasCadastradas/'+turmaId+'/disciplina').set(disciplina);
+}
+async function buscarDisciplinaPorTurmaNome(turmaNome){
+  const turmas = await buscarTurmasCadastradas();
+  const t = turmas.find(x=>turmaSlug(x.nome)===turmaSlug(turmaNome));
+  return t ? (t.disciplina||'') : '';
+}
+/* Mapeamento turma -> disciplina informado pelo professor; usado pelo botão "Aplicar disciplinas conhecidas" */
+const DISCIPLINAS_CONHECIDAS = {
+  "administração 1a": "Gestão de Pessoas",
+  "administração 1b": "Gestão de Pessoas",
+  "logística 2a": "Gestão de Pessoas",
+  "recursos humanos 2a": "Recrutamento e Seleção",
+  "recursos humanos 3a": "Recrutamento e Seleção"
+};
+function normalizarNomeTurma(nome){
+  return (nome||'').trim().toLowerCase().replace(/\s+/g,' ');
+}
+async function aplicarDisciplinasConhecidas(){
+  const turmas = await buscarTurmasCadastradas();
+  let aplicadas = 0;
+  for (const t of turmas){
+    const chave = normalizarNomeTurma(t.nome);
+    if (DISCIPLINAS_CONHECIDAS[chave] && t.disciplina !== DISCIPLINAS_CONHECIDAS[chave]){
+      await definirDisciplinaDaTurma(t.id, DISCIPLINAS_CONHECIDAS[chave]);
+      aplicadas++;
+    }
+  }
+  return {aplicadas, totalTurmas: turmas.length};
 }
 async function adicionarAlunosATurma(turmaId, nomes){
   const atualizacoes = {};
@@ -1848,7 +1881,8 @@ function renderListaTurmasCadastro(turmas){
       '<div class="turma-card-topo"><h3>'+escapeHTML(t.nome)+'</h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="gerenciar">Gerenciar alunos →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-turma">Excluir</button></div></div>'+
-      '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) cadastrado(s)</span></div></div>';
+      '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) cadastrado(s)</span>'+
+      '<span class="stat-mini">'+(t.disciplina?('Disciplina: '+escapeHTML(t.disciplina)):'<em>Disciplina não definida</em>')+'</span></div></div>';
   }).join('');
   lista.querySelectorAll('[data-acao="gerenciar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.turmaId;
@@ -1871,12 +1905,23 @@ function abrirModalGerenciarTurma(turmaId){
     '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></div>'
   ).join('') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const html =
+    '<div class="campo"><label for="input-disciplina-turma">Disciplina</label>'+
+    '<div style="display:flex;gap:10px;"><input type="text" id="input-disciplina-turma" value="'+escapeHTML(turma.disciplina||'')+'" placeholder="Ex.: Gestão de Pessoas" style="flex:1;">'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-salvar-disciplina-turma">Salvar</button></div>'+
+    '<p class="msg-sucesso" id="msg-disciplina-turma" hidden style="margin-top:8px;"></p></div>'+
     '<div class="lista-senhas">'+listaAlunosHtml+'</div>'+
     '<h4>Adicionar alunos (um nome por linha)</h4>'+
     '<div class="campo"><textarea id="textarea-novos-alunos" rows="6" placeholder="Cole ou digite um nome por linha"></textarea></div>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-adicionar-alunos">Adicionar</button>'+
     '<button type="button" class="link-zerar" id="btn-excluir-turma">Excluir turma</button></div>';
   abrirModal(turma.nome, html);
+  document.getElementById('btn-salvar-disciplina-turma').addEventListener('click', async ()=>{
+    const disciplina = document.getElementById('input-disciplina-turma').value.trim();
+    await definirDisciplinaDaTurma(turmaId, disciplina);
+    await recarregarTurmasModulo();
+    const msg = document.getElementById('msg-disciplina-turma');
+    msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Disciplina salva!';
+  });
   document.getElementById('btn-adicionar-alunos').addEventListener('click', async ()=>{
     const nomes = document.getElementById('textarea-novos-alunos').value.split('\n').map(s=>s.trim()).filter(Boolean);
     if (!nomes.length) return;
@@ -1918,6 +1963,24 @@ document.getElementById('btn-importar-professorhub').addEventListener('click', a
   } catch(e){
     msg.style.color='var(--vermelho)';
     msg.textContent='Erro ao importar: '+e.message;
+  }
+  btn.disabled = false;
+});
+document.getElementById('btn-aplicar-disciplinas').addEventListener('click', async ()=>{
+  const msg = document.getElementById('msg-importacao');
+  const btn = document.getElementById('btn-aplicar-disciplinas');
+  btn.disabled = true;
+  msg.hidden=false; msg.style.color='var(--ink-suave)'; msg.textContent='Aplicando…';
+  try{
+    const r = await aplicarDisciplinasConhecidas();
+    msg.style.color='var(--verde)';
+    msg.textContent = r.aplicadas
+      ? r.aplicadas+' de '+r.totalTurmas+' turma(s) atualizada(s) com a disciplina correspondente.'
+      : 'Nenhuma turma cadastrada bate com os nomes conhecidos (ou já estavam preenchidas).';
+    await recarregarTurmasModulo();
+  } catch(e){
+    msg.style.color='var(--vermelho)';
+    msg.textContent='Erro ao aplicar: '+e.message;
   }
   btn.disabled = false;
 });
