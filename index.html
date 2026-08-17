@@ -169,6 +169,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 
 /* ---- arquivo / código da atividade ---- */
 .codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
+code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-radius:4px;font-size:.85em;}
 #arquivo-secao{margin-top:30px;}
 .arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
 .arquivo-cabecalho h2{margin:0;font-size:1rem;text-transform:uppercase;letter-spacing:.03em;}
@@ -468,6 +469,44 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
       </div>
       <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
       <p class="msg-sucesso" id="msg-atividade-cadastrada" hidden></p>
+
+      <div style="margin-top:32px;">
+        <div class="arquivo-cabecalho" id="html-import-toggle">
+          <span id="html-import-seta">▸</span>
+          <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Criar novo conteúdo colando HTML (sem precisar pedir pra mim)</h2>
+        </div>
+        <div id="html-import-corpo" hidden style="margin-top:14px;">
+          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Escreva à mão ou peça pra uma IA gerar um texto nesse formato — depois cole abaixo. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+          <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
+&lt;titulo&gt;Nome da atividade&lt;/titulo&gt;
+&lt;subtitulo&gt;questionário — 3 questões&lt;/subtitulo&gt;
+&lt;caso&gt;
+Texto do caso/contexto, aparece uma vez no topo.
+&lt;/caso&gt;
+
+&lt;questao tema="Nome curto do tema"&gt;
+&lt;enunciado&gt;Lembrete curto do caso (opcional)&lt;/enunciado&gt;
+&lt;pergunta&gt;Texto da pergunta?&lt;/pergunta&gt;
+&lt;opcao letra="A"&gt;Alternativa A&lt;/opcao&gt;
+&lt;opcao letra="B" correta="true"&gt;Alternativa B (a certa)&lt;/opcao&gt;
+&lt;opcao letra="C"&gt;Alternativa C&lt;/opcao&gt;
+&lt;explicacao&gt;Por que essa é a resposta certa.&lt;/explicacao&gt;
+&lt;/questao&gt;
+
+(repita a tag &lt;questao&gt; para cada pergunta)
+&lt;/atividade&gt;</pre>
+          <div class="campo">
+            <label for="textarea-html-atividade">Cole aqui</label>
+            <textarea id="textarea-html-atividade" rows="10" placeholder="Cole o texto no formato acima..."></textarea>
+          </div>
+          <div class="acoes">
+            <button class="botao botao-secundario botao-pequeno" id="btn-pre-visualizar-html">Pré-visualizar</button>
+            <button class="botao botao-primario botao-pequeno" id="btn-salvar-conteudo-html" hidden>Salvar como novo conteúdo</button>
+          </div>
+          <p class="erro-msg" id="erro-html-atividade" hidden></p>
+          <div id="preview-html-atividade" style="margin-top:12px;"></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -635,6 +674,61 @@ const PERGUNTAS_ATIV002 = [
 /* ===== MODELOS DE CONTEÚDO — cada novo modelo entra aqui quando eu monto o conteúdo a seu pedido =====
    O módulo Atividades, no painel, usa esta lista para você "cadastrar" instâncias (código, valor, turmas) sem
    precisar escrever as perguntas/histórias em si. */
+/* ===== CONTEÚDO: ESTUDO DE CASO — GBS SUPERMERCADOS (Recrutamento e Seleção) ===== */
+const PERGUNTAS_GBS = [
+  {numero:1, titulo:"Desenho do Cargo (CHA)",
+    enunciado:"Lembrando o caso: a rede GBS Supermercados vai inaugurar uma unidade em Alagoinhas em 90 dias e abriu vaga para Gerente de RH da nova loja, que atuará sozinho(a) recrutando cerca de 40 posições.",
+    pergunta:"Sobre o desenho do cargo (CHA), todas as alternativas estão corretas, EXCETO uma. Qual é a alternativa INCORRETA?",
+    opcoes:[
+      {l:"A",t:"Conhecimento — domínio de ferramentas de gestão de RH e proficiência em Excel."},
+      {l:"B",t:"Atitude — disponibilidade para mudança para Alagoinhas nos primeiros 12 meses."},
+      {l:"C",t:"Habilidade — capacidade de conduzir um processo de contratação em massa sem suporte local."},
+      {l:"D",t:"Atitude — disposição para assumir a responsabilidade integral pela estruturação do RH da nova unidade."}
+    ],
+    correta:"B", explicacao:"“Disponibilidade para mudança” é uma condição contratual/logística do cargo — não uma competência comportamental. O CHA descreve capacidades e disposições da pessoa, não circunstâncias externas ao seu perfil."},
+  {numero:2, titulo:"Fontes de Recrutamento",
+    enunciado:"Lembrando o caso: a diretoria recebeu currículos de dois analistas do RH corporativo interessados na vaga (sem experiência em contratação de grande volume), e o Marketing sugeriu divulgar nas redes sociais da empresa.",
+    pergunta:"Sobre as fontes de recrutamento, todas as alternativas estão corretas, EXCETO uma. Qual é a alternativa INCORRETA?",
+    opcoes:[
+      {l:"A",t:"Recrutamento misto — combinar os candidatos internos já manifestados com a busca por candidatos externos, diante da falta de experiência em contratação de grande volume entre os internos."},
+      {l:"B",t:"Recrutamento interno — aproveitar os dois analistas do RH corporativo interessados na vaga."},
+      {l:"C",t:"Recrutamento interno — divulgar a vaga nas redes sociais da empresa como parte da campanha de employer branding da inauguração."},
+      {l:"D",t:"Recrutamento externo — captar candidatos fora do quadro atual de colaboradores da empresa."}
+    ],
+    correta:"C", explicacao:"Divulgar nas redes sociais da empresa, aberta ao público geral, é recrutamento EXTERNO. Quem divulga a vaga não define a fonte — quem pode se candidatar, sim."},
+  {numero:3, titulo:"Formas de Divulgação",
+    enunciado:"Lembrando o caso: o prazo de 90 dias preocupa a diretoria, que pediu prioridade máxima ao processo de contratação da nova unidade de Alagoinhas.",
+    pergunta:"Sobre as formas de divulgação, todas as alternativas estão corretas, EXCETO uma. Qual é a alternativa INCORRETA?",
+    opcoes:[
+      {l:"A",t:"Divulgação por recrutamento misto — combinar simultaneamente candidatos internos e externos como estratégia de divulgação."},
+      {l:"B",t:"Divulgação em redes sociais corporativas — aproveitar a campanha de employer branding já planejada pelo Marketing."},
+      {l:"C",t:"Divulgação por indicação — solicitar que colaboradores da rede indiquem candidatos de Alagoinhas e região."},
+      {l:"D",t:"Divulgação em parceria com instituições locais — contato com universidades e associações comerciais de Alagoinhas."}
+    ],
+    correta:"A", explicacao:"“Recrutamento misto” é uma fonte (combinação interno/externo), não uma forma/canal de divulgação. A ementa distingue fontes de formas — são conceitos relacionados, não sinônimos."},
+  {numero:4, titulo:"Técnicas de Seleção",
+    enunciado:"Lembrando o caso: entre os requisitos definidos pela diretoria estão experiência em contratação de grande volume e domínio de ferramentas de RH e Excel.",
+    pergunta:"Sobre as técnicas de seleção, todas as alternativas estão corretas, EXCETO uma. Qual é a alternativa INCORRETA?",
+    opcoes:[
+      {l:"A",t:"Entrevista individual — avaliar a disposição e as expectativas do(a) candidato(a) em relação à mudança para Alagoinhas."},
+      {l:"B",t:"Dinâmica de grupo — atividade coletiva com os candidatos remanescentes para avaliar exclusivamente o domínio técnico de recrutamento em massa exigido pelo cargo."},
+      {l:"C",t:"Análise curricular — triagem dos currículos recebidos, filtrando por formação, experiência em contratação de grande volume e domínio de ferramentas de RH."},
+      {l:"D",t:"Teste técnico — avaliação prática de Excel e de ferramentas de gestão de RH."},
+      {l:"E",t:"Verificação de referências profissionais — contato com empregadores anteriores para confirmar a experiência em contratação de grande volume."}
+    ],
+    correta:"B", explicacao:"Dinâmica de grupo é técnica válida, mas mede principalmente competências comportamentais (comunicação, trabalho em equipe) — não é adequada para avaliar “exclusivamente” domínio técnico; para isso, o teste técnico é a ferramenta correta."},
+  {numero:5, titulo:"Avaliação do Processo Seletivo",
+    enunciado:"Lembrando o caso: a diretoria estabeleceu um prazo de 90 dias para o preenchimento da vaga de Gerente de RH da nova unidade.",
+    pergunta:"Sobre a avaliação do processo seletivo, todas as alternativas estão corretas, EXCETO uma. Qual é a alternativa INCORRETA?",
+    opcoes:[
+      {l:"A",t:"Retenção — permanência do(a) profissional na função após o período inicial de atuação isolada na unidade."},
+      {l:"B",t:"Tempo de contratação — comparar o prazo de 90 dias estabelecido pela diretoria com o tempo efetivamente levado para preencher a vaga."},
+      {l:"C",t:"Volume de candidaturas recebidas — número total de currículos captados após a divulgação nas redes sociais."},
+      {l:"D",t:"Adequação ao cargo — desempenho do(a) profissional contratado(a) na condução da estruturação do RH da nova unidade."}
+    ],
+    correta:"C", explicacao:"Volume de candidaturas mede o alcance da divulgação/atração, não a eficácia da seleção. Indicadores de eficácia avaliam a QUALIDADE da contratação (adequação, retenção, desempenho), não a QUANTIDADE de pessoas atraídas."}
+];
+
 const MODELOS_CONTEUDO = {
   "teorias-administracao": {
     tipo:"quadrinho",
@@ -650,8 +744,63 @@ const MODELOS_CONTEUDO = {
     subtitulo:"questionário — 10 questões + bônus",
     instrucao:"Este questionário foi respondido no papel, em sala. Confira aqui a alternativa (A a E) que você marcou em cada questão e envie — o resultado será liberado pelo(a) professor(a).",
     perguntas: PERGUNTAS_ATIV002
+  },
+  "estudo-caso-gbs": {
+    tipo:"multipla-escolha",
+    titulo:"Estudo de Caso — GBS Supermercados",
+    subtitulo:"Recrutamento e Seleção — 5 questões",
+    instrucao:"CASO: A rede GBS Supermercados, com 14 lojas na Região Metropolitana de Salvador, vai inaugurar sua primeira unidade em Alagoinhas, no interior baiano, daqui a 90 dias. Para estruturar a equipe local, a diretoria abriu vaga para Gerente de Recursos Humanos da nova unidade — cargo inédito na empresa, já que as demais lojas são atendidas pelo RH corporativo, centralizado em Salvador. O cargo exigirá que o(a) profissional atue sozinho(a) na unidade nos primeiros seis meses, respondendo diretamente à diretoria, recrutando e selecionando toda a equipe operacional da nova loja (cerca de 40 posições), conduzindo a integração dos novos contratados e implantando as rotinas de departamento pessoal localmente. Requisitos definidos pela diretoria: formação superior em Administração, Psicologia ou Gestão de RH (concluída ou em andamento); experiência anterior em recrutamento e seleção de grande volume (contratação em massa); disponibilidade para mudança para Alagoinhas nos primeiros 12 meses; domínio de ferramentas de gestão de RH e proficiência intermediária em Excel. A diretoria já recebeu currículos de dois analistas do RH corporativo de Salvador interessados na vaga, mas nenhum deles tem experiência prévia em contratação de grande volume. Paralelamente, o Marketing sugeriu divulgar a vaga nas redes sociais da empresa, já que a inauguração está sendo usada como campanha de employer branding na cidade. O prazo apertado de 90 dias preocupa a diretoria, que pediu prioridade máxima ao processo. Em cada questão abaixo, todas as alternativas estão corretas, EXCETO uma — assinale a alternativa INCORRETA.",
+    perguntas: PERGUNTAS_GBS
   }
 };
+
+/* Cópia em tempo de execução — cresce com os conteúdos que o professor colar em HTML (guardados no banco) */
+let MODELOS_CONTEUDO_RUNTIME = Object.assign({}, MODELOS_CONTEUDO);
+async function carregarConteudosCadastrados(){
+  const snap = await db.ref('conteudosCadastrados').once('value');
+  const dados = snap.val() || {};
+  MODELOS_CONTEUDO_RUNTIME = Object.assign({}, MODELOS_CONTEUDO);
+  Object.entries(dados).forEach(([id, c])=>{
+    MODELOS_CONTEUDO_RUNTIME['custom:'+id] = {
+      tipo: c.tipo || 'multipla-escolha',
+      titulo: c.titulo,
+      subtitulo: c.subtitulo || '',
+      instrucao: c.instrucao || '',
+      perguntas: c.perguntas
+    };
+  });
+}
+
+/* Interpreta o formato simples colado pelo professor (tags <atividade>/<questao>/<opcao>...) */
+function parsearAtividadeHTML(texto){
+  const doc = new DOMParser().parseFromString(texto, 'text/html');
+  const raiz = doc.querySelector('atividade');
+  if (!raiz) throw new Error('Não encontrei a tag <atividade>...</atividade> envolvendo tudo.');
+  const pegarTexto = (el, seletor) => { const n = el.querySelector(seletor); return n ? n.textContent.trim() : ''; };
+  const titulo = pegarTexto(raiz, 'titulo');
+  if (!titulo) throw new Error('Falta a tag <titulo>Nome da atividade</titulo>.');
+  const subtitulo = pegarTexto(raiz, 'subtitulo');
+  const caso = pegarTexto(raiz, 'caso');
+  const questoesEl = raiz.querySelectorAll('questao');
+  if (!questoesEl.length) throw new Error('Não encontrei nenhuma tag <questao>...</questao>.');
+  const perguntas = Array.from(questoesEl).map((qEl, i)=>{
+    const numLabel = 'questão '+(i+1);
+    const tema = (qEl.getAttribute('tema')||'').trim() || ('Questão '+(i+1));
+    const enunciado = pegarTexto(qEl, 'enunciado');
+    const perguntaTxt = pegarTexto(qEl, 'pergunta');
+    if (!perguntaTxt) throw new Error('A '+numLabel+' ("'+tema+'") não tem <pergunta>...</pergunta>.');
+    const opcoesEl = Array.from(qEl.querySelectorAll('opcao'));
+    if (opcoesEl.length < 2) throw new Error('A '+numLabel+' ("'+tema+'") precisa de pelo menos 2 tags <opcao>.');
+    const opcoes = opcoesEl.map(o=>({ l:(o.getAttribute('letra')||'').toUpperCase().trim(), t:o.textContent.trim() }));
+    if (opcoes.some(o=>!o.l)) throw new Error('Alguma <opcao> da '+numLabel+' ("'+tema+'") está sem o atributo letra="A".');
+    const opcaoCorretaEl = opcoesEl.find(o=>(o.getAttribute('correta')||'').toLowerCase()==='true');
+    if (!opcaoCorretaEl) throw new Error('A '+numLabel+' ("'+tema+'") não tem nenhuma <opcao letra="..." correta="true">.');
+    const correta = (opcaoCorretaEl.getAttribute('letra')||'').toUpperCase().trim();
+    const explicacao = pegarTexto(qEl, 'explicacao');
+    return {numero:i+1, titulo:tema, enunciado, pergunta:perguntaTxt, opcoes, correta, explicacao};
+  });
+  return {tipo:'multipla-escolha', titulo, subtitulo: subtitulo || ('questionário — '+perguntas.length+' questões'), instrucao: caso, perguntas};
+}
 
 const ICONES={
   cronometro:'<circle cx="24" cy="26" r="14"/><line x1="24" y1="26" x2="24" y2="16"/><line x1="24" y1="26" x2="30" y2="29"/><line x1="24" y1="12" x2="24" y2="6"/><line x1="19" y1="6" x2="29" y2="6"/><line x1="34" y1="16" x2="38" y2="12"/>',
@@ -869,14 +1018,14 @@ async function restaurarAtividadesAnteriores(){
     }
     const contagem = await contarRespostasNoBanco(a.codigo);
     const semTurmaNativa = contagem.porTurma.filter(pt=>!nomesNativosSlug.has(pt.turmaKey));
-    const modelo = MODELOS_CONTEUDO[a.modeloConteudo];
+    const modelo = MODELOS_CONTEUDO_RUNTIME[a.modeloConteudo];
     relatorio.push({titulo:modelo.titulo, codigo:a.codigo, total:contagem.total, porTurma:contagem.porTurma, semTurmaNativa});
   }
   return {criadas, totalTurmas: turmasNativas.length, relatorio};
 }
 
 function construirAtividadeEfetiva(registro){
-  const modelo = MODELOS_CONTEUDO[registro.modeloConteudo];
+  const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   if (!modelo) return null;
   return Object.assign({}, modelo, {
     codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
@@ -1316,6 +1465,7 @@ async function entrarProfessor(){
   erro.hidden=true;
   document.getElementById('input-senha').value='';
   mostrarTela('tela-carregando');
+  await carregarConteudosCadastrados();
   const registros = await buscarAtividadesCadastradas();
   atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
   const sel = document.getElementById('select-atividade-prof');
@@ -1626,10 +1776,11 @@ function renderCheckboxesTurmas(containerId, turmas, selecionadas){
 }
 async function abrirTelaAtividades(){
   mostrarTela('tela-carregando');
+  await carregarConteudosCadastrados();
   turmasCacheAtiv = await buscarTurmasCadastradas();
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   const selModelo = document.getElementById('select-modelo-conteudo');
-  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
   renderListaAtividadesCadastro();
   document.getElementById('input-valor-nova-atividade').value = '';
@@ -1640,7 +1791,7 @@ function renderListaAtividadesCadastro(){
   const lista = document.getElementById('lista-atividades-cadastro');
   if (!atividadesCacheModulo.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
   lista.innerHTML = atividadesCacheModulo.map(a=>{
-    const modelo = MODELOS_CONTEUDO[a.modeloConteudo];
+    const modelo = MODELOS_CONTEUDO_RUNTIME[a.modeloConteudo];
     const nTurmas = Object.keys(a.turmasIds||{}).length;
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
@@ -1656,7 +1807,7 @@ function renderListaAtividadesCadastro(){
   lista.querySelectorAll('[data-acao="excluir-atividade"]').forEach(b=>b.addEventListener('click', async (e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     const reg = atividadesCacheModulo.find(a=>a.id===id);
-    const modelo = MODELOS_CONTEUDO[reg.modeloConteudo];
+    const modelo = MODELOS_CONTEUDO_RUNTIME[reg.modeloConteudo];
     if (!confirm('Excluir o cadastro de "'+(modelo?modelo.titulo:reg.codigo)+'"? As respostas já enviadas pelos alunos NÃO são apagadas — ficam guardadas e voltam a aparecer se você cadastrar de novo com o código '+reg.codigo+'.')) return;
     await db.ref('atividadesCadastradas/'+id).remove();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
@@ -1666,7 +1817,7 @@ function renderListaAtividadesCadastro(){
 function abrirModalEditarAtividade(id){
   const registro = atividadesCacheModulo.find(a=>a.id===id);
   if (!registro) return;
-  const modelo = MODELOS_CONTEUDO[registro.modeloConteudo];
+  const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   const html =
     '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
@@ -1725,6 +1876,45 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   msg.hidden=false; msg.textContent='Atividade cadastrada!'; msg.style.color='var(--verde)';
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   renderListaAtividadesCadastro();
+});
+
+document.getElementById('html-import-toggle').addEventListener('click', ()=>{
+  const corpo = document.getElementById('html-import-corpo');
+  const seta = document.getElementById('html-import-seta');
+  corpo.hidden = !corpo.hidden;
+  seta.textContent = corpo.hidden ? '▸' : '▾';
+});
+
+let conteudoParseadoTemp = null;
+document.getElementById('btn-pre-visualizar-html').addEventListener('click', ()=>{
+  const erro = document.getElementById('erro-html-atividade');
+  const preview = document.getElementById('preview-html-atividade');
+  const btnSalvar = document.getElementById('btn-salvar-conteudo-html');
+  erro.hidden = true; preview.innerHTML = ''; btnSalvar.hidden = true; conteudoParseadoTemp = null;
+  try{
+    const texto = document.getElementById('textarea-html-atividade').value;
+    if (!texto.trim()) throw new Error('Cole o texto no formato do exemplo antes de pré-visualizar.');
+    const resultado = parsearAtividadeHTML(texto);
+    conteudoParseadoTemp = resultado;
+    preview.innerHTML = '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
+      '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
+      '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
+    btnSalvar.hidden = false;
+  } catch(e){
+    erro.hidden = false; erro.textContent = e.message;
+  }
+});
+document.getElementById('btn-salvar-conteudo-html').addEventListener('click', async ()=>{
+  if (!conteudoParseadoTemp) return;
+  const ref = db.ref('conteudosCadastrados').push();
+  await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
+  await carregarConteudosCadastrados();
+  const selModelo = document.getElementById('select-modelo-conteudo');
+  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  document.getElementById('textarea-html-atividade').value = '';
+  document.getElementById('preview-html-atividade').innerHTML = '<p class="msg-sucesso" style="color:var(--verde);">Conteúdo salvo! Já aparece na lista "Conteúdo" acima — escolha-o para cadastrar a atividade.</p>';
+  document.getElementById('btn-salvar-conteudo-html').hidden = true;
+  conteudoParseadoTemp = null;
 });
 
 /* ---- módulo Relatórios ---- */
@@ -1858,6 +2048,7 @@ function abrirModalTurma(tk, t, arquivado){
 async function iniciar(){
   try{
     await initFirebase();
+    await carregarConteudosCadastrados();
   } catch(e){
     document.getElementById('erro-texto').textContent = 'Erro ao conectar: '+e.message+'. Verifique CONFIG.firebase no início do arquivo.';
     mostrarTela('tela-erro');
