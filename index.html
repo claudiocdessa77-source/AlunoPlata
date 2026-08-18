@@ -26,13 +26,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .tela.ativa{display:block;}
 
 .aba-processo{display:inline-block;background:var(--folder);color:#fff;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:6px 6px 0 0;margin-left:22px;font-weight:700;}
-.cabecalho{background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:28px 28px 24px;box-shadow:5px 5px 0 var(--borda);}
+.cabecalho{position:relative;background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:28px 28px 24px;box-shadow:5px 5px 0 var(--borda);}
 .cabecalho h1{margin:0 0 4px;font-size:clamp(1.5rem,4.2vw,2.3rem);letter-spacing:-.01em;text-transform:uppercase;font-weight:900;}
 .cabecalho .subtitulo{margin:0 0 16px;font-family:var(--font-mono);font-size:.82rem;color:var(--ink-suave);text-transform:uppercase;letter-spacing:.06em;}
 .cabecalho .instrucao{margin:0;font-size:1rem;max-width:62ch;}
 
 /* ---- cartão central (identificação / carregando / login) ---- */
-.cartao-central{max-width:460px;margin:60px auto;background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:30px 28px;box-shadow:5px 5px 0 var(--borda);text-align:left;}
+.cartao-central{position:relative;max-width:460px;margin:60px auto;background:var(--papel);border:1.5px solid var(--ink);border-radius:4px 14px 14px 14px;padding:30px 28px;box-shadow:5px 5px 0 var(--borda);text-align:left;}
+.botao-voltar-canto{position:absolute;top:16px;right:16px;background:#fff;border:1.5px solid var(--ink);border-radius:8px;width:36px;height:36px;font-size:1.1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:5;}
+.botao-voltar-canto:hover{background:#F0EDE4;}
 .rotulo-selecao{font-weight:700;font-size:.85rem;margin:0 0 10px;}
 .lista-selecao{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:14px;padding-right:2px;}
 .item-selecao{text-align:left;padding:12px 14px;border:1.5px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:var(--font-display);font-size:.95rem;cursor:pointer;}
@@ -55,12 +57,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .campo input:focus-visible,.campo textarea:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
 .erro-msg{background:#FCEAE8;border:1.5px solid var(--vermelho);color:var(--vermelho);border-radius:8px;padding:9px 12px;font-size:.85rem;font-weight:600;margin-bottom:14px;}
 .link-discreto{display:inline-block;margin-top:18px;font-size:.8rem;color:var(--ink-suave);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font-display);padding:0;}
-
-/* ---- cabeçalho com botão de voltar ao lado do nome da turma ---- */
-.cabecalho-com-voltar{display:flex;align-items:center;gap:10px;margin-bottom:2px;}
-.botao-voltar{background:#fff;border:1.5px solid var(--ink);border-radius:8px;width:34px;height:34px;font-size:1.05rem;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;}
-.botao-voltar:hover{background:#F0EDE4;}
-.cabecalho-com-voltar h1{margin:0;font-size:1.35rem;text-transform:uppercase;font-weight:900;}
 
 .carregando-box{text-align:center;}
 .spinner{width:34px;height:34px;border:4px solid var(--borda);border-top-color:var(--folder);border-radius:50%;margin:0 auto 14px;}
@@ -229,10 +225,8 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 <!-- ===== TELA: ESCOLHER ATIVIDADE ===== -->
 <section id="tela-escolher-atividade" class="tela">
   <div class="cartao-central">
-    <div class="cabecalho-com-voltar">
-      <button class="botao-voltar" id="btn-voltar-turma" type="button" aria-label="Voltar">←</button>
-      <h1 id="titulo-turma-atividade"></h1>
-    </div>
+    <button class="botao-voltar-canto" id="btn-voltar-turma" type="button" aria-label="Voltar">←</button>
+    <h1 id="titulo-turma-atividade"></h1>
     <p class="subtitulo">escolha a atividade</p>
     <div id="lista-atividades" class="lista-selecao" style="max-height:none;"></div>
     <p class="erro-msg" id="erro-atividades" hidden></p>
@@ -242,10 +236,8 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 <!-- ===== TELA: ESCOLHER NOME ===== -->
 <section id="tela-escolher-nome" class="tela">
   <div class="cartao-central">
-    <div class="cabecalho-com-voltar">
-      <button class="botao-voltar" id="btn-voltar-atividade" type="button" aria-label="Voltar">←</button>
-      <h1 id="titulo-turma-escolhida"></h1>
-    </div>
+    <button class="botao-voltar-canto" id="btn-voltar-atividade" type="button" aria-label="Voltar">←</button>
+    <h1 id="titulo-turma-escolhida"></h1>
     <p class="subtitulo">encontre seu nome na lista</p>
     <div class="campo">
       <input type="text" id="filtro-nome" autocomplete="off" placeholder="Digite para filtrar…">
@@ -258,6 +250,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 <!-- ===== TELA: SENHA ===== -->
 <section id="tela-senha" class="tela">
   <div class="cartao-central">
+    <button class="botao-voltar-canto" id="btn-voltar-senha" type="button" aria-label="Voltar">←</button>
     <h1 id="titulo-nome-escolhido"></h1>
     <p class="subtitulo">confirme sua identidade</p>
     <div class="campo">
@@ -293,6 +286,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
     <header class="cabecalho">
+      <button class="botao-voltar-canto" id="btn-voltar-desafio" type="button" aria-label="Voltar">←</button>
       <h1 id="titulo-desafio"></h1>
       <p class="subtitulo" id="subtitulo-desafio"></p>
       <p class="instrucao" id="instrucao-desafio"></p>
@@ -316,11 +310,11 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 <!-- ===== TELA: AGUARDANDO ===== -->
 <section id="tela-aguardando" class="tela">
   <div class="cartao-central aguardando-box">
+    <button class="botao-voltar-canto" id="btn-voltar-aguardando" type="button" aria-label="Voltar">←</button>
     <svg class="icone-aguardando" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="15"/><path d="M24 17v9l7 5"/><path d="M17 6h14M20 6v4M28 6v4"/></svg>
     <h2>Resposta enviada!</h2>
     <p id="aguardando-texto"></p>
     <p class="aguardando-nota">Esta página atualiza sozinha assim que a correção for liberada — não é preciso atualizar manualmente.</p>
-    <button class="botao botao-primario" id="btn-voltar-aguardando" type="button" style="margin-top:16px;">← Voltar</button>
     <div id="outras-atividades-aguardando" class="bloco-outras-atividades"></div>
   </div>
 </section>
@@ -330,14 +324,12 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
   <div class="pagina">
     <div class="aba-processo">Ficha Didática · Gestão de Pessoas</div>
     <header class="cabecalho">
+      <button class="botao-voltar-canto" id="btn-voltar-resultado" type="button" aria-label="Voltar">←</button>
       <h1 id="titulo-resultado"></h1>
       <p class="subtitulo" id="subtitulo-resultado"></p>
       <div id="pontuacao-resultado"></div>
     </header>
     <main id="historias-resultado"></main>
-    <div class="acoes">
-      <button class="botao botao-primario" id="btn-voltar-resultado" type="button">← Voltar</button>
-    </div>
     <div id="outras-atividades-resultado" class="bloco-outras-atividades" style="max-width:none;"></div>
     <footer>
       Atividade elaborada para apoiar o estudo de Gestão de Pessoas.
@@ -2322,6 +2314,8 @@ async function iniciar(){
 
 document.getElementById('btn-voltar-turma').addEventListener('click', mostrarEscolhaTurma);
 document.getElementById('btn-voltar-atividade').addEventListener('click', mostrarEscolhaAtividade);
+document.getElementById('btn-voltar-senha').addEventListener('click', ()=>{ nomeEscolhidoPendente=null; mostrarTela('tela-escolher-nome'); });
+document.getElementById('btn-voltar-desafio').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-voltar-aguardando').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-voltar-resultado').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-enviar').addEventListener('click', pedirConfirmacaoEnvio);
