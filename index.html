@@ -983,7 +983,7 @@ async function imprimirAtividadeRespondida(turmaNome, nomeAluno, atividade, dado
 }
 window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-relatorio'));
 
-/* ---- Visualização da atividade "como o aluno vê", acessada pelo professor (sem responder/gravar nada) ---- */
+/* ---- Visualização da atividade "como o aluno vê", acessada pelo professor — vem como gabarito já marcado ---- */
 function montarVisualizacaoAtividade(atividade){
   if (atividade.tipo === 'multipla-escolha'){
     return atividade.perguntas.map(p=>{
@@ -993,16 +993,49 @@ function montarVisualizacaoAtividade(atividade){
         (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
         '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
         '<div class="lista-selecao" style="max-height:none;">'+
-          p.opcoes.map(o=>'<div class="item-selecao" style="cursor:default;">'+o.l+') '+escapeHTML(o.t)+'</div>').join('')+
-        '</div></section>';
+          p.opcoes.map(o=>{
+            const certa = o.l===p.correta;
+            return '<div class="item-selecao'+(certa?' acerto':'')+'" style="cursor:default;">'+o.l+') '+escapeHTML(o.t)+(certa?' ✓ (correta)':'')+'</div>';
+          }).join('')+
+        '</div>'+
+        (p.explicacao ? '<div class="revelacao"><p>'+escapeHTML(p.explicacao)+'</p></div>' : '')+
+        '</section>';
     }).join('');
   }
+  const pensadores = atividade.pensadores;
   return atividade.historias.map(h=>{
     const numLabel = String(h.num).padStart(2,'0');
+    const pensador = pensadores[h.pensadorId];
     return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
       '<div class="paineis-grid">'+h.paineis.map(p=>'<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>').join('')+'</div>'+
+      '<div class="revelacao"><div class="ficha-pensador"><h3>Gabarito: '+pensador.nome+' — '+pensador.teoria+'</h3><p>'+pensador.explicacao+'</p></div></div>'+
       '</section>';
   }).join('');
+}
+function montarConteudoImpressaoGabarito(atividade){
+  let html = '';
+  if (atividade.tipo === 'multipla-escolha'){
+    atividade.perguntas.forEach(p=>{
+      html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+'</strong></p>';
+      html += '<p>'+escapeHTML(p.pergunta)+'</p>';
+      p.opcoes.forEach(o=>{
+        const certa = o.l===p.correta;
+        html += '<p class="'+(certa?'alt-impressao-marcada alt-impressao-correta':'')+'">'+(certa?'[X]':'[ ]')+' '+o.l+') '+escapeHTML(o.t)+(certa?' (CORRETA)':'')+'</p>';
+      });
+      if (p.explicacao) html += '<p><em>Explicação: '+escapeHTML(p.explicacao)+'</em></p>';
+      html += '</div>';
+    });
+  } else {
+    const pensadores = atividade.pensadores;
+    atividade.historias.forEach(h=>{
+      const pensador = pensadores[h.pensadorId];
+      html += '<div class="questao-impressao"><p><strong>História '+String(h.num).padStart(2,'0')+'</strong></p>';
+      h.paineis.forEach(p=>{ html += '<p>"'+escapeHTML(p.texto)+'"</p>'; });
+      html += '<p><strong>Pensador correto: '+escapeHTML(pensador.nome)+' — '+escapeHTML(pensador.teoria)+'</strong></p>';
+      html += '<p><em>'+escapeHTML(pensador.explicacao)+'</em></p></div>';
+    });
+  }
+  return html;
 }
 function montarConteudoImpressaoBranco(atividade){
   let html = '';
@@ -1022,6 +1055,20 @@ function montarConteudoImpressaoBranco(atividade){
   }
   return html;
 }
+const AVISO_VERSAO_PROFESSOR = '<p style="border:2px solid var(--vermelho);color:var(--vermelho);font-weight:800;text-align:center;padding:8px;margin-bottom:16px;">VERSÃO DO PROFESSOR — GABARITO — NÃO DISTRIBUIR AOS ALUNOS</p>';
+async function imprimirGabaritoAtividade(turmaNome, atividade){
+  const disciplinaTurma = await buscarDisciplinaPorTurmaNome(turmaNome);
+  document.getElementById('imp-disciplina').textContent = disciplinaTurma || atividade.disciplina || '—';
+  document.getElementById('imp-turma').textContent = turmaNome;
+  document.getElementById('imp-data').textContent = formatarDataCodigo(atividade.dataAtividade);
+  document.getElementById('imp-estudante').textContent = 'VERSÃO DO PROFESSOR';
+  document.getElementById('imp-nota').textContent = 'GABARITO';
+  document.getElementById('imp-titulo-atividade').textContent = atividade.titulo;
+  document.getElementById('imp-codigo-atividade').textContent = atividade.codigo;
+  document.getElementById('imp-conteudo-atividade').innerHTML = AVISO_VERSAO_PROFESSOR + montarConteudoImpressaoGabarito(atividade);
+  document.body.classList.add('imprimindo-relatorio');
+  window.print();
+}
 async function imprimirAtividadeEmBranco(turmaNome, atividade){
   const disciplinaTurma = await buscarDisciplinaPorTurmaNome(turmaNome);
   document.getElementById('imp-disciplina').textContent = disciplinaTurma || atividade.disciplina || '—';
@@ -1036,11 +1083,17 @@ async function imprimirAtividadeEmBranco(turmaNome, atividade){
   window.print();
 }
 function visualizarAtividadeComoAluno(turmaNome, atividade){
-  const html = '<div class="acoes" style="margin-top:0;margin-bottom:18px;"><button type="button" class="botao botao-primario botao-pequeno" id="btn-imprimir-preview">Imprimir</button></div>'+
+  const html = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">'+
+    '<span class="badge-liberado" style="background:var(--vermelho);">VERSÃO DO PROFESSOR — GABARITO</span>'+
+    '<div class="acoes" style="margin:0;"><button type="button" class="botao botao-primario botao-pequeno" id="btn-imprimir-gabarito">Imprimir gabarito</button>'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-imprimir-branco">Imprimir em branco</button></div></div>'+
     (atividade.instrucao ? '<p class="instrucao" style="margin-bottom:20px;">'+escapeHTML(atividade.instrucao)+'</p>' : '')+
     montarVisualizacaoAtividade(atividade);
   abrirModal(atividade.titulo+' — '+turmaNome, html);
-  document.getElementById('btn-imprimir-preview').addEventListener('click', ()=>{
+  document.getElementById('btn-imprimir-gabarito').addEventListener('click', ()=>{
+    imprimirGabaritoAtividade(turmaNome, atividade);
+  });
+  document.getElementById('btn-imprimir-branco').addEventListener('click', ()=>{
     imprimirAtividadeEmBranco(turmaNome, atividade);
   });
 }
