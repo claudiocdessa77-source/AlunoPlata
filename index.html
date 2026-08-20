@@ -142,7 +142,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 
 .modal-overlay{position:fixed;inset:0;background:rgba(33,38,43,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;}
 .modal-overlay[hidden]{display:none;}
-.modal-caixa{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:82vh;overflow-y:auto;padding:26px 26px 22px;position:relative;}
+.modal-caixa{background:#fff;border-radius:12px;max-width:1200px;width:95vw;max-height:92vh;overflow-y:auto;padding:26px 26px 22px;position:relative;}
 .modal-fechar{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--ink-suave);padding:4px 8px;}
 .modal-caixa h3{margin:0 22px 16px 0;font-size:1.1rem;}
 .modal-caixa h4{margin:18px 0 8px;font-size:.9rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-suave);}
@@ -169,7 +169,8 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 
 /* ---- arquivo / código da atividade ---- */
 .codigo-atividade{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-suave);letter-spacing:.04em;}
-.pill-turma{display:inline-block;background:var(--bg);border:1px solid var(--borda);border-radius:12px;padding:2px 10px;font-size:.78rem;color:var(--ink-suave);margin:2px 5px 2px 0;}
+.pill-turma{display:inline-block;background:var(--bg);border:1px solid var(--borda);border-radius:12px;padding:2px 10px;font-size:.78rem;color:var(--ink-suave);margin:2px 5px 2px 0;font-family:inherit;cursor:pointer;}
+.pill-turma:hover{background:var(--folder);color:#fff;border-color:var(--folder);}
 code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-radius:4px;font-size:.85em;}
 #arquivo-secao{margin-top:30px;}
 .arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -981,6 +982,68 @@ async function imprimirAtividadeRespondida(turmaNome, nomeAluno, atividade, dado
   window.print();
 }
 window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-relatorio'));
+
+/* ---- Visualização da atividade "como o aluno vê", acessada pelo professor (sem responder/gravar nada) ---- */
+function montarVisualizacaoAtividade(atividade){
+  if (atividade.tipo === 'multipla-escolha'){
+    return atividade.perguntas.map(p=>{
+      const numLabel = String(p.numero).padStart(2,'0');
+      return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+        '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+        '<div class="lista-selecao" style="max-height:none;">'+
+          p.opcoes.map(o=>'<div class="item-selecao" style="cursor:default;">'+o.l+') '+escapeHTML(o.t)+'</div>').join('')+
+        '</div></section>';
+    }).join('');
+  }
+  return atividade.historias.map(h=>{
+    const numLabel = String(h.num).padStart(2,'0');
+    return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
+      '<div class="paineis-grid">'+h.paineis.map(p=>'<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>').join('')+'</div>'+
+      '</section>';
+  }).join('');
+}
+function montarConteudoImpressaoBranco(atividade){
+  let html = '';
+  if (atividade.tipo === 'multipla-escolha'){
+    atividade.perguntas.forEach(p=>{
+      html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+'</strong></p>';
+      html += '<p>'+escapeHTML(p.pergunta)+'</p>';
+      p.opcoes.forEach(o=>{ html += '<p>[ ] '+o.l+') '+escapeHTML(o.t)+'</p>'; });
+      html += '</div>';
+    });
+  } else {
+    atividade.historias.forEach(h=>{
+      html += '<div class="questao-impressao"><p><strong>História '+String(h.num).padStart(2,'0')+'</strong></p>';
+      h.paineis.forEach(p=>{ html += '<p>"'+escapeHTML(p.texto)+'"</p>'; });
+      html += '<p>Pensador: _______________________</p></div>';
+    });
+  }
+  return html;
+}
+async function imprimirAtividadeEmBranco(turmaNome, atividade){
+  const disciplinaTurma = await buscarDisciplinaPorTurmaNome(turmaNome);
+  document.getElementById('imp-disciplina').textContent = disciplinaTurma || atividade.disciplina || '—';
+  document.getElementById('imp-turma').textContent = turmaNome;
+  document.getElementById('imp-data').textContent = formatarDataCodigo(atividade.dataAtividade);
+  document.getElementById('imp-estudante').textContent = '_'.repeat(40);
+  document.getElementById('imp-nota').textContent = '______';
+  document.getElementById('imp-titulo-atividade').textContent = atividade.titulo;
+  document.getElementById('imp-codigo-atividade').textContent = atividade.codigo;
+  document.getElementById('imp-conteudo-atividade').innerHTML = montarConteudoImpressaoBranco(atividade);
+  document.body.classList.add('imprimindo-relatorio');
+  window.print();
+}
+function visualizarAtividadeComoAluno(turmaNome, atividade){
+  const html = '<div class="acoes" style="margin-top:0;margin-bottom:18px;"><button type="button" class="botao botao-primario botao-pequeno" id="btn-imprimir-preview">Imprimir</button></div>'+
+    (atividade.instrucao ? '<p class="instrucao" style="margin-bottom:20px;">'+escapeHTML(atividade.instrucao)+'</p>' : '')+
+    montarVisualizacaoAtividade(atividade);
+  abrirModal(atividade.titulo+' — '+turmaNome, html);
+  document.getElementById('btn-imprimir-preview').addEventListener('click', ()=>{
+    imprimirAtividadeEmBranco(turmaNome, atividade);
+  });
+}
 function mostrarTela(id){
   document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
   document.getElementById(id).classList.add('ativa');
@@ -2012,7 +2075,7 @@ function renderListaAtividadesCadastro(){
       .map(tid=>{ const t = turmasCacheAtiv.find(x=>x.id===tid); return t ? t.nome : null; })
       .filter(Boolean).sort((x,y)=>x.localeCompare(y,'pt-BR'));
     const turmasHtml = nomesTurmas.length
-      ? nomesTurmas.map(n=>'<span class="pill-turma">'+escapeHTML(n)+'</span>').join('')
+      ? nomesTurmas.map(n=>'<button type="button" class="pill-turma" data-acao="ver-como-aluno" data-ativ-id="'+a.id+'" data-turma-nome="'+escapeHTML(n)+'">'+escapeHTML(n)+'</button>').join('')
       : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
@@ -2022,6 +2085,13 @@ function renderListaAtividadesCadastro(){
       '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span></div>'+
       '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
+  lista.querySelectorAll('[data-acao="ver-como-aluno"]').forEach(b=>b.addEventListener('click', (e)=>{
+    const id = e.currentTarget.dataset.ativId;
+    const turmaNome = e.currentTarget.dataset.turmaNome;
+    const registro = atividadesCacheModulo.find(a=>a.id===id);
+    const efetiva = registro && construirAtividadeEfetiva(registro);
+    if (efetiva) visualizarAtividadeComoAluno(turmaNome, efetiva);
+  }));
   lista.querySelectorAll('[data-acao="editar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     abrirModalEditarAtividade(id);
@@ -2230,15 +2300,12 @@ async function abrirModalTurma(tk, t, arquivado){
       linhas = registrados.map(nome=>{
         const chave = turmaSlug(nome);
         return porChave[chave] || {respondeu:false, id:chave, nome:nome, turma:turmaNativa.nome};
-      }).sort((a,b)=>{
-        if (a.respondeu!==b.respondeu) return a.respondeu?-1:1;
-        return a.respondeu ? (b.enviadoEm||0)-(a.enviadoEm||0) : a.nome.localeCompare(b.nome,'pt-BR');
-      });
+      }).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     } else {
-      linhas = submissoes.sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
+      linhas = submissoes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     }
   } else {
-    linhas = submissoes.sort((a,b)=>(b.enviadoEm||0)-(a.enviadoEm||0));
+    linhas = submissoes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     nomeTurmaExibir = submissoes[0] ? submissoes[0].turma : tk;
   }
 
