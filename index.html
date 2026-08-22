@@ -172,6 +172,9 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .pill-turma{display:inline-block;background:var(--bg);border:1px solid var(--borda);border-radius:12px;padding:2px 10px;font-size:.78rem;color:var(--ink-suave);margin:2px 5px 2px 0;font-family:inherit;cursor:pointer;}
 .pill-turma:hover{background:var(--folder);color:#fff;border-color:var(--folder);}
 code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-radius:4px;font-size:.85em;}
+.dropzone-arquivo{border:2px dashed var(--borda);border-radius:10px;padding:22px;text-align:center;cursor:pointer;margin-bottom:14px;background:var(--bg);transition:background .15s,border-color .15s;}
+.dropzone-arquivo:hover,.dropzone-arquivo.arrastando{background:#F0EDE4;border-color:var(--folder-escuro);}
+.dropzone-arquivo p{margin:0;font-size:.88rem;color:var(--ink-suave);}
 #arquivo-secao{margin-top:30px;}
 .arquivo-cabecalho{display:flex;align-items:center;gap:10px;cursor:pointer;}
 .arquivo-cabecalho h2{margin:0;font-size:1rem;text-transform:uppercase;letter-spacing:.03em;}
@@ -511,8 +514,12 @@ Texto do caso/contexto, aparece uma vez no topo.
 
 (repita a tag &lt;questao&gt; para cada pergunta)
 &lt;/atividade&gt;</pre>
+          <div id="dropzone-html-atividade" class="dropzone-arquivo" tabindex="0" role="button" aria-label="Arraste um arquivo HTML aqui ou clique para escolher">
+            <p>📎 Arraste o arquivo .html aqui, ou <span style="text-decoration:underline;">clique para escolher</span></p>
+            <input type="file" id="input-arquivo-html" accept=".html,.htm,text/html" style="display:none;">
+          </div>
           <div class="campo">
-            <label for="textarea-html-atividade">Cole aqui</label>
+            <label for="textarea-html-atividade">Ou cole aqui</label>
             <textarea id="textarea-html-atividade" rows="10" placeholder="Cole qualquer HTML de atividade, do jeito que estiver..."></textarea>
           </div>
           <div class="acoes">
@@ -2235,14 +2242,14 @@ document.getElementById('html-import-toggle').addEventListener('click', ()=>{
 });
 
 let conteudoParseadoTemp = null;
-document.getElementById('btn-pre-visualizar-html').addEventListener('click', async ()=>{
+async function preVisualizarHTMLAtividade(){
   const erro = document.getElementById('erro-html-atividade');
   const preview = document.getElementById('preview-html-atividade');
   const btnSalvar = document.getElementById('btn-salvar-conteudo-html');
   const btnPreview = document.getElementById('btn-pre-visualizar-html');
   erro.hidden = true; preview.innerHTML = ''; btnSalvar.hidden = true; conteudoParseadoTemp = null;
   const texto = document.getElementById('textarea-html-atividade').value;
-  if (!texto.trim()){ erro.hidden=false; erro.textContent='Cole um HTML antes de pré-visualizar.'; return; }
+  if (!texto.trim()){ erro.hidden=false; erro.textContent='Cole um HTML (ou arraste um arquivo) antes de pré-visualizar.'; return; }
   let resultado = null;
   let usouIA = false;
   try{
@@ -2268,6 +2275,40 @@ document.getElementById('btn-pre-visualizar-html').addEventListener('click', asy
     '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
     '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
   btnSalvar.hidden = false;
+}
+document.getElementById('btn-pre-visualizar-html').addEventListener('click', preVisualizarHTMLAtividade);
+
+function carregarArquivoHTMLNoTextarea(file){
+  if (!file) return;
+  const dz = document.getElementById('dropzone-html-atividade');
+  if (!/\.(html?|txt)$/i.test(file.name) && file.type && file.type!=='text/html' && file.type!=='text/plain'){
+    document.getElementById('erro-html-atividade').hidden = false;
+    document.getElementById('erro-html-atividade').textContent = 'Isso não parece um arquivo de texto/HTML. Tente outro arquivo.';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    document.getElementById('textarea-html-atividade').value = e.target.result;
+    preVisualizarHTMLAtividade();
+  };
+  reader.onerror = ()=>{
+    document.getElementById('erro-html-atividade').hidden = false;
+    document.getElementById('erro-html-atividade').textContent = 'Não consegui ler esse arquivo. Tente colar o conteúdo direto no campo abaixo.';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+const dropzoneHtml = document.getElementById('dropzone-html-atividade');
+const inputArquivoHtml = document.getElementById('input-arquivo-html');
+dropzoneHtml.addEventListener('click', ()=>inputArquivoHtml.click());
+dropzoneHtml.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inputArquivoHtml.click(); } });
+inputArquivoHtml.addEventListener('change', (e)=>{ carregarArquivoHTMLNoTextarea(e.target.files[0]); e.target.value=''; });
+dropzoneHtml.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzoneHtml.classList.add('arrastando'); });
+dropzoneHtml.addEventListener('dragleave', ()=>{ dropzoneHtml.classList.remove('arrastando'); });
+dropzoneHtml.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  dropzoneHtml.classList.remove('arrastando');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  carregarArquivoHTMLNoTextarea(file);
 });
 document.getElementById('btn-salvar-conteudo-html').addEventListener('click', async ()=>{
   if (!conteudoParseadoTemp) return;
