@@ -2119,7 +2119,7 @@ async function abrirTelaAtividades(){
   turmasCacheAtiv = await buscarTurmasCadastradas();
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   const selModelo = document.getElementById('select-modelo-conteudo');
-  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  selModelo.innerHTML = '<option value="">Selecione um conteúdo…</option>'+Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
   renderListaAtividadesCadastro();
   document.getElementById('input-valor-nova-atividade').value = '';
@@ -2142,7 +2142,7 @@ function renderListaAtividadesCadastro(){
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
-      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span></div>'+
+      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span></div>'+
       '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
   lista.querySelectorAll('[data-acao="ver-como-aluno"]').forEach(b=>b.addEventListener('click', (e)=>{
@@ -2220,16 +2220,21 @@ document.getElementById('btn-restaurar-atividades').addEventListener('click', as
 });
 document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
   const modeloConteudo = document.getElementById('select-modelo-conteudo').value;
+  const msg = document.getElementById('msg-atividade-cadastrada');
+  if (!modeloConteudo){
+    msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha um conteúdo antes de cadastrar.';
+    return;
+  }
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
   const disciplina = document.getElementById('input-disciplina-nova-atividade').value.trim();
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
   await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina);
+  document.getElementById('select-modelo-conteudo').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
   document.getElementById('input-disciplina-nova-atividade').value = '';
-  const msg = document.getElementById('msg-atividade-cadastrada');
-  msg.hidden=false; msg.textContent='Atividade cadastrada!'; msg.style.color='var(--verde)';
+  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada!';
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   renderListaAtividadesCadastro();
 });
@@ -2316,7 +2321,7 @@ document.getElementById('btn-salvar-conteudo-html').addEventListener('click', as
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
   await carregarConteudosCadastrados();
   const selModelo = document.getElementById('select-modelo-conteudo');
-  selModelo.innerHTML = Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  selModelo.innerHTML = '<option value="">Selecione um conteúdo…</option>'+Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
   document.getElementById('textarea-html-atividade').value = '';
   document.getElementById('preview-html-atividade').innerHTML = '<p class="msg-sucesso" style="color:var(--verde);">Conteúdo salvo! Já aparece na lista "Conteúdo" acima — escolha-o para cadastrar a atividade.</p>';
   document.getElementById('btn-salvar-conteudo-html').hidden = true;
