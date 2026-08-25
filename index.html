@@ -373,6 +373,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-turmas">Turmas</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-atividades">Atividades</button>
+          <button class="botao botao-secundario botao-pequeno" id="btn-modulo-notas">Notas</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-relatorios">Relatórios</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-gerenciar-senhas">Senhas dos alunos</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
@@ -446,6 +447,28 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <button class="botao botao-secundario botao-pequeno" id="btn-aplicar-disciplinas">Aplicar disciplinas conhecidas</button>
       </div>
       <p class="msg-sucesso" id="msg-importacao" hidden></p>
+
+      <div style="margin-top:22px;">
+        <div class="arquivo-cabecalho" id="cursos-disciplinas-toggle">
+          <span id="cursos-disciplinas-seta">▸</span>
+          <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Cursos e Disciplinas</h2>
+        </div>
+        <div id="cursos-disciplinas-corpo" hidden style="margin-top:14px;">
+          <h4 style="font-size:.8rem;text-transform:uppercase;color:var(--ink-suave);margin:0 0 8px;">Cursos</h4>
+          <div id="lista-cursos" style="margin-bottom:10px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:22px;max-width:420px;">
+            <input type="text" id="input-novo-curso" placeholder="Ex.: Administração" style="flex:1;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;">
+            <button type="button" class="botao botao-secundario botao-pequeno" id="btn-criar-curso">Adicionar</button>
+          </div>
+          <h4 style="font-size:.8rem;text-transform:uppercase;color:var(--ink-suave);margin:0 0 8px;">Disciplinas</h4>
+          <div id="lista-disciplinas" style="margin-bottom:10px;"></div>
+          <div style="display:flex;gap:8px;max-width:420px;">
+            <input type="text" id="input-nova-disciplina" placeholder="Ex.: Gestão de Pessoas" style="flex:1;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;">
+            <button type="button" class="botao botao-secundario botao-pequeno" id="btn-criar-disciplina">Adicionar</button>
+          </div>
+        </div>
+      </div>
+
       <div id="lista-turmas-cadastro" style="margin-top:20px;"></div>
     </div>
   </div>
@@ -470,12 +493,16 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
       <div class="campo" style="max-width:420px;">
-        <label for="select-modelo-conteudo">Conteúdo</label>
+        <label for="select-modelo-conteudo">Conteúdo (perguntas)</label>
         <select id="select-modelo-conteudo" class="select-turma"></select>
       </div>
+      <div class="campo" style="max-width:420px;">
+        <label for="input-nome-nova-atividade">Nome da atividade</label>
+        <input type="text" id="input-nome-nova-atividade" placeholder="Ex.: Prova Bimestral 1 (deixe em branco para usar o nome do conteúdo)">
+      </div>
       <div class="campo" style="max-width:300px;">
-        <label for="input-disciplina-nova-atividade">Disciplina</label>
-        <input type="text" id="input-disciplina-nova-atividade" placeholder="Ex.: Gestão de Pessoas">
+        <label for="select-disciplina-nova-atividade">Disciplina</label>
+        <select id="select-disciplina-nova-atividade" class="select-turma"><option value="">— nenhuma —</option></select>
       </div>
       <div class="campo" style="max-width:200px;">
         <label for="input-valor-nova-atividade">Valor (nota máxima)</label>
@@ -530,6 +557,28 @@ Texto do caso/contexto, aparece uma vez no topo.
           <div id="preview-html-atividade" style="margin-top:12px;"></div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TELA: MÓDULO NOTAS ===== -->
+<section id="tela-professor-notas" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo">Plataforma de Atividade dos Alunos - Painel do Professor</div>
+    <div class="cabecalho">
+      <button class="botao-home-canto" id="btn-voltar-painel-notas" type="button" aria-label="Início"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></button>
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Notas</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">todas as notas da turma, atividade por atividade</p>
+        </div>
+      </div>
+      <div class="campo" style="margin-top:18px;max-width:420px;">
+        <label for="select-turma-notas">Turma</label>
+        <select id="select-turma-notas" class="select-turma"></select>
+      </div>
+      <div id="legenda-notas" style="margin:14px 0 6px;"></div>
+      <div id="tabela-notas-container" style="overflow-x:auto;"></div>
     </div>
   </div>
 </section>
@@ -1179,11 +1228,39 @@ async function importarDoProfessorHub(){
   return {totalTurmasProfessorHub:turmasPH.length, turmasNovas, alunosNovos};
 }
 
+/* ---- Cursos e Disciplinas (registro simples, usado em seletores) ---- */
+async function buscarCursosCadastrados(){
+  const snap = await db.ref('cursosCadastrados').once('value');
+  const dados = snap.val() || {};
+  return Object.entries(dados).map(([id,c])=>({id, nome:c.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+async function criarCursoCadastrado(nome){
+  const ref = db.ref('cursosCadastrados').push();
+  await ref.set({nome, criadoEm:Date.now()});
+  return ref.key;
+}
+async function removerCursoCadastrado(id){
+  await db.ref('cursosCadastrados/'+id).remove();
+}
+async function buscarDisciplinasCadastradas(){
+  const snap = await db.ref('disciplinasCadastradas').once('value');
+  const dados = snap.val() || {};
+  return Object.entries(dados).map(([id,d])=>({id, nome:d.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+async function criarDisciplinaCadastrada(nome){
+  const ref = db.ref('disciplinasCadastradas').push();
+  await ref.set({nome, criadoEm:Date.now()});
+  return ref.key;
+}
+async function removerDisciplinaCadastrada(id){
+  await db.ref('disciplinasCadastradas/'+id).remove();
+}
+
 /* ---- Turmas cadastradas (nativo — substitui a leitura do ProfessorHub) ---- */
 async function buscarTurmasCadastradas(){
   const snap = await db.ref('turmasCadastradas').once('value');
   const dados = snap.val() || {};
-  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, disciplina:t.disciplina||'', alunos:t.alunos||{}}))
+  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, curso:t.curso||'', disciplina:t.disciplina||'', alunos:t.alunos||{}}))
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
 async function criarTurmaCadastrada(nome){
@@ -1191,8 +1268,8 @@ async function criarTurmaCadastrada(nome){
   await ref.set({nome, criadaEm:Date.now()});
   return ref.key;
 }
-async function definirDisciplinaDaTurma(turmaId, disciplina){
-  await db.ref('turmasCadastradas/'+turmaId+'/disciplina').set(disciplina);
+async function definirCursoDisciplinaDaTurma(turmaId, curso, disciplina){
+  await db.ref('turmasCadastradas/'+turmaId).update({curso, disciplina});
 }
 async function buscarDisciplinaPorTurmaNome(turmaNome){
   const turmas = await buscarTurmasCadastradas();
@@ -1212,11 +1289,16 @@ function normalizarNomeTurma(nome){
 }
 async function aplicarDisciplinasConhecidas(){
   const turmas = await buscarTurmasCadastradas();
+  const disciplinasExistentes = await buscarDisciplinasCadastradas();
+  const nomesExistentes = new Set(disciplinasExistentes.map(d=>d.nome));
+  for (const nomeDisc of new Set(Object.values(DISCIPLINAS_CONHECIDAS))){
+    if (!nomesExistentes.has(nomeDisc)) await criarDisciplinaCadastrada(nomeDisc);
+  }
   let aplicadas = 0;
   for (const t of turmas){
     const chave = normalizarNomeTurma(t.nome);
     if (DISCIPLINAS_CONHECIDAS[chave] && t.disciplina !== DISCIPLINAS_CONHECIDAS[chave]){
-      await definirDisciplinaDaTurma(t.id, DISCIPLINAS_CONHECIDAS[chave]);
+      await definirCursoDisciplinaDaTurma(t.id, t.curso||'', DISCIPLINAS_CONHECIDAS[chave]);
       aplicadas++;
     }
   }
@@ -1255,11 +1337,11 @@ function gerarCodigoAtividade(numero){
   const yyyy = hoje.getFullYear();
   return 'ATIV'+String(numero).padStart(3,'0')+dd+mm+yyyy;
 }
-async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina){
+async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade){
   const numero = await proximoNumeroAtividade();
   const codigo = gerarCodigoAtividade(numero);
   const ref = db.ref('atividadesCadastradas').push();
-  await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, disciplina:disciplina||'', ativa:true, criadaEm:Date.now()});
+  await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, disciplina:disciplina||'', nomeAtividade:nomeAtividade||'', ativa:true, criadaEm:Date.now()});
   return ref.key;
 }
 async function atualizarAtividadeCadastrada(id, dados){
@@ -1316,7 +1398,8 @@ function construirAtividadeEfetiva(registro){
   return Object.assign({}, modelo, {
     codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
     id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
-    disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15)
+    disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
+    titulo: registro.nomeAtividade || modelo.titulo, nomeAtividade: registro.nomeAtividade||''
   });
 }
 
@@ -1981,13 +2064,42 @@ async function salvarListaSenhas(){
 
 /* ---- módulo Turmas ---- */
 let turmasCacheModulo = [];
+let cursosCacheModulo = [];
+let disciplinasCacheModulo = [];
 async function recarregarTurmasModulo(){
   turmasCacheModulo = await buscarTurmasCadastradas();
   renderListaTurmasCadastro(turmasCacheModulo);
 }
+async function recarregarCursosDisciplinas(){
+  cursosCacheModulo = await buscarCursosCadastrados();
+  disciplinasCacheModulo = await buscarDisciplinasCadastradas();
+  renderListaCursos();
+  renderListaDisciplinas();
+}
+function renderListaCursos(){
+  const el = document.getElementById('lista-cursos');
+  el.innerHTML = cursosCacheModulo.length ? cursosCacheModulo.map(c=>
+    '<span class="pill-turma" style="cursor:default;">'+escapeHTML(c.nome)+' <button type="button" data-remover-curso="'+c.id+'" style="background:none;border:none;color:var(--vermelho);cursor:pointer;font-weight:800;padding:0 0 0 4px;font-size:1em;">×</button></span>'
+  ).join('') : '<p class="vazio-msg" style="margin:0;">Nenhum curso cadastrado.</p>';
+  el.querySelectorAll('[data-remover-curso]').forEach(b=>b.addEventListener('click', async (e)=>{
+    await removerCursoCadastrado(e.target.dataset.removerCurso);
+    await recarregarCursosDisciplinas();
+  }));
+}
+function renderListaDisciplinas(){
+  const el = document.getElementById('lista-disciplinas');
+  el.innerHTML = disciplinasCacheModulo.length ? disciplinasCacheModulo.map(d=>
+    '<span class="pill-turma" style="cursor:default;">'+escapeHTML(d.nome)+' <button type="button" data-remover-disciplina="'+d.id+'" style="background:none;border:none;color:var(--vermelho);cursor:pointer;font-weight:800;padding:0 0 0 4px;font-size:1em;">×</button></span>'
+  ).join('') : '<p class="vazio-msg" style="margin:0;">Nenhuma disciplina cadastrada.</p>';
+  el.querySelectorAll('[data-remover-disciplina]').forEach(b=>b.addEventListener('click', async (e)=>{
+    await removerDisciplinaCadastrada(e.target.dataset.removerDisciplina);
+    await recarregarCursosDisciplinas();
+  }));
+}
 async function abrirTelaTurmas(){
   mostrarTela('tela-carregando');
   await recarregarTurmasModulo();
+  await recarregarCursosDisciplinas();
   mostrarTela('tela-professor-turmas');
 }
 function renderListaTurmasCadastro(turmas){
@@ -2023,22 +2135,29 @@ function abrirModalGerenciarTurma(turmaId){
     '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></div>'
   ).join('') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const html =
-    '<div class="campo"><label for="input-disciplina-turma">Disciplina</label>'+
-    '<div style="display:flex;gap:10px;"><input type="text" id="input-disciplina-turma" value="'+escapeHTML(turma.disciplina||'')+'" placeholder="Ex.: Gestão de Pessoas" style="flex:1;">'+
-    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-salvar-disciplina-turma">Salvar</button></div>'+
-    '<p class="msg-sucesso" id="msg-disciplina-turma" hidden style="margin-top:8px;"></p></div>'+
-    '<div class="lista-senhas">'+listaAlunosHtml+'</div>'+
+    '<div class="campo"><label for="select-curso-turma">Curso</label>'+
+    '<select id="select-curso-turma" class="select-turma"><option value="">— nenhum —</option>'+
+    cursosCacheModulo.map(c=>'<option value="'+escapeHTML(c.nome)+'" '+(turma.curso===c.nome?'selected':'')+'>'+escapeHTML(c.nome)+'</option>').join('')+
+    '</select></div>'+
+    '<div class="campo"><label for="select-disciplina-turma">Disciplina</label>'+
+    '<select id="select-disciplina-turma" class="select-turma"><option value="">— nenhuma —</option>'+
+    disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(turma.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+
+    '</select></div>'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-salvar-disciplina-turma">Salvar</button>'+
+    '<p class="msg-sucesso" id="msg-disciplina-turma" hidden style="margin-top:8px;"></p>'+
+    '<div class="lista-senhas" style="margin-top:16px;">'+listaAlunosHtml+'</div>'+
     '<h4>Adicionar alunos (um nome por linha)</h4>'+
     '<div class="campo"><textarea id="textarea-novos-alunos" rows="6" placeholder="Cole ou digite um nome por linha"></textarea></div>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-adicionar-alunos">Adicionar</button>'+
     '<button type="button" class="link-zerar" id="btn-excluir-turma">Excluir turma</button></div>';
   abrirModal(turma.nome, html);
   document.getElementById('btn-salvar-disciplina-turma').addEventListener('click', async ()=>{
-    const disciplina = document.getElementById('input-disciplina-turma').value.trim();
-    await definirDisciplinaDaTurma(turmaId, disciplina);
+    const curso = document.getElementById('select-curso-turma').value;
+    const disciplina = document.getElementById('select-disciplina-turma').value;
+    await definirCursoDisciplinaDaTurma(turmaId, curso, disciplina);
     await recarregarTurmasModulo();
     const msg = document.getElementById('msg-disciplina-turma');
-    msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Disciplina salva!';
+    msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Salvo!';
   });
   document.getElementById('btn-adicionar-alunos').addEventListener('click', async ()=>{
     const nomes = document.getElementById('textarea-novos-alunos').value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -2102,6 +2221,28 @@ document.getElementById('btn-aplicar-disciplinas').addEventListener('click', asy
   }
   btn.disabled = false;
 });
+document.getElementById('cursos-disciplinas-toggle').addEventListener('click', ()=>{
+  const corpo = document.getElementById('cursos-disciplinas-corpo');
+  const seta = document.getElementById('cursos-disciplinas-seta');
+  corpo.hidden = !corpo.hidden;
+  seta.textContent = corpo.hidden ? '▸' : '▾';
+});
+document.getElementById('btn-criar-curso').addEventListener('click', async ()=>{
+  const nome = document.getElementById('input-novo-curso').value.trim();
+  if (!nome) return;
+  await criarCursoCadastrado(nome);
+  document.getElementById('input-novo-curso').value = '';
+  await recarregarCursosDisciplinas();
+});
+document.getElementById('input-novo-curso').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('btn-criar-curso').click(); });
+document.getElementById('btn-criar-disciplina').addEventListener('click', async ()=>{
+  const nome = document.getElementById('input-nova-disciplina').value.trim();
+  if (!nome) return;
+  await criarDisciplinaCadastrada(nome);
+  document.getElementById('input-nova-disciplina').value = '';
+  await recarregarCursosDisciplinas();
+});
+document.getElementById('input-nova-disciplina').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('btn-criar-disciplina').click(); });
 
 /* ---- módulo Atividades ---- */
 let turmasCacheAtiv = [];
@@ -2117,11 +2258,15 @@ async function abrirTelaAtividades(){
   mostrarTela('tela-carregando');
   await carregarConteudosCadastrados();
   turmasCacheAtiv = await buscarTurmasCadastradas();
+  disciplinasCacheModulo = await buscarDisciplinasCadastradas();
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   const selModelo = document.getElementById('select-modelo-conteudo');
   selModelo.innerHTML = '<option value="">Selecione um conteúdo…</option>'+Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
+  const selDisciplina = document.getElementById('select-disciplina-nova-atividade');
+  selDisciplina.innerHTML = '<option value="">— nenhuma —</option>'+disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'">'+escapeHTML(d.nome)+'</option>').join('');
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
   renderListaAtividadesCadastro();
+  document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
   document.getElementById('msg-atividade-cadastrada').hidden = true;
   mostrarTela('tela-professor-atividades');
@@ -2137,8 +2282,9 @@ function renderListaAtividadesCadastro(){
     const turmasHtml = nomesTurmas.length
       ? nomesTurmas.map(n=>'<button type="button" class="pill-turma" data-acao="ver-como-aluno" data-ativ-id="'+a.id+'" data-turma-nome="'+escapeHTML(n)+'">'+escapeHTML(n)+'</button>').join('')
       : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
+    const tituloExibir = a.nomeAtividade || (modelo?modelo.titulo:'(modelo não encontrado)');
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
-      '<div class="turma-card-topo"><h3>'+escapeHTML(modelo?modelo.titulo:'(modelo não encontrado)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(tituloExibir)+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
@@ -2160,7 +2306,8 @@ function renderListaAtividadesCadastro(){
     const id = e.target.closest('.turma-card').dataset.ativId;
     const reg = atividadesCacheModulo.find(a=>a.id===id);
     const modelo = MODELOS_CONTEUDO_RUNTIME[reg.modeloConteudo];
-    if (!confirm('Excluir o cadastro de "'+(modelo?modelo.titulo:reg.codigo)+'"? As respostas já enviadas pelos alunos NÃO são apagadas — ficam guardadas e voltam a aparecer se você cadastrar de novo com o código '+reg.codigo+'.')) return;
+    const nomeExibir = reg.nomeAtividade || (modelo?modelo.titulo:reg.codigo);
+    if (!confirm('Excluir o cadastro de "'+nomeExibir+'"? As respostas já enviadas pelos alunos NÃO são apagadas — ficam guardadas e voltam a aparecer se você cadastrar de novo com o código '+reg.codigo+'.')) return;
     await db.ref('atividadesCadastradas/'+id).remove();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2171,21 +2318,24 @@ function abrirModalEditarAtividade(id){
   if (!registro) return;
   const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   const html =
-    '<div class="campo"><label>Disciplina</label><input type="text" id="modal-input-disciplina" value="'+escapeHTML(registro.disciplina||'')+'" placeholder="Ex.: Gestão de Pessoas"></div>'+
+    '<div class="campo"><label>Nome da atividade</label><input type="text" id="modal-input-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'" placeholder="Deixe em branco para usar: '+escapeHTML(modelo?modelo.titulo:'')+'"></div>'+
+    '<div class="campo"><label>Disciplina</label><select id="modal-select-disciplina" class="select-turma"><option value="">— nenhuma —</option>'+
+    disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(registro.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+'</select></div>'+
     '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa (aparece para os alunos)</label>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-atividade">Salvar</button></div>';
-  abrirModal((modelo?modelo.titulo:'Atividade')+' — '+registro.codigo, html);
+  abrirModal((registro.nomeAtividade || (modelo?modelo.titulo:'Atividade'))+' — '+registro.codigo, html);
   renderCheckboxesTurmas('modal-checkboxes-turmas', turmasCacheAtiv, registro.turmasIds);
   document.getElementById('btn-salvar-edicao-atividade').addEventListener('click', async ()=>{
     const valorDigitado = parseFloat(document.getElementById('modal-input-valor').value.replace(',','.'));
     const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
-    const disciplina = document.getElementById('modal-input-disciplina').value.trim();
+    const nomeAtividade = document.getElementById('modal-input-nome').value.trim();
+    const disciplina = document.getElementById('modal-select-disciplina').value;
     const ativa = document.getElementById('modal-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, ativa, turmasIds});
+    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, ativa, turmasIds});
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2227,13 +2377,15 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   }
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
-  const disciplina = document.getElementById('input-disciplina-nova-atividade').value.trim();
+  const nomeAtividade = document.getElementById('input-nome-nova-atividade').value.trim();
+  const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina);
+  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade);
   document.getElementById('select-modelo-conteudo').value = '';
+  document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
-  document.getElementById('input-disciplina-nova-atividade').value = '';
+  document.getElementById('select-disciplina-nova-atividade').value = '';
   msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada!';
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   renderListaAtividadesCadastro();
@@ -2329,6 +2481,66 @@ document.getElementById('btn-salvar-conteudo-html').addEventListener('click', as
 });
 
 /* ---- módulo Relatórios ---- */
+/* ---- módulo Notas ---- */
+let turmasCacheNotas = [];
+async function abrirTelaNotas(){
+  mostrarTela('tela-carregando');
+  turmasCacheNotas = await buscarTurmasCadastradas();
+  const sel = document.getElementById('select-turma-notas');
+  document.getElementById('legenda-notas').innerHTML = '';
+  document.getElementById('tabela-notas-container').innerHTML = '';
+  if (!turmasCacheNotas.length){
+    sel.innerHTML = '<option value="">Nenhuma turma cadastrada</option>';
+    mostrarTela('tela-professor-notas');
+    return;
+  }
+  sel.innerHTML = turmasCacheNotas.map((t,i)=>'<option value="'+i+'">'+escapeHTML(t.nome)+'</option>').join('');
+  mostrarTela('tela-professor-notas');
+  await renderizarTabelaNotas(0);
+}
+async function renderizarTabelaNotas(idx){
+  const turma = turmasCacheNotas[idx];
+  const container = document.getElementById('tabela-notas-container');
+  const legenda = document.getElementById('legenda-notas');
+  if (!turma){ container.innerHTML=''; legenda.innerHTML=''; return; }
+  container.innerHTML = '<p class="vazio-msg">Carregando notas…</p>';
+  legenda.innerHTML = '';
+  const turmaKey = turmaSlug(turma.nome);
+  const registros = await buscarAtividadesCadastradas();
+  const atividadesDaTurma = registros.filter(a=>a.turmasIds && a.turmasIds[turma.id]).map(construirAtividadeEfetiva).filter(Boolean)
+    .sort((a,b)=>(a.numero||0)-(b.numero||0));
+  const alunos = Object.values(turma.alunos||{}).map(a=>a.nome).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+  if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
+  if (!atividadesDaTurma.length){ container.innerHTML = '<p class="vazio-msg">Nenhuma atividade associada a esta turma ainda.</p>'; return; }
+
+  legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' ('+a.codigo+')</div>').join('');
+
+  const notasPorAtividade = {};
+  for (const ativ of atividadesDaTurma){
+    const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+ativ.codigo+'/alunos').once('value');
+    const dados = snap.val() || {};
+    const mapa = {};
+    Object.entries(dados).forEach(([chave, sub])=>{ mapa[chave] = sub.nota; });
+    notasPorAtividade[ativ.codigo] = mapa;
+  }
+
+  const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+'">Ativ. '+a.numero+'</th>').join('');
+  const linhas = alunos.map(nome=>{
+    const chave = turmaSlug(nome);
+    let total = 0, temNota = false;
+    const celulas = atividadesDaTurma.map(ativ=>{
+      const nota = notasPorAtividade[ativ.codigo][chave];
+      if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td>'+escapeHTML(String(nota))+'</td>'; }
+      return '<td style="color:var(--ink-suave);">—</td>';
+    }).join('');
+    const totalTxt = temNota ? (Math.round(total*100)/100) : '—';
+    return '<tr><td>'+escapeHTML(nome)+'</td>'+celulas+'<td><strong>'+totalTxt+'</strong></td></tr>';
+  }).join('');
+
+  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+}
+
 async function abrirTelaRelatorios(){
   document.getElementById('relatorio-conteudo').innerHTML = '';
   const lista = document.getElementById('lista-tipos-relatorio');
@@ -2562,6 +2774,9 @@ document.getElementById('btn-voltar-painel-atividades').addEventListener('click'
 });
 document.getElementById('btn-modulo-relatorios').addEventListener('click', abrirTelaRelatorios);
 document.getElementById('btn-voltar-painel-relatorios').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
+document.getElementById('btn-modulo-notas').addEventListener('click', abrirTelaNotas);
+document.getElementById('btn-voltar-painel-notas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
+document.getElementById('select-turma-notas').addEventListener('change', (e)=>{ renderizarTabelaNotas(Number(e.target.value)); });
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') fecharModal(); });
 
