@@ -493,12 +493,8 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
       <div class="campo" style="max-width:420px;">
-        <label for="select-modelo-conteudo">Conteúdo (perguntas)</label>
+        <label for="select-modelo-conteudo">Conteúdo</label>
         <select id="select-modelo-conteudo" class="select-turma"></select>
-      </div>
-      <div class="campo" style="max-width:420px;">
-        <label for="input-nome-nova-atividade">Nome da atividade</label>
-        <input type="text" id="input-nome-nova-atividade" placeholder="Ex.: Prova Bimestral 1 (deixe em branco para usar o nome do conteúdo)">
       </div>
       <div class="campo" style="max-width:300px;">
         <label for="select-disciplina-nova-atividade">Disciplina</label>
@@ -2266,7 +2262,6 @@ async function abrirTelaAtividades(){
   selDisciplina.innerHTML = '<option value="">— nenhuma —</option>'+disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'">'+escapeHTML(d.nome)+'</option>').join('');
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
   renderListaAtividadesCadastro();
-  document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
   document.getElementById('msg-atividade-cadastrada').hidden = true;
   mostrarTela('tela-professor-atividades');
@@ -2318,24 +2313,22 @@ function abrirModalEditarAtividade(id){
   if (!registro) return;
   const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   const html =
-    '<div class="campo"><label>Nome da atividade</label><input type="text" id="modal-input-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'" placeholder="Deixe em branco para usar: '+escapeHTML(modelo?modelo.titulo:'')+'"></div>'+
     '<div class="campo"><label>Disciplina</label><select id="modal-select-disciplina" class="select-turma"><option value="">— nenhuma —</option>'+
     disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(registro.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+'</select></div>'+
     '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa (aparece para os alunos)</label>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-atividade">Salvar</button></div>';
-  abrirModal((registro.nomeAtividade || (modelo?modelo.titulo:'Atividade'))+' — '+registro.codigo, html);
+  abrirModal((modelo?modelo.titulo:'Atividade')+' — '+registro.codigo, html);
   renderCheckboxesTurmas('modal-checkboxes-turmas', turmasCacheAtiv, registro.turmasIds);
   document.getElementById('btn-salvar-edicao-atividade').addEventListener('click', async ()=>{
     const valorDigitado = parseFloat(document.getElementById('modal-input-valor').value.replace(',','.'));
     const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
-    const nomeAtividade = document.getElementById('modal-input-nome').value.trim();
     const disciplina = document.getElementById('modal-select-disciplina').value;
     const ativa = document.getElementById('modal-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, ativa, turmasIds});
+    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, ativa, turmasIds});
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2377,13 +2370,11 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   }
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
-  const nomeAtividade = document.getElementById('input-nome-nova-atividade').value.trim();
   const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade);
+  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina);
   document.getElementById('select-modelo-conteudo').value = '';
-  document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
   document.getElementById('select-disciplina-nova-atividade').value = '';
   msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada!';
