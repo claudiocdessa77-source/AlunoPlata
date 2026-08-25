@@ -496,11 +496,6 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <label for="input-nome-nova-atividade">Nome da atividade</label>
         <input type="text" id="input-nome-nova-atividade" placeholder="Ex.: Prova Bimestral 1, Estudo de Caso — GBS Supermercados...">
       </div>
-      <div class="campo" style="max-width:420px;">
-        <label for="select-modelo-conteudo">Baseada em (banco de perguntas)</label>
-        <select id="select-modelo-conteudo" class="select-turma"></select>
-        <p style="font-size:.78rem;color:var(--ink-suave);margin:6px 0 0;">Esta lista mostra os bancos de perguntas que existem hoje (não o nome desta atividade) — dá pra usar o mesmo banco em várias atividades com nomes diferentes, como quando você aplica o mesmo estudo de caso em turmas diferentes.</p>
-      </div>
       <div class="campo" style="max-width:300px;">
         <label for="select-disciplina-nova-atividade">Disciplina</label>
         <select id="select-disciplina-nova-atividade" class="select-turma"><option value="">— nenhuma —</option></select>
@@ -514,6 +509,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
       </div>
       <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
+      <p style="font-size:.78rem;color:var(--ink-suave);margin:8px 0 0;">Depois de cadastrada, clique em "Editar →" no card dela para escolher o banco de perguntas.</p>
       <p class="msg-sucesso" id="msg-atividade-cadastrada" hidden></p>
 
       <div style="margin-top:32px;">
@@ -2261,8 +2257,6 @@ async function abrirTelaAtividades(){
   turmasCacheAtiv = await buscarTurmasCadastradas();
   disciplinasCacheModulo = await buscarDisciplinasCadastradas();
   atividadesCacheModulo = await buscarAtividadesCadastradas();
-  const selModelo = document.getElementById('select-modelo-conteudo');
-  selModelo.innerHTML = '<option value="">Selecione um conteúdo…</option>'+Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
   const selDisciplina = document.getElementById('select-disciplina-nova-atividade');
   selDisciplina.innerHTML = '<option value="">— nenhuma —</option>'+disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'">'+escapeHTML(d.nome)+'</option>').join('');
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasCacheAtiv, null);
@@ -2283,10 +2277,11 @@ function renderListaAtividadesCadastro(){
     const turmasHtml = nomesTurmas.length
       ? nomesTurmas.map(n=>'<button type="button" class="pill-turma" data-acao="ver-como-aluno" data-ativ-id="'+a.id+'" data-turma-nome="'+escapeHTML(n)+'">'+escapeHTML(n)+'</button>').join('')
       : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
-    const tituloExibir = a.nomeAtividade || (modelo?modelo.titulo:'(modelo não encontrado)');
+    const tituloExibir = a.nomeAtividade || (modelo?modelo.titulo:'(sem nome)');
+    const badgeConteudo = modelo ? '' : ' <span class="badge-pendente">Sem perguntas ainda</span>';
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(tituloExibir)+' <span class="codigo-atividade">'+a.codigo+'</span> '+
-      '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span></h3>'+
+      '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span>'+badgeConteudo+'</h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span></div>'+
@@ -2297,7 +2292,8 @@ function renderListaAtividadesCadastro(){
     const turmaNome = e.currentTarget.dataset.turmaNome;
     const registro = atividadesCacheModulo.find(a=>a.id===id);
     const efetiva = registro && construirAtividadeEfetiva(registro);
-    if (efetiva) visualizarAtividadeComoAluno(turmaNome, efetiva);
+    if (!efetiva){ alert('Essa atividade ainda não tem um banco de perguntas escolhido. Clique em "Editar →" para escolher.'); return; }
+    visualizarAtividadeComoAluno(turmaNome, efetiva);
   }));
   lista.querySelectorAll('[data-acao="editar"]').forEach(b=>b.addEventListener('click',(e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
@@ -2320,7 +2316,10 @@ function abrirModalEditarAtividade(id){
   const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   const html =
     '<div class="campo"><label>Nome da atividade</label><input type="text" id="modal-input-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
-    '<p style="font-size:.78rem;color:var(--ink-suave);margin:-10px 0 16px;">Baseada em: '+escapeHTML(modelo?modelo.titulo:'(banco de perguntas não encontrado)')+'</p>'+
+    '<div class="campo"><label>Baseada em (banco de perguntas)</label>'+
+    '<select id="modal-select-conteudo" class="select-turma"><option value="">— nenhum ainda —</option>'+
+    Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'" '+(registro.modeloConteudo===chave?'selected':'')+'>'+escapeHTML(m.titulo)+'</option>').join('')+
+    '</select>'+(modelo?'':'<p style="font-size:.78rem;color:var(--vermelho);margin:6px 0 0;">Sem banco de perguntas escolhido — os alunos não vão ver questões até você selecionar um aqui.</p>')+'</div>'+
     '<div class="campo"><label>Disciplina</label><select id="modal-select-disciplina" class="select-turma"><option value="">— nenhuma —</option>'+
     disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(registro.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+'</select></div>'+
     '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
@@ -2333,11 +2332,12 @@ function abrirModalEditarAtividade(id){
     const valorDigitado = parseFloat(document.getElementById('modal-input-valor').value.replace(',','.'));
     const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
     const nomeAtividade = document.getElementById('modal-input-nome').value.trim();
+    const modeloConteudo = document.getElementById('modal-select-conteudo').value;
     const disciplina = document.getElementById('modal-select-disciplina').value;
     const ativa = document.getElementById('modal-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, ativa, turmasIds});
+    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, modeloConteudo, ativa, turmasIds});
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2372,14 +2372,9 @@ document.getElementById('btn-restaurar-atividades').addEventListener('click', as
 });
 document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
   const nomeAtividade = document.getElementById('input-nome-nova-atividade').value.trim();
-  const modeloConteudo = document.getElementById('select-modelo-conteudo').value;
   const msg = document.getElementById('msg-atividade-cadastrada');
   if (!nomeAtividade){
     msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Digite um nome para a atividade.';
-    return;
-  }
-  if (!modeloConteudo){
-    msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha em qual banco de perguntas essa atividade se baseia.';
     return;
   }
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
@@ -2387,13 +2382,12 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-  await criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade);
+  await criarAtividadeCadastrada('', valorTotal, turmasIds, disciplina, nomeAtividade);
   document.getElementById('input-nome-nova-atividade').value = '';
-  document.getElementById('select-modelo-conteudo').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
   document.getElementById('select-disciplina-nova-atividade').value = '';
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
-  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada!';
+  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada! Clique em "Editar →" no card dela pra escolher o banco de perguntas.';
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   renderListaAtividadesCadastro();
 });
@@ -2479,10 +2473,8 @@ document.getElementById('btn-salvar-conteudo-html').addEventListener('click', as
   const ref = db.ref('conteudosCadastrados').push();
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
   await carregarConteudosCadastrados();
-  const selModelo = document.getElementById('select-modelo-conteudo');
-  selModelo.innerHTML = '<option value="">Selecione um conteúdo…</option>'+Object.entries(MODELOS_CONTEUDO_RUNTIME).map(([chave,m])=>'<option value="'+chave+'">'+escapeHTML(m.titulo)+'</option>').join('');
   document.getElementById('textarea-html-atividade').value = '';
-  document.getElementById('preview-html-atividade').innerHTML = '<p class="msg-sucesso" style="color:var(--verde);">Conteúdo salvo! Já aparece na lista "Conteúdo" acima — escolha-o para cadastrar a atividade.</p>';
+  document.getElementById('preview-html-atividade').innerHTML = '<p class="msg-sucesso" style="color:var(--verde);">Conteúdo salvo! Cadastre a atividade (ou edite uma já existente) e escolha esse banco de perguntas em "Baseada em".</p>';
   document.getElementById('btn-salvar-conteudo-html').hidden = true;
   conteudoParseadoTemp = null;
 });
