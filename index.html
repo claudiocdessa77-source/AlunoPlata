@@ -2505,6 +2505,7 @@ document.getElementById('btn-salvar-conteudo-html').addEventListener('click', as
 /* ---- módulo Relatórios ---- */
 /* ---- módulo Notas ---- */
 let turmasCacheNotas = [];
+let atividadesCacheNotas = [];
 async function abrirTelaNotas(){
   mostrarTela('tela-carregando');
   turmasCacheNotas = await buscarTurmasCadastradas();
@@ -2532,11 +2533,13 @@ async function renderizarTabelaNotas(idx){
   const atividadesDaTurma = registros.filter(a=>a.turmasIds && a.turmasIds[turma.id]).map(construirAtividadeEfetiva).filter(Boolean)
     .sort((a,b)=>(a.numero||0)-(b.numero||0));
   const alunos = Object.values(turma.alunos||{}).map(a=>a.nome).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  atividadesCacheNotas = atividadesDaTurma;
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
   if (!atividadesDaTurma.length){ container.innerHTML = '<p class="vazio-msg">Nenhuma atividade associada a esta turma ainda.</p>'; return; }
 
-  legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' ('+a.codigo+')</div>').join('');
+  legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' — valor '+a.valorTotal+' ('+a.codigo+')</div>').join('')+
+    '<button type="button" class="botao-texto" id="btn-recalcular-notas-turma" style="margin-top:6px;">Recalcular todas as notas desta turma com os valores atuais</button>';
 
   const notasPorAtividade = {};
   for (const ativ of atividadesDaTurma){
@@ -2561,6 +2564,17 @@ async function renderizarTabelaNotas(idx){
   }).join('');
 
   container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  const btnRecalc = document.getElementById('btn-recalcular-notas-turma');
+  if (btnRecalc){
+    btnRecalc.addEventListener('click', async ()=>{
+      btnRecalc.disabled = true;
+      btnRecalc.textContent = 'Recalculando…';
+      for (const ativ of atividadesCacheNotas){
+        await recalcularNotasDaAtividade(ativ.codigo, ativ.valorTotal, ativ);
+      }
+      await renderizarTabelaNotas(idx);
+    });
+  }
 }
 
 async function abrirTelaRelatorios(){
