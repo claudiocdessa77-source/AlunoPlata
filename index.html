@@ -492,35 +492,9 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       </div>
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
-      <div class="campo" style="max-width:420px;">
-        <label for="input-nome-nova-atividade">Nome da atividade</label>
-        <input type="text" id="input-nome-nova-atividade" placeholder="Ex.: Prova Bimestral 1, Estudo de Caso — GBS Supermercados...">
-      </div>
-      <div class="campo" style="max-width:300px;">
-        <label for="select-disciplina-nova-atividade">Disciplina</label>
-        <select id="select-disciplina-nova-atividade" class="select-turma"><option value="">— nenhuma —</option></select>
-      </div>
-      <div class="campo" style="max-width:200px;">
-        <label for="input-valor-nova-atividade">Valor (nota máxima)</label>
-        <input type="text" inputmode="decimal" id="input-valor-nova-atividade" placeholder="Ex.: 10">
-      </div>
-      <div class="campo">
-        <label>Turmas com acesso</label>
-        <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
-      </div>
-      <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
-      <p style="font-size:.78rem;color:var(--ink-suave);margin:8px 0 0;">Depois de cadastrada, clique em "Editar →" no card dela para escolher o banco de perguntas.</p>
-      <p class="msg-sucesso" id="msg-atividade-cadastrada" hidden></p>
-
-      <div style="margin-top:32px;">
-        <div class="arquivo-cabecalho" id="html-import-toggle">
-          <span id="html-import-seta">▸</span>
-          <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Criar novo conteúdo colando HTML (sem precisar pedir pra mim)</h2>
-        </div>
-        <div id="html-import-corpo" hidden style="margin-top:14px;">
-          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole qualquer HTML de atividade ou questionário</strong> — mesmo que não siga um formato específico (por exemplo, um arquivo gerado por uma IA de imagem/texto, com o visual e a estrutura que quiser). A plataforma tenta entender sozinha o que for preciso, usando IA por trás dos panos.</p>
-          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se preferir um caminho mais rápido e sem depender de interpretação, este modelo de texto simples funciona na hora, sem IA. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
-          <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
+      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole ou arraste o HTML da atividade</strong> — pode ser gerado por você, por uma IA de texto/imagem, com o visual e a estrutura que quiser. A plataforma lê as perguntas e o gabarito sozinha.</p>
+      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se preferir um formato simples que funciona na hora, sem depender de interpretação por IA, use este modelo — cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+      <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
 &lt;titulo&gt;Nome da atividade&lt;/titulo&gt;
 &lt;subtitulo&gt;questionário — 3 questões&lt;/subtitulo&gt;
 &lt;caso&gt;
@@ -538,22 +512,40 @@ Texto do caso/contexto, aparece uma vez no topo.
 
 (repita a tag &lt;questao&gt; para cada pergunta)
 &lt;/atividade&gt;</pre>
-          <div id="dropzone-html-atividade" class="dropzone-arquivo" tabindex="0" role="button" aria-label="Arraste um arquivo HTML aqui ou clique para escolher">
-            <p>📎 Arraste o arquivo .html aqui, ou <span style="text-decoration:underline;">clique para escolher</span></p>
-            <input type="file" id="input-arquivo-html" accept=".html,.htm,text/html" style="display:none;">
-          </div>
-          <div class="campo">
-            <label for="textarea-html-atividade">Ou cole aqui</label>
-            <textarea id="textarea-html-atividade" rows="10" placeholder="Cole qualquer HTML de atividade, do jeito que estiver..."></textarea>
-          </div>
-          <div class="acoes">
-            <button class="botao botao-secundario botao-pequeno" id="btn-pre-visualizar-html">Pré-visualizar</button>
-            <button class="botao botao-primario botao-pequeno" id="btn-salvar-conteudo-html" hidden>Salvar como novo conteúdo</button>
-          </div>
-          <p class="erro-msg" id="erro-html-atividade" hidden></p>
-          <div id="preview-html-atividade" style="margin-top:12px;"></div>
-        </div>
+      <div id="dropzone-html-atividade" class="dropzone-arquivo" tabindex="0" role="button" aria-label="Arraste um arquivo HTML aqui ou clique para escolher">
+        <p>📎 Arraste o arquivo .html aqui, ou <span style="text-decoration:underline;">clique para escolher</span></p>
+        <input type="file" id="input-arquivo-html" accept=".html,.htm,text/html" style="display:none;">
       </div>
+      <div class="campo">
+        <label for="textarea-html-atividade">Ou cole aqui</label>
+        <textarea id="textarea-html-atividade" rows="10" placeholder="Cole qualquer HTML de atividade, do jeito que estiver..."></textarea>
+      </div>
+      <div class="acoes">
+        <button class="botao botao-secundario botao-pequeno" id="btn-pre-visualizar-html">Pré-visualizar</button>
+      </div>
+      <p class="erro-msg" id="erro-html-atividade" hidden></p>
+      <div id="preview-html-atividade" style="margin-top:12px;"></div>
+
+      <div id="campos-atividade-apos-preview" hidden style="margin-top:22px;border-top:1.5px solid var(--borda);padding-top:20px;">
+        <div class="campo" style="max-width:420px;">
+          <label for="input-nome-nova-atividade">Nome da atividade</label>
+          <input type="text" id="input-nome-nova-atividade" placeholder="Ex.: Prova Bimestral 1">
+        </div>
+        <div class="campo" style="max-width:300px;">
+          <label for="select-disciplina-nova-atividade">Disciplina</label>
+          <select id="select-disciplina-nova-atividade" class="select-turma"><option value="">— nenhuma —</option></select>
+        </div>
+        <div class="campo" style="max-width:200px;">
+          <label for="input-valor-nova-atividade">Valor (nota máxima)</label>
+          <input type="text" inputmode="decimal" id="input-valor-nova-atividade" placeholder="Ex.: 10">
+        </div>
+        <div class="campo">
+          <label>Turmas com acesso</label>
+          <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
+        </div>
+        <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
+      </div>
+      <p class="msg-sucesso" id="msg-atividade-cadastrada" hidden></p>
     </div>
   </div>
 </section>
@@ -2281,6 +2273,11 @@ async function abrirTelaAtividades(){
   renderListaAtividadesCadastro();
   document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
+  document.getElementById('textarea-html-atividade').value = '';
+  document.getElementById('preview-html-atividade').innerHTML = '';
+  document.getElementById('erro-html-atividade').hidden = true;
+  document.getElementById('campos-atividade-apos-preview').hidden = true;
+  conteudoParseadoTemp = null;
   document.getElementById('msg-atividade-cadastrada').hidden = true;
   mostrarTela('tela-professor-atividades');
 }
@@ -2393,42 +2390,14 @@ document.getElementById('btn-restaurar-atividades').addEventListener('click', as
   }
   btn.disabled = false;
 });
-document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
-  const nomeAtividade = document.getElementById('input-nome-nova-atividade').value.trim();
-  const msg = document.getElementById('msg-atividade-cadastrada');
-  if (!nomeAtividade){
-    msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Digite um nome para a atividade.';
-    return;
-  }
-  const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
-  const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
-  const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
-  const turmasIds = {};
-  document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-  await criarAtividadeCadastrada('', valorTotal, turmasIds, disciplina, nomeAtividade);
-  document.getElementById('input-nome-nova-atividade').value = '';
-  document.getElementById('input-valor-nova-atividade').value = '';
-  document.getElementById('select-disciplina-nova-atividade').value = '';
-  document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
-  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada! Clique em "Editar →" no card dela pra escolher o banco de perguntas.';
-  atividadesCacheModulo = await buscarAtividadesCadastradas();
-  renderListaAtividadesCadastro();
-});
-
-document.getElementById('html-import-toggle').addEventListener('click', ()=>{
-  const corpo = document.getElementById('html-import-corpo');
-  const seta = document.getElementById('html-import-seta');
-  corpo.hidden = !corpo.hidden;
-  seta.textContent = corpo.hidden ? '▸' : '▾';
-});
 
 let conteudoParseadoTemp = null;
 async function preVisualizarHTMLAtividade(){
   const erro = document.getElementById('erro-html-atividade');
   const preview = document.getElementById('preview-html-atividade');
-  const btnSalvar = document.getElementById('btn-salvar-conteudo-html');
   const btnPreview = document.getElementById('btn-pre-visualizar-html');
-  erro.hidden = true; preview.innerHTML = ''; btnSalvar.hidden = true; conteudoParseadoTemp = null;
+  const camposDepois = document.getElementById('campos-atividade-apos-preview');
+  erro.hidden = true; preview.innerHTML = ''; camposDepois.hidden = true; conteudoParseadoTemp = null;
   const texto = document.getElementById('textarea-html-atividade').value;
   if (!texto.trim()){ erro.hidden=false; erro.textContent='Cole um HTML (ou arraste um arquivo) antes de pré-visualizar.'; return; }
   let resultado = null;
@@ -2451,17 +2420,17 @@ async function preVisualizarHTMLAtividade(){
     btnPreview.disabled = false;
   }
   conteudoParseadoTemp = resultado;
-  preview.innerHTML = (usouIA ? '<p style="font-size:.8rem;color:var(--ink-suave);margin-bottom:8px;">Interpretado com IA — confira se ficou correto antes de salvar.</p>' : '') +
+  preview.innerHTML = (usouIA ? '<p style="font-size:.8rem;color:var(--ink-suave);margin-bottom:8px;">Interpretado com IA — confira se ficou correto antes de cadastrar.</p>' : '') +
     '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
     '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
     '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
-  btnSalvar.hidden = false;
+  document.getElementById('input-nome-nova-atividade').value = resultado.titulo;
+  camposDepois.hidden = false;
 }
 document.getElementById('btn-pre-visualizar-html').addEventListener('click', preVisualizarHTMLAtividade);
 
 function carregarArquivoHTMLNoTextarea(file){
   if (!file) return;
-  const dz = document.getElementById('dropzone-html-atividade');
   if (!/\.(html?|txt)$/i.test(file.name) && file.type && file.type!=='text/html' && file.type!=='text/plain'){
     document.getElementById('erro-html-atividade').hidden = false;
     document.getElementById('erro-html-atividade').textContent = 'Isso não parece um arquivo de texto/HTML. Tente outro arquivo.';
@@ -2491,15 +2460,37 @@ dropzoneHtml.addEventListener('drop', (e)=>{
   const file = e.dataTransfer.files && e.dataTransfer.files[0];
   carregarArquivoHTMLNoTextarea(file);
 });
-document.getElementById('btn-salvar-conteudo-html').addEventListener('click', async ()=>{
-  if (!conteudoParseadoTemp) return;
+document.getElementById('btn-cadastrar-atividade').addEventListener('click', async ()=>{
+  const msg = document.getElementById('msg-atividade-cadastrada');
+  if (!conteudoParseadoTemp){
+    msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Cole o HTML e clique em "Pré-visualizar" antes de cadastrar.';
+    return;
+  }
+  const nomeAtividade = document.getElementById('input-nome-nova-atividade').value.trim() || conteudoParseadoTemp.titulo;
+  const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
+  const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
+  const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
+  const turmasIds = {};
+  document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+
   const ref = db.ref('conteudosCadastrados').push();
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
   await carregarConteudosCadastrados();
+  const chaveConteudo = 'custom:'+ref.key;
+  await criarAtividadeCadastrada(chaveConteudo, valorTotal, turmasIds, disciplina, nomeAtividade);
+
+  document.getElementById('input-nome-nova-atividade').value = '';
+  document.getElementById('input-valor-nova-atividade').value = '';
+  document.getElementById('select-disciplina-nova-atividade').value = '';
+  document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
   document.getElementById('textarea-html-atividade').value = '';
-  document.getElementById('preview-html-atividade').innerHTML = '<p class="msg-sucesso" style="color:var(--verde);">Conteúdo salvo! Cadastre a atividade (ou edite uma já existente) e escolha esse banco de perguntas em "Baseada em".</p>';
-  document.getElementById('btn-salvar-conteudo-html').hidden = true;
+  document.getElementById('preview-html-atividade').innerHTML = '';
+  document.getElementById('campos-atividade-apos-preview').hidden = true;
   conteudoParseadoTemp = null;
+
+  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada e pronta para as turmas escolhidas!';
+  atividadesCacheModulo = await buscarAtividadesCadastradas();
+  renderListaAtividadesCadastro();
 });
 
 /* ---- módulo Relatórios ---- */
