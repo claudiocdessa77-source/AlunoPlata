@@ -1364,6 +1364,24 @@ async function contarRespostasNoBanco(codigo){
   });
   return {total, porTurma};
 }
+/* Quando o valor (nota máxima) de uma atividade muda, recalcula e regrava a nota de quem já respondeu,
+   em todas as turmas onde essa atividade foi aplicada — mantém proporção acertos/total. */
+async function recalcularNotasDaAtividade(codigo, valorTotalNovo, atividadeEfetiva){
+  const totalItens = itensAtividade(atividadeEfetiva).length;
+  if (!totalItens) return 0;
+  const snap = await db.ref('turmas').once('value');
+  const todasTurmas = snap.val() || {};
+  const escritas = [];
+  Object.entries(todasTurmas).forEach(([tk,t])=>{
+    const alunos = t && t.atividades && t.atividades[codigo] ? (t.atividades[codigo].alunos||{}) : {};
+    Object.entries(alunos).forEach(([chave, sub])=>{
+      const novaNota = calcularNota(sub.acertos||0, totalItens, valorTotalNovo);
+      escritas.push(db.ref('turmas/'+tk+'/atividades/'+codigo+'/alunos/'+chave+'/nota').set(novaNota));
+    });
+  });
+  await Promise.all(escritas);
+  return escritas.length;
+}
 async function restaurarAtividadesAnteriores(){
   const existentes = await buscarAtividadesCadastradas();
   const turmasNativas = await buscarTurmasCadastradas();
@@ -2337,7 +2355,12 @@ function abrirModalEditarAtividade(id){
     const ativa = document.getElementById('modal-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+    const valorMudou = valorTotal !== registro.valorTotal;
     await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, modeloConteudo, ativa, turmasIds});
+    if (valorMudou && modeloConteudo){
+      const efetiva = construirAtividadeEfetiva(Object.assign({}, registro, {modeloConteudo}));
+      if (efetiva) await recalcularNotasDaAtividade(registro.codigo, valorTotal, efetiva);
+    }
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2629,7 +2652,8 @@ async function abrirModalTurma(tk, t, arquivado){
     return '<div class="linha-barra"><span class="linha-barra-label">'+label+'</span><div class="barra-fundo"><div class="barra-preenchida" style="width:'+pct+'%;background:'+cor+'"></div></div><span class="linha-barra-valor">'+pct+'%</span></div>';
   }).join('');
   const caminhoBase = arquivado ? ('arquivo/'+tk+'/alunos/') : ('turmas/'+tk+'/atividades/'+ativ.codigo+'/alunos/');
-  const resumo = '<p style="font-size:.85rem;color:var(--ink-suave);margin:0 0 10px;">'+respondidos.length+' de '+linhas.length+' aluno(s) responderam</p>';
+  const botaoRecalcular = (!arquivado && itens.length) ? '<button type="button" class="botao-texto" id="btn-recalcular-notas" style="margin-left:10px;">Recalcular notas com o valor atual ('+ativ.valorTotal+')</button>' : '';
+  const resumo = '<p style="font-size:.85rem;color:var(--ink-suave);margin:0 0 10px;">'+respondidos.length+' de '+linhas.length+' aluno(s) responderam'+botaoRecalcular+'</p>';
 
   const tabelaHtml = linhas.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Status</th><th>Nota</th><th>Enviado em</th>'+(arquivado?'':'<th>Liberado</th><th></th>')+'</tr></thead><tbody>'+
     linhas.map(a=>{
@@ -2695,6 +2719,16 @@ async function abrirModalTurma(tk, t, arquivado){
       await imprimirAtividadeRespondida(dados.turma || nomeTurmaExibir, dados.nome, ativ, dados);
     });
   });
+  const btnRecalcular = document.getElementById('btn-recalcular-notas');
+  if (btnRecalcular){
+    btnRecalcular.addEventListener('click', async ()=>{
+      btnRecalcular.disabled = true;
+      btnRecalcular.textContent = 'Recalculando…';
+      await recalcularNotasDaAtividade(ativ.codigo, ativ.valorTotal, ativ);
+      const snapAtualizado = await db.ref('turmas/'+tk+'/atividades/'+ativ.codigo).once('value');
+      abrirModalTurma(tk, snapAtualizado.val() || {}, arquivado);
+    });
+  }
 }
 
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
