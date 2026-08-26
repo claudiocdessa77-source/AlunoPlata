@@ -2322,11 +2322,37 @@ function renderListaAtividadesCadastro(){
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(tituloExibir)+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span>'+badgeConteudo+'</h3>'+
-      '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
+      '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="verificar-respostas">Verificar respostas</button>'+
+      '<button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span></div>'+
       '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
+  lista.querySelectorAll('[data-acao="verificar-respostas"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const id = e.target.closest('.turma-card').dataset.ativId;
+    const registro = atividadesCacheModulo.find(a=>a.id===id);
+    if (!registro) return;
+    const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
+    const nomeAtiv = registro.nomeAtividade || (modelo?modelo.titulo:registro.codigo);
+    const turmasNativas = await buscarTurmasCadastradas();
+    const nomesNativosSlug = new Set(turmasNativas.map(t=>turmaSlug(t.nome)));
+    const nomesTurmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>{ const t=turmasNativas.find(x=>x.id===tid); return t?t.nome:null; }).filter(Boolean);
+    const {total, porTurma} = await contarRespostasNoBanco(registro.codigo);
+    let html = '<p style="font-size:.85rem;color:var(--ink-suave);margin:0 0 14px;">Turmas com acesso cadastrado: '+(nomesTurmasAssociadas.length?nomesTurmasAssociadas.join(', '):'nenhuma')+'</p>';
+    if (!total){
+      html += '<p class="vazio-msg">Nenhuma resposta encontrada no banco de dados pra esta atividade, em nenhuma turma. Ou seja: realmente ninguém respondeu ainda (não é erro de exibição).</p>';
+    } else {
+      html += '<p style="font-weight:800;margin-bottom:8px;">'+total+' resposta(s) encontrada(s) no total:</p>';
+      html += porTurma.map(pt=>{
+        const orfa = !nomesNativosSlug.has(pt.turmaKey);
+        return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(pt.nomeTurma)+'</span><span class="linha-barra-valor" style="flex:1;text-align:left;">'+pt.n+' aluno(s)'+(orfa?' — <strong style="color:var(--vermelho);">sem turma cadastrada com esse nome exato</strong>':'')+'</span></div>';
+      }).join('');
+      if (porTurma.some(pt=>!nomesNativosSlug.has(pt.turmaKey))){
+        html += '<p style="margin-top:14px;font-size:.85rem;">As linhas em vermelho têm respostas salvas mas o nome da turma não bate com nenhuma turma cadastrada hoje (diferença de acentuação, espaço, abreviação, etc.) — é por isso que elas não aparecem no painel. Confira o nome exato da turma em <strong>Turmas</strong> e ajuste pra bater, ou recadastre a turma com esse nome.</p>';
+      }
+    }
+    abrirModal('Verificar respostas — '+nomeAtiv, html);
+  }));
   lista.querySelectorAll('[data-acao="ver-como-aluno"]').forEach(b=>b.addEventListener('click', (e)=>{
     const id = e.currentTarget.dataset.ativId;
     const turmaNome = e.currentTarget.dataset.turmaNome;
