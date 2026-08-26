@@ -492,8 +492,8 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       </div>
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
-      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole ou arraste o HTML da atividade</strong> — pode ser gerado por você, por uma IA de texto/imagem, com o visual e a estrutura que quiser. A plataforma lê as perguntas e o gabarito sozinha.</p>
-      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se preferir um formato simples que funciona na hora, sem depender de interpretação por IA, use este modelo — cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole ou arraste o HTML da atividade neste formato</strong> — funciona na hora, sem precisar de internet ou IA. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se o arquivo veio de outro lugar (outra IA, por exemplo) e não está nesse formato, cole o HTML numa conversa com a Claude e peça para converter — ela devolve o texto pronto, exatamente nesse padrão, pra você colar aqui.</p>
       <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
 &lt;titulo&gt;Nome da atividade&lt;/titulo&gt;
 &lt;subtitulo&gt;questionário — 3 questões&lt;/subtitulo&gt;
@@ -880,53 +880,6 @@ function parsearAtividadeHTML(texto){
     return {numero:i+1, titulo:tema, enunciado, pergunta:perguntaTxt, opcoes, correta, explicacao};
   });
   return {tipo:'multipla-escolha', titulo, subtitulo: subtitulo || ('questionário — '+perguntas.length+' questões'), instrucao: caso, perguntas};
-}
-
-/* Alternativa flexível: quando o texto colado NÃO segue o formato simples acima, manda para a IA
-   interpretar (funciona com qualquer HTML de atividade/questionário, seja qual for a estrutura). */
-async function interpretarHTMLComIA(textoColado){
-  const promptSistema = 'Você recebe o código-fonte de um arquivo HTML de uma atividade ou questionário educacional — pode ter qualquer estrutura, CSS e JavaScript, de qualquer origem. Sua tarefa é EXTRAIR o conteúdo pedagógico dele e devolver APENAS um JSON válido, sem nenhum texto antes ou depois, sem marcação markdown, no formato exato abaixo:\n\n'+
-    '{"titulo":"título da atividade","subtitulo":"resumo curto, tipo \'questionário — N questões\'","caso":"todo o texto de contexto/caso que aparece uma vez, no início (string vazia se não houver)","perguntas":[{"tema":"título curto dessa questão","enunciado":"lembrete curto do caso específico dessa questão, se fizer sentido (pode ser vazio)","pergunta":"o texto da pergunta em si","opcoes":[{"letra":"A","texto":"..."},{"letra":"B","texto":"..."}],"correta":"a letra da alternativa correta","explicacao":"por que essa é a resposta certa"}]}\n\n'+
-    'Regras importantes: preserve o texto original das perguntas e alternativas o máximo possível, sem resumir nem reescrever o conteúdo pedagógico — apenas extraia. Se o HTML já indicar qual alternativa é a correta (variável isAnswer, correta, isCorrect, classe indicando acerto, etc.), use exatamente essa, sem inventar. Extraia TODAS as questões encontradas, na ordem em que aparecem. Se já houver uma explicação/justificativa no HTML para cada questão, use-a; senão, escreva uma breve e correta. Responda APENAS com o JSON.';
-
-  let resp;
-  try{
-    resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens: 4000,
-        system: promptSistema,
-        messages:[{role:'user', content: textoColado.slice(0,60000)}]
-      })
-    });
-  } catch(e){ throw new Error('Não consegui contatar a IA para interpretar esse HTML: '+e.message); }
-  if (!resp.ok) throw new Error('A IA não conseguiu processar esse HTML (erro '+resp.status+'). Tente novamente.');
-  const data = await resp.json();
-  const textoResposta = (data.content||[]).map(b=>b.text||'').join('');
-  let json;
-  try{ json = JSON.parse(textoResposta.replace(/```json|```/g,'').trim()); }
-  catch(e){ throw new Error('A IA não devolveu um formato reconhecível. Tente novamente, ou use o modelo de texto simples acima.'); }
-  if (!json.titulo || !Array.isArray(json.perguntas) || !json.perguntas.length){
-    throw new Error('Não consegui identificar título e perguntas nesse HTML. Confira se o arquivo realmente tem um questionário, ou use o modelo de texto simples acima.');
-  }
-  json.perguntas.forEach((p,i)=>{
-    if (!p.pergunta || !Array.isArray(p.opcoes) || p.opcoes.length<2 || !p.correta){
-      throw new Error('A questão '+(i+1)+' ficou incompleta na extração — tente novamente.');
-    }
-  });
-  return {
-    tipo:'multipla-escolha',
-    titulo: json.titulo,
-    subtitulo: json.subtitulo || ('questionário — '+json.perguntas.length+' questões'),
-    instrucao: json.caso || '',
-    perguntas: json.perguntas.map((p,i)=>({
-      numero:i+1, titulo:p.tema||('Questão '+(i+1)), enunciado:p.enunciado||'',
-      pergunta:p.pergunta, opcoes:(p.opcoes||[]).map(o=>({l:(o.letra||'').toUpperCase().trim(), t:o.texto})),
-      correta:(p.correta||'').toUpperCase().trim(), explicacao:p.explicacao||''
-    }))
-  };
 }
 
 const ICONES={
@@ -2395,32 +2348,20 @@ let conteudoParseadoTemp = null;
 async function preVisualizarHTMLAtividade(){
   const erro = document.getElementById('erro-html-atividade');
   const preview = document.getElementById('preview-html-atividade');
-  const btnPreview = document.getElementById('btn-pre-visualizar-html');
   const camposDepois = document.getElementById('campos-atividade-apos-preview');
   erro.hidden = true; preview.innerHTML = ''; camposDepois.hidden = true; conteudoParseadoTemp = null;
   const texto = document.getElementById('textarea-html-atividade').value;
   if (!texto.trim()){ erro.hidden=false; erro.textContent='Cole um HTML (ou arraste um arquivo) antes de pré-visualizar.'; return; }
   let resultado = null;
-  let usouIA = false;
   try{
     resultado = parsearAtividadeHTML(texto);
   } catch(e){
-    // não bateu com o formato simples — tenta interpretar com IA, que aceita qualquer HTML
-    usouIA = true;
-    btnPreview.disabled = true;
-    preview.innerHTML = '<p class="vazio-msg">Não é o formato simples — interpretando o HTML com IA, pode levar alguns segundos…</p>';
-    try{
-      resultado = await interpretarHTMLComIA(texto);
-    } catch(e2){
-      preview.innerHTML = '';
-      erro.hidden = false; erro.textContent = e2.message;
-      btnPreview.disabled = false;
-      return;
-    }
-    btnPreview.disabled = false;
+    erro.hidden = false;
+    erro.textContent = 'Esse texto não está no formato simples que este site lê sozinho ('+e.message+'). Cole esse HTML numa conversa com a Claude e peça para converter para o formato do exemplo acima — ela devolve pronto pra colar aqui.';
+    return;
   }
   conteudoParseadoTemp = resultado;
-  preview.innerHTML = (usouIA ? '<p style="font-size:.8rem;color:var(--ink-suave);margin-bottom:8px;">Interpretado com IA — confira se ficou correto antes de cadastrar.</p>' : '') +
+  preview.innerHTML =
     '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
     '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
     '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
