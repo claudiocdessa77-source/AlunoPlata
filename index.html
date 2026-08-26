@@ -57,6 +57,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-displ
 .campo{margin-bottom:16px;}
 .campo label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;}
 .campo input,.campo textarea{width:100%;padding:11px 13px;border:1.5px solid var(--ink);border-radius:8px;font-size:1rem;font-family:var(--font-display);background:#fff;color:var(--ink);}
+.textarea-discursiva{width:100%;padding:13px 15px;border:1.5px solid var(--ink);border-radius:8px;font-size:.95rem;font-family:var(--font-display);background:#fff;color:var(--ink);resize:vertical;}
+.textarea-discursiva:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
 .campo input:focus-visible,.campo textarea:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
 .erro-msg{background:#FCEAE8;border:1.5px solid var(--vermelho);color:var(--vermelho);border-radius:8px;padding:9px 12px;font-size:.85rem;font-weight:600;margin-bottom:14px;}
 .link-discreto{display:inline-block;margin-top:18px;font-size:.8rem;color:var(--ink-suave);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:var(--font-display);padding:0;}
@@ -492,7 +494,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       </div>
       <div id="lista-atividades-cadastro" style="margin-top:18px;"></div>
       <h4 style="margin-top:26px;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Nova atividade</h4>
-      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole ou arraste o HTML da atividade neste formato</strong> — funciona na hora, sem precisar de internet ou IA. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas:</p>
+      <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;"><strong>Cole ou arraste o HTML da atividade neste formato</strong> — funciona na hora, sem precisar de internet ou IA. Cada <code>&lt;questao&gt;</code> precisa de 2 ou mais <code>&lt;opcao&gt;</code>, com <code>correta="true"</code> em uma delas — ou use <code>tipo="discursiva"</code> pra uma pergunta de resposta livre, que você corrige manualmente depois.</p>
       <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Se o arquivo veio de outro lugar (outra IA, por exemplo) e não está nesse formato, cole o HTML numa conversa com a Claude e peça para converter — ela devolve o texto pronto, exatamente nesse padrão, pra você colar aqui.</p>
       <pre style="background:var(--bg);border-radius:8px;padding:14px;font-size:.72rem;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">&lt;atividade&gt;
 &lt;titulo&gt;Nome da atividade&lt;/titulo&gt;
@@ -510,7 +512,13 @@ Texto do caso/contexto, aparece uma vez no topo.
 &lt;explicacao&gt;Por que essa é a resposta certa.&lt;/explicacao&gt;
 &lt;/questao&gt;
 
-(repita a tag &lt;questao&gt; para cada pergunta)
+(repita a tag &lt;questao&gt; para cada pergunta de múltipla escolha)
+
+&lt;questao tema="Nome do tema" tipo="discursiva"&gt;
+&lt;enunciado&gt;Contexto da pergunta (opcional)&lt;/enunciado&gt;
+&lt;pergunta&gt;Pergunta de resposta livre, sem alternativas.&lt;/pergunta&gt;
+&lt;/questao&gt;
+
 &lt;/atividade&gt;</pre>
       <div id="dropzone-html-atividade" class="dropzone-arquivo" tabindex="0" role="button" aria-label="Arraste um arquivo HTML aqui ou clique para escolher">
         <p>📎 Arraste o arquivo .html aqui, ou <span style="text-decoration:underline;">clique para escolher</span></p>
@@ -866,11 +874,15 @@ function parsearAtividadeHTML(texto){
   const perguntas = Array.from(questoesEl).map((qEl, i)=>{
     const numLabel = 'questão '+(i+1);
     const tema = (qEl.getAttribute('tema')||'').trim() || ('Questão '+(i+1));
+    const tipoQuestao = (qEl.getAttribute('tipo')||'').toLowerCase().trim();
     const enunciado = pegarTexto(qEl, 'enunciado');
     const perguntaTxt = pegarTexto(qEl, 'pergunta');
     if (!perguntaTxt) throw new Error('A '+numLabel+' ("'+tema+'") não tem <pergunta>...</pergunta>.');
+    if (tipoQuestao === 'discursiva'){
+      return {numero:i+1, titulo:tema, enunciado, pergunta:perguntaTxt, tipo:'discursiva'};
+    }
     const opcoesEl = Array.from(qEl.querySelectorAll('opcao'));
-    if (opcoesEl.length < 2) throw new Error('A '+numLabel+' ("'+tema+'") precisa de pelo menos 2 tags <opcao>.');
+    if (opcoesEl.length < 2) throw new Error('A '+numLabel+' ("'+tema+'") precisa de pelo menos 2 tags <opcao> (ou de tipo="discursiva" na tag <questao> se for uma pergunta aberta).');
     const opcoes = opcoesEl.map(o=>({ l:(o.getAttribute('letra')||'').toUpperCase().trim(), t:o.textContent.trim() }));
     if (opcoes.some(o=>!o.l)) throw new Error('Alguma <opcao> da '+numLabel+' ("'+tema+'") está sem o atributo letra="A".');
     const opcaoCorretaEl = opcoesEl.find(o=>(o.getAttribute('correta')||'').toLowerCase()==='true');
@@ -913,8 +925,12 @@ function turmaSlug(nome){
     .replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'x';
 }
 function itensAtividade(atividade){
-  if (atividade.tipo === 'multipla-escolha') return atividade.perguntas.map(p=>({num:p.numero, correta:p.correta}));
+  if (atividade.tipo === 'multipla-escolha') return atividade.perguntas.filter(p=>p.tipo!=='discursiva').map(p=>({num:p.numero, correta:p.correta}));
   return atividade.historias.map(h=>({num:h.num, correta:h.pensadorId}));
+}
+function perguntasDiscursivas(atividade){
+  if (atividade.tipo !== 'multipla-escolha') return [];
+  return atividade.perguntas.filter(p=>p.tipo==='discursiva');
 }
 function calcularAcertos(respostas, atividade){
   const itens = itensAtividade(atividade);
@@ -938,6 +954,12 @@ function montarConteudoImpressaoAtividade(atividade, dados){
   if (atividade.tipo === 'multipla-escolha'){
     atividade.perguntas.forEach(p=>{
       const escolha = dados.respostas ? dados.respostas[p.numero] : null;
+      if (p.tipo === 'discursiva'){
+        html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+' (discursiva)</strong></p>';
+        html += '<p>'+escapeHTML(p.pergunta)+'</p>';
+        html += '<p>Resposta: '+escapeHTML(escolha||'(sem resposta)')+'</p></div>';
+        return;
+      }
       const certo = escolha === p.correta;
       html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+'</strong> — '+(certo?'DEFERIDO':'INDEFERIDO')+'</p>';
       html += '<p>'+escapeHTML(p.pergunta)+'</p>';
@@ -986,6 +1008,14 @@ function montarVisualizacaoAtividade(atividade){
   if (atividade.tipo === 'multipla-escolha'){
     return atividade.perguntas.map(p=>{
       const numLabel = String(p.numero).padStart(2,'0');
+      if (p.tipo === 'discursiva'){
+        return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+' · DISCURSIVA</span></div>'+
+          '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+          (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+          '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+          '<p style="font-size:.85rem;color:var(--ink-suave);">Resposta aberta — o aluno escreve; você avalia manualmente pela nota.</p>'+
+          '</section>';
+      }
       return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
         '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
         (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
@@ -1014,6 +1044,11 @@ function montarConteudoImpressaoGabarito(atividade){
   let html = '';
   if (atividade.tipo === 'multipla-escolha'){
     atividade.perguntas.forEach(p=>{
+      if (p.tipo === 'discursiva'){
+        html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+' (discursiva — avaliação manual)</strong></p>';
+        html += '<p>'+escapeHTML(p.pergunta)+'</p></div>';
+        return;
+      }
       html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+'</strong></p>';
       html += '<p>'+escapeHTML(p.pergunta)+'</p>';
       p.opcoes.forEach(o=>{
@@ -1039,6 +1074,12 @@ function montarConteudoImpressaoBranco(atividade){
   let html = '';
   if (atividade.tipo === 'multipla-escolha'){
     atividade.perguntas.forEach(p=>{
+      if (p.tipo === 'discursiva'){
+        html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+' (discursiva)</strong></p>';
+        html += '<p>'+escapeHTML(p.pergunta)+'</p>';
+        html += '<p>_______________________________________________</p><p>_______________________________________________</p><p>_______________________________________________</p></div>';
+        return;
+      }
       html += '<div class="questao-impressao"><p><strong>Questão '+String(p.numero).padStart(2,'0')+' — '+escapeHTML(p.titulo)+'</strong></p>';
       html += '<p>'+escapeHTML(p.pergunta)+'</p>';
       p.opcoes.forEach(o=>{ html += '<p>[ ] '+o.l+') '+escapeHTML(o.t)+'</p>'; });
@@ -1689,14 +1730,23 @@ function renderPerguntasDesafio(main){
     const card=document.createElement('section');
     card.className='historia-card';
     const numLabel=String(p.numero).padStart(2,'0');
-    card.innerHTML =
-      '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
-      '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
-      '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>'+
-      '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
-      '<div class="lista-selecao" style="max-height:none;">'+
-        p.opcoes.map(o=>('<button type="button" class="item-selecao" data-pergunta="'+p.numero+'" data-opcao="'+o.l+'">'+o.l+') '+escapeHTML(o.t)+'</button>')).join('')+
-      '</div>';
+    if (p.tipo === 'discursiva'){
+      card.innerHTML =
+        '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+' · DISCURSIVA</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+        '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+        '<textarea class="textarea-discursiva" data-pergunta="'+p.numero+'" rows="7" placeholder="Digite sua resposta aqui...">'+escapeHTML(respostasAtuais[p.numero]||'')+'</textarea>';
+    } else {
+      card.innerHTML =
+        '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>'+
+        '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+        '<div class="lista-selecao" style="max-height:none;">'+
+          p.opcoes.map(o=>('<button type="button" class="item-selecao" data-pergunta="'+p.numero+'" data-opcao="'+o.l+'">'+o.l+') '+escapeHTML(o.t)+'</button>')).join('')+
+        '</div>';
+    }
     main.appendChild(card);
   });
   main.querySelectorAll('.item-selecao').forEach(btn=>{
@@ -1708,15 +1758,25 @@ function renderPerguntasDesafio(main){
       document.getElementById('btn-enviar').hidden = false;
     });
   });
+  main.querySelectorAll('.textarea-discursiva').forEach(ta=>{
+    ta.addEventListener('input',()=>{
+      respostasAtuais[Number(ta.dataset.pergunta)] = ta.value;
+      document.getElementById('aviso-desafio').hidden = true;
+      document.getElementById('confirmacao-envio').hidden = true;
+      document.getElementById('btn-enviar').hidden = false;
+    });
+  });
 }
 
 function pedirConfirmacaoEnvio(){
   const itens = itensAtividade(atividadeAtual);
+  const discursivas = perguntasDiscursivas(atividadeAtual);
   const faltando = itens.filter(it=>!respostasAtuais[it.num]).map(it=>String(it.num).padStart(2,'0'));
+  const faltandoDiscursivas = discursivas.filter(p=>!String(respostasAtuais[p.numero]||'').trim()).map(p=>String(p.numero).padStart(2,'0'));
   const aviso = document.getElementById('aviso-desafio');
   const termo = atividadeAtual.tipo==='multipla-escolha' ? 'questões' : 'histórias';
-  if (faltando.length){
-    aviso.hidden=false; aviso.textContent='Responda todas as '+termo+' antes de enviar. Faltam: '+faltando.join(', ')+'.'; return;
+  if (faltando.length || faltandoDiscursivas.length){
+    aviso.hidden=false; aviso.textContent='Responda todas as '+termo+' antes de enviar. Faltam: '+faltando.concat(faltandoDiscursivas).sort().join(', ')+'.'; return;
   }
   aviso.hidden=true;
   document.getElementById('confirmacao-envio').hidden=false;
@@ -1779,12 +1839,24 @@ async function renderResultado(respostas, acertos, nota){
 
 function renderPerguntasResultado(main, respostas){
   atividadeAtual.perguntas.forEach(p=>{
-    const escolha = respostas[p.numero];
-    const certo = escolha === p.correta;
     const numLabel = String(p.numero).padStart(2,'0');
     const card = document.createElement('section');
-    card.className = 'historia-card revelado';
     card.style.setProperty('--cor-tema', '#A87F45');
+    if (p.tipo === 'discursiva'){
+      card.className = 'historia-card';
+      card.innerHTML =
+        '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+' · DISCURSIVA</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+        '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+        '<div class="revelacao"><p style="white-space:pre-wrap;">'+escapeHTML(respostas[p.numero]||'(sem resposta)')+'</p></div>'+
+        '<p style="font-size:.82rem;color:var(--ink-suave);margin-top:8px;">Resposta discursiva — avaliada individualmente pelo(a) professor(a), não entra na correção automática.</p>';
+      main.appendChild(card);
+      return;
+    }
+    const escolha = respostas[p.numero];
+    const certo = escolha === p.correta;
+    card.className = 'historia-card revelado';
     card.innerHTML =
       '<div class="carimbo">'+(certo?'Deferido':'Indeferido')+'</div>'+
       '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
@@ -2364,7 +2436,7 @@ async function preVisualizarHTMLAtividade(){
   preview.innerHTML =
     '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
     '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
-    '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>'<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>').join('')+'</ul></div>';
+    '<ul style="margin:0 0 4px 18px;font-size:.85rem;">'+resultado.perguntas.map(p=>p.tipo==='discursiva' ? ('<li>'+escapeHTML(p.titulo)+' — discursiva (avaliação manual)</li>') : ('<li>'+escapeHTML(p.titulo)+' — '+p.opcoes.length+' alternativas, correta: '+escapeHTML(p.correta)+'</li>')).join('')+'</ul></div>';
   document.getElementById('input-nome-nova-atividade').value = resultado.titulo;
   camposDepois.hidden = false;
 }
