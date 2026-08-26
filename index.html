@@ -2306,6 +2306,23 @@ async function abrirTelaAtividades(){
   document.getElementById('msg-atividade-cadastrada').hidden = true;
   mostrarTela('tela-professor-atividades');
 }
+async function irParaVerDetalhes(registro, turmaKey){
+  const efetiva = construirAtividadeEfetiva(registro);
+  if (!efetiva) return;
+  fecharModal();
+  mostrarTela('tela-carregando');
+  const registros = await buscarAtividadesCadastradas();
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
+  const idx = atividadesEfetivasProf.findIndex(a=>a.codigo===registro.codigo);
+  atividadeSelecionadaProf = idx>=0 ? atividadesEfetivasProf[idx] : efetiva;
+  const sel = document.getElementById('select-atividade-prof');
+  sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+  if (idx>=0) sel.value = String(idx);
+  mostrarTela('tela-professor-painel');
+  escutarTodasTurmas(renderPainelProfessor);
+  const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo).once('value');
+  await abrirModalTurma(turmaKey, snap.val()||{}, false);
+}
 function renderListaAtividadesCadastro(){
   const lista = document.getElementById('lista-atividades-cadastro');
   if (!atividadesCacheModulo.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
@@ -2345,13 +2362,19 @@ function renderListaAtividadesCadastro(){
       html += '<p style="font-weight:800;margin-bottom:8px;">'+total+' resposta(s) encontrada(s) no total:</p>';
       html += porTurma.map(pt=>{
         const orfa = !nomesNativosSlug.has(pt.turmaKey);
-        return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(pt.nomeTurma)+'</span><span class="linha-barra-valor" style="flex:1;text-align:left;">'+pt.n+' aluno(s)'+(orfa?' — <strong style="color:var(--vermelho);">sem turma cadastrada com esse nome exato</strong>':'')+'</span></div>';
+        const acaoBtn = orfa ? '' : ' <button type="button" class="botao-texto" data-ir-detalhes="'+pt.turmaKey+'">Ver detalhes / liberar →</button>';
+        return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(pt.nomeTurma)+'</span><span class="linha-barra-valor" style="flex:1;text-align:left;">'+pt.n+' aluno(s)'+(orfa?' — <strong style="color:var(--vermelho);">sem turma cadastrada com esse nome exato</strong>':acaoBtn)+'</span></div>';
       }).join('');
       if (porTurma.some(pt=>!nomesNativosSlug.has(pt.turmaKey))){
         html += '<p style="margin-top:14px;font-size:.85rem;">As linhas em vermelho têm respostas salvas mas o nome da turma não bate com nenhuma turma cadastrada hoje (diferença de acentuação, espaço, abreviação, etc.) — é por isso que elas não aparecem no painel. Confira o nome exato da turma em <strong>Turmas</strong> e ajuste pra bater, ou recadastre a turma com esse nome.</p>';
       }
     }
     abrirModal('Verificar respostas — '+nomeAtiv, html);
+    document.querySelectorAll('[data-ir-detalhes]').forEach(btn=>{
+      btn.addEventListener('click', async (ev)=>{
+        await irParaVerDetalhes(registro, ev.target.dataset.irDetalhes);
+      });
+    });
   }));
   lista.querySelectorAll('[data-acao="ver-como-aluno"]').forEach(b=>b.addEventListener('click', (e)=>{
     const id = e.currentTarget.dataset.ativId;
