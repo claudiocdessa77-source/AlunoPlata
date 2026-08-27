@@ -1882,6 +1882,24 @@ let atividadeSelecionadaProf = null;
 let atividadesEfetivasProf = [];
 let ultimoSnapshotTurmas = {};
 
+let modoTodasAtividades = false;
+function popularSeletorAtividade(manterSelecao){
+  const sel = document.getElementById('select-atividade-prof');
+  const codAtual = manterSelecao ? (modoTodasAtividades ? 'todas' : (atividadeSelecionadaProf ? atividadeSelecionadaProf.codigo : null)) : null;
+  if (!atividadesEfetivasProf.length){
+    sel.innerHTML = '<option value="">Nenhuma atividade cadastrada</option>';
+    atividadeSelecionadaProf = null;
+    modoTodasAtividades = false;
+    return;
+  }
+  sel.innerHTML = '<option value="todas">— Todas as atividades —</option>'+
+    atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+  if (codAtual === 'todas'){ modoTodasAtividades = true; sel.value = 'todas'; return; }
+  const idxMantido = codAtual ? atividadesEfetivasProf.findIndex(a=>a.codigo===codAtual) : -1;
+  modoTodasAtividades = false;
+  atividadeSelecionadaProf = atividadesEfetivasProf[idxMantido>=0?idxMantido:0];
+  sel.value = String(idxMantido>=0?idxMantido:0);
+}
 async function entrarProfessor(){
   const senha = document.getElementById('input-senha').value;
   const erro = document.getElementById('erro-senha');
@@ -1892,14 +1910,7 @@ async function entrarProfessor(){
   await carregarConteudosCadastrados();
   const registros = await buscarAtividadesCadastradas();
   atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
-  const sel = document.getElementById('select-atividade-prof');
-  if (!atividadesEfetivasProf.length){
-    sel.innerHTML = '<option value="">Nenhuma atividade cadastrada</option>';
-    atividadeSelecionadaProf = null;
-  } else {
-    sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
-    atividadeSelecionadaProf = atividadesEfetivasProf[0];
-  }
+  popularSeletorAtividade(false);
   mostrarTela('tela-professor-painel');
   if (!atividadeSelecionadaProf){ document.getElementById('stats-gerais').innerHTML=''; document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
   escutarTodasTurmas(renderPainelProfessor);
@@ -1915,14 +1926,77 @@ function renderPainelProfessor(turmasRaw){
   renderPainelProfessorAtual();
 }
 
-function renderPainelProfessorAtual(){
-  if (!atividadeSelecionadaProf) return;
-  const cod = atividadeSelecionadaProf.codigo;
-  const itens = itensAtividade(atividadeSelecionadaProf);
+function construirTurmasParaAtividade(atividadeEfetiva){
+  const cod = atividadeEfetiva.codigo;
   const turmas = {};
   Object.entries(ultimoSnapshotTurmas).forEach(([tk,t])=>{
     if (t.atividades && t.atividades[cod]) turmas[tk] = t.atividades[cod];
   });
+  return turmas;
+}
+function renderCardsTurmasParaAtividade(atividadeEfetiva, turmas){
+  const itens = itensAtividade(atividadeEfetiva);
+  const turmaKeys = Object.keys(turmas);
+  if (!turmaKeys.length) return '<p class="vazio-msg">Nenhuma resposta recebida ainda para esta atividade.</p>';
+  return turmaKeys.map(tk=>{
+    const t=turmas[tk]; const alunos=t.alunos||{}; const n=Object.keys(alunos).length;
+    const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
+    const media = n?Math.round((soma/(n*itens.length))*100):0;
+    const nomeTurma = n?Object.values(alunos)[0].turma:tk;
+    return '<div class="turma-card" data-turma="'+tk+'">'+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
+      '<div class="turma-card-botoes"><button type="button" class="botao botao-secundario botao-pequeno" data-acao="liberar">'+(t.liberado?'Bloquear novamente':'Liberar respostas')+'</button>'+
+      '<button type="button" class="link-zerar" data-acao="arquivar" style="color:var(--folder-escuro);">Arquivar</button>'+
+      '<button type="button" class="link-zerar" data-acao="zerar">Zerar respostas</button></div></div>'+
+      '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) responderam</span><span class="stat-mini">'+media+'% de acerto médio</span>'+
+      '<button type="button" class="botao-texto" data-acao="detalhes">Ver detalhes →</button></div></div>';
+  }).join('');
+}
+function anexarHandlersCardsTurmas(container, atividadeEfetiva, turmas){
+  const cod = atividadeEfetiva.codigo;
+  container.querySelectorAll('[data-acao="liberar"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const tk = e.target.closest('.turma-card').dataset.turma;
+    await definirLiberadoAtividade(tk, cod, !turmas[tk].liberado);
+  }));
+  container.querySelectorAll('[data-acao="zerar"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const tk = e.target.closest('.turma-card').dataset.turma;
+    if (confirm('Isso apaga todas as respostas desta turma para esta atividade. Confirmar?')) await zerarAtividadeDaTurma(tk, cod);
+  }));
+  container.querySelectorAll('[data-acao="arquivar"]').forEach(b=>b.addEventListener('click', async (e)=>{
+    const tk = e.target.closest('.turma-card').dataset.turma;
+    const n = Object.keys(turmas[tk].alunos||{}).length;
+    if (confirm('Arquivar esta turma nesta atividade? As '+n+' resposta(s) saem do painel principal e vão para o Arquivo, com o código '+cod+'. Isso não apaga os dados.')){
+      await arquivarTurma(tk, cod, turmas[tk]);
+      await carregarArquivo();
+    }
+  }));
+  container.querySelectorAll('[data-acao="detalhes"]').forEach(b=>b.addEventListener('click',(e)=>{
+    const tk = e.target.closest('.turma-card').dataset.turma;
+    atividadeSelecionadaProf = atividadeEfetiva;
+    abrirModalTurma(tk, turmas[tk]);
+  }));
+}
+function renderPainelTodasAtividades(){
+  document.getElementById('stats-gerais').innerHTML = '';
+  const lista = document.getElementById('turmas-lista');
+  if (!atividadesEfetivasProf.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
+  const secoes = atividadesEfetivasProf.map(ativ=>({ativ, turmas: construirTurmasParaAtividade(ativ)}));
+  lista.innerHTML = secoes.map(s=>
+    '<div data-secao-codigo="'+s.ativ.codigo+'">'+
+    '<h3 style="margin:24px 0 10px;font-size:1rem;">'+escapeHTML(s.ativ.titulo)+' <span class="codigo-atividade">'+s.ativ.codigo+'</span></h3>'+
+    renderCardsTurmasParaAtividade(s.ativ, s.turmas)+
+    '</div>'
+  ).join('');
+  secoes.forEach(s=>{
+    const container = lista.querySelector('[data-secao-codigo="'+s.ativ.codigo+'"]');
+    anexarHandlersCardsTurmas(container, s.ativ, s.turmas);
+  });
+}
+function renderPainelProfessorAtual(){
+  if (modoTodasAtividades){ renderPainelTodasAtividades(); return; }
+  if (!atividadeSelecionadaProf) return;
+  const itens = itensAtividade(atividadeSelecionadaProf);
+  const turmas = construirTurmasParaAtividade(atividadeSelecionadaProf);
 
   let totalAlunos=0, somaAcertos=0;
   const porItemGeral={}; itens.forEach(it=>porItemGeral[it.num]={certo:0,total:0});
@@ -1957,44 +2031,16 @@ function renderPainelProfessorAtual(){
   });
 
   const lista = document.getElementById('turmas-lista');
-  if (!turmaKeys.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma resposta recebida ainda para esta atividade.</p>'; return; }
-  lista.innerHTML = turmaKeys.map(tk=>{
-    const t=turmas[tk]; const alunos=t.alunos||{}; const n=Object.keys(alunos).length;
-    const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
-    const media = n?Math.round((soma/(n*itens.length))*100):0;
-    const nomeTurma = n?Object.values(alunos)[0].turma:tk;
-    return '<div class="turma-card" data-turma="'+tk+'">'+
-      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
-      '<div class="turma-card-botoes"><button type="button" class="botao botao-secundario botao-pequeno" data-acao="liberar">'+(t.liberado?'Bloquear novamente':'Liberar respostas')+'</button>'+
-      '<button type="button" class="link-zerar" data-acao="arquivar" style="color:var(--folder-escuro);">Arquivar</button>'+
-      '<button type="button" class="link-zerar" data-acao="zerar">Zerar respostas</button></div></div>'+
-      '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) responderam</span><span class="stat-mini">'+media+'% de acerto médio</span>'+
-      '<button type="button" class="botao-texto" data-acao="detalhes">Ver detalhes →</button></div></div>';
-  }).join('');
-
-  lista.querySelectorAll('[data-acao="liberar"]').forEach(b=>b.addEventListener('click', async (e)=>{
-    const tk = e.target.closest('.turma-card').dataset.turma;
-    await definirLiberadoAtividade(tk, cod, !turmas[tk].liberado);
-  }));
-  lista.querySelectorAll('[data-acao="zerar"]').forEach(b=>b.addEventListener('click', async (e)=>{
-    const tk = e.target.closest('.turma-card').dataset.turma;
-    if (confirm('Isso apaga todas as respostas desta turma para esta atividade. Confirmar?')) await zerarAtividadeDaTurma(tk, cod);
-  }));
-  lista.querySelectorAll('[data-acao="arquivar"]').forEach(b=>b.addEventListener('click', async (e)=>{
-    const tk = e.target.closest('.turma-card').dataset.turma;
-    const n = Object.keys(turmas[tk].alunos||{}).length;
-    if (confirm('Arquivar esta turma nesta atividade? As '+n+' resposta(s) saem do painel principal e vão para o Arquivo, com o código '+cod+'. Isso não apaga os dados.')){
-      await arquivarTurma(tk, cod, turmas[tk]);
-      await carregarArquivo();
-    }
-  }));
-  lista.querySelectorAll('[data-acao="detalhes"]').forEach(b=>b.addEventListener('click',(e)=>{
-    const tk = e.target.closest('.turma-card').dataset.turma;
-    abrirModalTurma(tk, turmas[tk]);
-  }));
+  lista.innerHTML = renderCardsTurmasParaAtividade(atividadeSelecionadaProf, turmas);
+  if (turmaKeys.length) anexarHandlersCardsTurmas(lista, atividadeSelecionadaProf, turmas);
 }
 document.getElementById('select-atividade-prof').addEventListener('change', (e)=>{
-  atividadeSelecionadaProf = atividadesEfetivasProf[Number(e.target.value)];
+  if (e.target.value === 'todas'){
+    modoTodasAtividades = true;
+  } else {
+    modoTodasAtividades = false;
+    atividadeSelecionadaProf = atividadesEfetivasProf[Number(e.target.value)];
+  }
   renderPainelProfessorAtual();
   carregarArquivo();
 });
@@ -2313,11 +2359,9 @@ async function irParaVerDetalhes(registro, turmaKey){
   mostrarTela('tela-carregando');
   const registros = await buscarAtividadesCadastradas();
   atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
-  const idx = atividadesEfetivasProf.findIndex(a=>a.codigo===registro.codigo);
-  atividadeSelecionadaProf = idx>=0 ? atividadesEfetivasProf[idx] : efetiva;
-  const sel = document.getElementById('select-atividade-prof');
-  sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
-  if (idx>=0) sel.value = String(idx);
+  modoTodasAtividades = false;
+  atividadeSelecionadaProf = efetiva;
+  popularSeletorAtividade(true);
   mostrarTela('tela-professor-painel');
   escutarTodasTurmas(renderPainelProfessor);
   const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo).once('value');
@@ -2860,17 +2904,9 @@ document.getElementById('btn-voltar-painel-atividades').addEventListener('click'
   mostrarTela('tela-carregando');
   const registros = await buscarAtividadesCadastradas();
   atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
-  const sel = document.getElementById('select-atividade-prof');
-  const codAtual = atividadeSelecionadaProf ? atividadeSelecionadaProf.codigo : null;
-  if (!atividadesEfetivasProf.length){ sel.innerHTML='<option value="">Nenhuma atividade cadastrada</option>'; atividadeSelecionadaProf=null; }
-  else {
-    sel.innerHTML = atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
-    const idxMantido = atividadesEfetivasProf.findIndex(a=>a.codigo===codAtual);
-    atividadeSelecionadaProf = atividadesEfetivasProf[idxMantido>=0?idxMantido:0];
-    sel.value = String(idxMantido>=0?idxMantido:0);
-  }
+  popularSeletorAtividade(true);
   mostrarTela('tela-professor-painel');
-  if (atividadeSelecionadaProf){ renderPainelProfessorAtual(); } else { document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
+  if (atividadeSelecionadaProf || modoTodasAtividades){ renderPainelProfessorAtual(); } else { document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
 });
 document.getElementById('btn-modulo-relatorios').addEventListener('click', abrirTelaRelatorios);
 document.getElementById('btn-voltar-painel-relatorios').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
