@@ -2380,15 +2380,22 @@ function renderListaAtividadesCadastro(){
       : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
     const tituloExibir = a.nomeAtividade || (modelo?modelo.titulo:'(sem nome)');
     const badgeConteudo = modelo ? '' : ' <span class="badge-pendente">Sem perguntas ainda</span>';
+    const botaoTestar = modelo ? '<button type="button" class="botao-texto" data-acao="testar-atividade">Testar atividade</button>' : '';
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(tituloExibir)+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span>'+badgeConteudo+'</h3>'+
-      '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="verificar-respostas">Verificar respostas</button>'+
+      '<div class="turma-card-botoes">'+botaoTestar+'<button type="button" class="botao-texto" data-acao="verificar-respostas">Verificar respostas</button>'+
       '<button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span></div>'+
       '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
+  lista.querySelectorAll('[data-acao="testar-atividade"]').forEach(b=>b.addEventListener('click', (e)=>{
+    const id = e.target.closest('.turma-card').dataset.ativId;
+    const registro = atividadesCacheModulo.find(a=>a.id===id);
+    const efetiva = registro && construirAtividadeEfetiva(registro);
+    if (efetiva) abrirTesteAtividade(efetiva);
+  }));
   lista.querySelectorAll('[data-acao="verificar-respostas"]').forEach(b=>b.addEventListener('click', async (e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     const registro = atividadesCacheModulo.find(a=>a.id===id);
@@ -2727,6 +2734,117 @@ function abrirModal(titulo, conteudoHtml){
   document.getElementById('modal-overlay').hidden = false;
 }
 function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
+
+/* ---- Testar atividade (professor responde de verdade, como se fosse aluno, sem gravar nada) ---- */
+let respostasTeste = {};
+function montarHTMLTesteDesafio(atividade){
+  if (atividade.tipo === 'multipla-escolha'){
+    return atividade.perguntas.map(p=>{
+      const numLabel = String(p.numero).padStart(2,'0');
+      if (p.tipo === 'discursiva'){
+        return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+' · DISCURSIVA</span></div>'+
+          '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+          (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+          '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+          '<textarea class="textarea-discursiva" data-pergunta="'+p.numero+'" rows="5" placeholder="Digite sua resposta de teste..."></textarea></section>';
+      }
+      return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        (p.enunciado ? '<p class="pergunta-enunciado">'+escapeHTML(p.enunciado)+'</p>' : '')+
+        '<p class="pergunta-questao"><strong>'+escapeHTML(p.pergunta)+'</strong></p>'+
+        '<div class="lista-selecao" style="max-height:none;">'+
+          p.opcoes.map(o=>'<button type="button" class="item-selecao" data-pergunta="'+p.numero+'" data-opcao="'+o.l+'">'+o.l+') '+escapeHTML(o.t)+'</button>').join('')+
+        '</div></section>';
+    }).join('');
+  }
+  const pensadores = atividade.pensadores;
+  const ordem = ordemChips(pensadores);
+  return atividade.historias.map(h=>{
+    const numLabel = String(h.num).padStart(2,'0');
+    return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
+      '<div class="paineis-grid">'+h.paineis.map(p=>'<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>').join('')+'</div>'+
+      '<div class="pergunta"><p>Quem inspirou esta história?</p><div class="chips">'+
+        ordem.map(id=>'<button type="button" class="chip" data-historia="'+h.num+'" data-pensador="'+id+'">'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>').join('')+
+      '</div></div></section>';
+  }).join('');
+}
+function abrirTesteAtividade(atividade){
+  respostasTeste = {};
+  const html = '<div style="margin-bottom:16px;"><span class="badge-liberado" style="background:var(--folder-escuro);">MODO TESTE — suas respostas aqui não são salvas nem contam para nenhuma turma</span></div>'+
+    (atividade.instrucao ? '<p class="instrucao" style="margin-bottom:20px;">'+escapeHTML(atividade.instrucao)+'</p>' : '')+
+    '<div id="teste-desafio-conteudo">'+montarHTMLTesteDesafio(atividade)+'</div>'+
+    '<div class="acoes" style="margin-top:20px;"><button type="button" class="botao botao-primario" id="btn-ver-resultado-teste">Ver resultado</button></div>';
+  abrirModal('Testar — '+atividade.titulo, html);
+  const container = document.getElementById('teste-desafio-conteudo');
+  container.querySelectorAll('.item-selecao, .chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const numAttr = btn.dataset.pergunta || btn.dataset.historia;
+      const opAttr = btn.dataset.opcao || btn.dataset.pensador;
+      respostasTeste[numAttr] = opAttr;
+      const seletor = btn.dataset.pergunta ? '[data-pergunta="'+numAttr+'"]' : '[data-historia="'+numAttr+'"]';
+      container.querySelectorAll(seletor).forEach(b=>b.classList.toggle('selecionado', b===btn));
+    });
+  });
+  container.querySelectorAll('.textarea-discursiva').forEach(ta=>{
+    ta.addEventListener('input', ()=>{ respostasTeste[ta.dataset.pergunta] = ta.value; });
+  });
+  document.getElementById('btn-ver-resultado-teste').addEventListener('click', ()=>mostrarResultadoTeste(atividade));
+}
+function mostrarResultadoTeste(atividade){
+  const itens = itensAtividade(atividade);
+  let acertos = 0;
+  itens.forEach(it=>{ if (String(respostasTeste[it.num])===String(it.correta)) acertos++; });
+  const nota = calcularNota(acertos, itens.length, atividade.valorTotal);
+  let corpo = '<div style="background:var(--ink);color:#fff;padding:14px 18px;border-radius:8px;font-weight:800;margin-bottom:20px;">Você acertou '+acertos+' de '+itens.length+'. Nota: '+(nota==null?'—':nota)+'.</div>';
+
+  if (atividade.tipo === 'multipla-escolha'){
+    corpo += atividade.perguntas.map(p=>{
+      const numLabel = String(p.numero).padStart(2,'0');
+      if (p.tipo === 'discursiva'){
+        return '<section class="historia-card"><div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+' · DISCURSIVA</span></div>'+
+          '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+          '<div class="revelacao"><p style="white-space:pre-wrap;">'+escapeHTML(respostasTeste[p.numero]||'(sem resposta)')+'</p></div></section>';
+      }
+      const escolha = respostasTeste[p.numero];
+      const certo = escolha === p.correta;
+      return '<section class="historia-card revelado"><div class="carimbo">'+(certo?'Deferido':'Indeferido')+'</div>'+
+        '<div class="historia-cabecalho"><span class="historia-numero">QUESTÃO '+numLabel+'</span></div>'+
+        '<h4 class="pergunta-titulo">'+escapeHTML(p.titulo)+'</h4>'+
+        '<div class="lista-selecao" style="max-height:none;">'+
+          p.opcoes.map(o=>{
+            let cls='item-selecao';
+            if (o.l===p.correta && certo) cls+=' acerto';
+            else if (o.l===escolha && !certo) cls+=' erro';
+            else if (o.l===p.correta && !certo) cls+=' resposta-certa';
+            return '<button type="button" class="'+cls+'" disabled>'+o.l+') '+escapeHTML(o.t)+'</button>';
+          }).join('')+
+        '</div><div class="revelacao"><p>'+escapeHTML(p.explicacao)+'</p></div></section>';
+    }).join('');
+  } else {
+    const pensadores = atividade.pensadores;
+    const ordem = ordemChips(pensadores);
+    corpo += atividade.historias.map(h=>{
+      const numLabel = String(h.num).padStart(2,'0');
+      const escolha = respostasTeste[h.num];
+      const certo = escolha === h.pensadorId;
+      const pensadorCerto = pensadores[h.pensadorId];
+      return '<section class="historia-card revelado"><div class="carimbo">'+(certo?'Deferido':'Indeferido')+'</div>'+
+        '<div class="historia-cabecalho"><span class="historia-numero">HISTÓRIA '+numLabel+'</span></div>'+
+        '<div class="paineis-grid">'+h.paineis.map(p=>'<div class="painel"><div class="painel-icone">'+svg(p.icone)+'</div><p class="painel-fala">"'+p.texto+'"</p></div>').join('')+'</div>'+
+        '<div class="pergunta"><p>Sua resposta:</p><div class="chips">'+
+          ordem.map(id=>{
+            let cls='chip';
+            if (id===h.pensadorId && certo) cls+=' acerto';
+            else if (id===escolha && !certo) cls+=' erro';
+            else if (id===h.pensadorId && !certo) cls+=' resposta-certa';
+            return '<button type="button" class="'+cls+'" disabled>'+pensadores[id].nome.split(' ').slice(-1)[0]+'</button>';
+          }).join('')+
+        '</div></div>'+
+        '<div class="revelacao"><div class="ficha-pensador"><h3>'+escapeHTML(pensadorCerto.nome)+' — '+escapeHTML(pensadorCerto.teoria)+'</h3><p>'+escapeHTML(pensadorCerto.explicacao)+'</p></div></div></section>';
+    }).join('');
+  }
+  abrirModal('Resultado do teste — '+atividade.titulo, corpo);
+}
 
 async function abrirModalTurma(tk, t, arquivado){
   const ativ = arquivado ? (atividadesEfetivasProf.find(a=>a.codigo===t.codigoAtividade) || atividadeSelecionadaProf) : atividadeSelecionadaProf;
