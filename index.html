@@ -1621,7 +1621,7 @@ async function mostrarEscolhaAtividade(){
   const erro = document.getElementById('erro-atividades');
   try{
     const registros = await buscarAtividadesCadastradas();
-    const disponiveis = registros.filter(r=>r.ativa!==false && r.turmasIds && turmaEscolhidaTemp.id && r.turmasIds[turmaEscolhidaTemp.id]);
+    const disponiveis = registros.filter(r=>r.ativa!==false && r.tipoEspecial!=='entrevista-dupla' && r.turmasIds && turmaEscolhidaTemp.id && r.turmasIds[turmaEscolhidaTemp.id]);
     atividadesDisponiveisTemp = disponiveis.map(construirAtividadeEfetiva).filter(Boolean);
     if (!atividadesDisponiveisTemp.length){
       erro.hidden=false; erro.textContent='Nenhuma atividade disponível para esta turma no momento.'; lista.innerHTML='';
@@ -2528,6 +2528,26 @@ async function abrirModalEditarDupla(registro){
     renderListaAtividadesCadastro();
   });
 }
+function montarResultadoDupla(registro, dupla){
+  if (dupla.notaTotal == null){
+    return '<p class="vazio-msg">Esta dupla ainda não foi avaliada — o resultado aparece aqui depois que as notas forem salvas em "Gerenciar duplas".</p>';
+  }
+  const criterios = registro.criterios || [];
+  let html = '<div style="background:var(--ink);color:#fff;padding:14px 18px;border-radius:8px;font-weight:800;margin-bottom:20px;">Nota final: '+dupla.notaTotal+' / '+registro.valorTotal+'</div>';
+  html += '<section class="historia-card">';
+  html += '<h4 class="pergunta-titulo">'+escapeHTML(dupla.nome1)+' &amp; '+escapeHTML(dupla.nome2)+'</h4>';
+  html += '<p class="pergunta-enunciado">Turma: '+escapeHTML(dupla.turmaNome)+' · '+escapeHTML(registro.nomeAtividade||'')+'</p>';
+  if (dupla.pergunta1) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome1)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta1)+'</p>';
+  if (dupla.pergunta2) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome2)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta2)+'</p>';
+  html += '</section>';
+  html += '<section class="historia-card"><h4 class="pergunta-titulo">Avaliação por critério</h4>';
+  html += criterios.map((c,i)=>{
+    const nota = dupla.notas && dupla.notas[i]!=null ? dupla.notas[i] : 0;
+    return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(c.nome)+'</span><span class="linha-barra-valor">'+nota+' / '+c.valorMax+'</span></div>';
+  }).join('');
+  html += '</section>';
+  return html;
+}
 async function abrirModalGerenciarDuplas(registro){
   const turmasNativas = await buscarTurmasCadastradas();
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean);
@@ -2550,16 +2570,17 @@ async function abrirModalGerenciarDuplas(registro){
       (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
       '<div style="display:flex;flex-wrap:wrap;margin-top:10px;">'+inputsNotas+'</div>'+
       '<p style="font-weight:800;margin-top:4px;">Total: <span class="total-nota-dupla" data-dupla-id="'+duplaId+'">'+(d.notaTotal!=null?d.notaTotal:'—')+'</span> / '+registro.valorTotal+'</p>'+
-      '<button type="button" class="botao botao-secundario botao-pequeno" data-salvar-dupla="'+duplaId+'">Salvar notas</button>'+
+      '<button type="button" class="botao botao-secundario botao-pequeno" data-salvar-dupla="'+duplaId+'">Salvar notas</button> '+
+      '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button>'+
       '</div>';
   }).join('') || '<p class="vazio-msg">Nenhuma dupla cadastrada ainda.</p>';
 
   const formNovaDuplaHtml = '<div style="border-top:1.5px solid var(--borda);padding-top:16px;margin-top:16px;">'+
     '<h4>Adicionar dupla</h4>'+
     '<div class="campo"><label for="select-turma-nova-dupla">Turma</label><select id="select-turma-nova-dupla" class="select-turma">'+opcoesDuplaTurma+'</select></div>'+
-    '<div class="campo"><label for="input-dupla-nome1">Nome 1</label><input type="text" id="input-dupla-nome1"></div>'+
+    '<div class="campo"><label for="input-dupla-nome1">Nome 1</label><select id="input-dupla-nome1" class="select-turma"></select></div>'+
     '<div class="campo"><label for="input-dupla-pergunta1">Pergunta que o Nome 1 faz (como recrutador)</label><textarea id="input-dupla-pergunta1" rows="2"></textarea></div>'+
-    '<div class="campo"><label for="input-dupla-nome2">Nome 2</label><input type="text" id="input-dupla-nome2"></div>'+
+    '<div class="campo"><label for="input-dupla-nome2">Nome 2</label><select id="input-dupla-nome2" class="select-turma"></select></div>'+
     '<div class="campo"><label for="input-dupla-pergunta2">Pergunta que o Nome 2 faz (depois de inverter os papéis)</label><textarea id="input-dupla-pergunta2" rows="2"></textarea></div>'+
     '<button type="button" class="botao botao-primario botao-pequeno" id="btn-adicionar-dupla">Adicionar dupla</button>'+
     '<p class="msg-sucesso" id="msg-dupla-adicionada" hidden></p>'+
@@ -2569,6 +2590,32 @@ async function abrirModalGerenciarDuplas(registro){
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;">Critérios desta atividade: '+criterios.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
     listaDuplasHtml + formNovaDuplaHtml
   );
+
+  function atualizarSelecaoAlunosDupla(){
+    const turmaId = document.getElementById('select-turma-nova-dupla').value;
+    const turmaObj = turmasNativas.find(t=>t.id===turmaId);
+    const nome1El = document.getElementById('input-dupla-nome1');
+    const nome2El = document.getElementById('input-dupla-nome2');
+    if (!turmaObj){
+      nome1El.innerHTML = '<option value="">— nenhum —</option>';
+      nome2El.innerHTML = '<option value="">— nenhum —</option>';
+      return;
+    }
+    const jaEmDupla = new Set();
+    Object.values(duplas).forEach(d=>{
+      if (d.turmaId === turmaId){ jaEmDupla.add(turmaSlug(d.nome1)); jaEmDupla.add(turmaSlug(d.nome2)); }
+    });
+    const nomesDisponiveis = Object.values(turmaObj.alunos||{}).map(a=>a.nome)
+      .filter(nome=>!jaEmDupla.has(turmaSlug(nome)))
+      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const opcoesHtml = nomesDisponiveis.length
+      ? '<option value="">— selecione —</option>'+nomesDisponiveis.map(n=>'<option value="'+escapeHTML(n)+'">'+escapeHTML(n)+'</option>').join('')
+      : '<option value="">— nenhum aluno disponível (todos já em dupla) —</option>';
+    nome1El.innerHTML = opcoesHtml;
+    nome2El.innerHTML = opcoesHtml;
+  }
+  atualizarSelecaoAlunosDupla();
+  document.getElementById('select-turma-nova-dupla').addEventListener('change', atualizarSelecaoAlunosDupla);
 
   document.querySelectorAll('.input-nota-criterio').forEach(inp=>{
     inp.addEventListener('input', ()=>{
@@ -2609,6 +2656,12 @@ async function abrirModalGerenciarDuplas(registro){
       abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id));
     });
   });
+  document.querySelectorAll('[data-ver-aluno-dupla]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const dupla = duplas[btn.dataset.verAlunoDupla];
+      abrirModal('Como o aluno vê — '+escapeHTML(dupla.nome1)+' & '+escapeHTML(dupla.nome2), montarResultadoDupla(registro, dupla));
+    });
+  });
   const btnAdicionar = document.getElementById('btn-adicionar-dupla');
   if (btnAdicionar) btnAdicionar.addEventListener('click', async ()=>{
     const selTurma = document.getElementById('select-turma-nova-dupla');
@@ -2620,7 +2673,11 @@ async function abrirModalGerenciarDuplas(registro){
     const pergunta2 = document.getElementById('input-dupla-pergunta2').value.trim();
     const msg = document.getElementById('msg-dupla-adicionada');
     if (!turmaObj || !nome1 || !nome2){
-      msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha a turma e digite os dois nomes.';
+      msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha a turma e os dois alunos.';
+      return;
+    }
+    if (nome1 === nome2){
+      msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha dois alunos diferentes.';
       return;
     }
     await adicionarDupla(registro.id, turmaId, turmaObj.nome, nome1, nome2, pergunta1, pergunta2);
