@@ -1390,6 +1390,31 @@ async function salvarNotasDupla(atividadeId, codigo, dupla, duplaId, notas, nota
   await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome1)).set(dados(dupla.nome1));
   await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome2)).set(dados(dupla.nome2));
 }
+async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosNomes, ativa){
+  const criteriosAntigos = registro.criterios || [];
+  const valorPorCriterio = Math.round((valorTotal/criteriosNomes.length)*100)/100;
+  const criteriosNovos = criteriosNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
+  await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criterios:criteriosNovos, ativa});
+
+  const valorMudou = valorTotal !== registro.valorTotal;
+  const duplas = registro.duplas || {};
+  if (valorMudou){
+    for (const [duplaId, dupla] of Object.entries(duplas)){
+      if (dupla.notaTotal == null) continue;
+      const notasNovas = {}; let total = 0;
+      criteriosNovos.forEach((c,i)=>{
+        const notaAntiga = dupla.notas ? dupla.notas[i] : null;
+        const maxAntigo = criteriosAntigos[i] ? criteriosAntigos[i].valorMax : c.valorMax;
+        if (notaAntiga != null && maxAntigo){
+          const notaNova = Math.round((notaAntiga/maxAntigo)*c.valorMax*100)/100;
+          notasNovas[i] = notaNova; total += notaNova;
+        }
+      });
+      const notaTotalNova = Math.round(total*100)/100;
+      await salvarNotasDupla(registro.id, registro.codigo, dupla, duplaId, notasNovas, notaTotalNova);
+    }
+  }
+}
 async function atualizarAtividadeCadastrada(id, dados){
   await db.ref('atividadesCadastradas/'+id).update(dados);
 }
@@ -2473,6 +2498,36 @@ async function irParaVerDetalhes(registro, turmaKey){
   const snap = await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo).once('value');
   await abrirModalTurma(turmaKey, snap.val()||{}, false);
 }
+async function abrirModalEditarDupla(registro){
+  const criterios = registro.criterios || [];
+  const html =
+    '<div class="campo"><label for="modal-dupla-nome">Nome da atividade</label><input type="text" id="modal-dupla-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
+    '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas-dupla" class="lista-selecao" style="max-height:220px;"></div></div>'+
+    '<div class="campo"><label>Critérios de avaliação</label><div id="modal-lista-criterios-dupla">'+
+      criterios.map((c,i)=>'<input type="text" class="modal-input-criterio-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
+    '</div></div>'+
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-dupla-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa</label>'+
+    '<p style="font-size:.78rem;color:var(--ink-suave);margin:-10px 0 16px;">Se mudar o valor total, as notas das duplas já lançadas são recalculadas automaticamente, mantendo a proporção.</p>'+
+    '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-dupla">Salvar</button></div>';
+  abrirModal((registro.nomeAtividade||'Atividade em dupla')+' — '+registro.codigo, html);
+  const turmasNativas = await buscarTurmasCadastradas();
+  renderCheckboxesTurmas('modal-checkboxes-turmas-dupla', turmasNativas, registro.turmasIds);
+  document.getElementById('btn-salvar-edicao-dupla').addEventListener('click', async ()=>{
+    const nomeAtividade = document.getElementById('modal-dupla-nome').value.trim() || registro.nomeAtividade;
+    const valorDigitado = parseFloat(document.getElementById('modal-dupla-valor').value.replace(',','.'));
+    const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
+    const criteriosNomes = Array.from(document.querySelectorAll('.modal-input-criterio-dupla')).map(i=>i.value.trim()).filter(Boolean);
+    const ativa = document.getElementById('modal-dupla-checkbox-ativa').checked;
+    const turmasIds = {};
+    document.querySelectorAll('#modal-checkboxes-turmas-dupla input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+    if (!criteriosNomes.length){ return; }
+    await atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosNomes, ativa);
+    fecharModal();
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    renderListaAtividadesCadastro();
+  });
+}
 async function abrirModalGerenciarDuplas(registro){
   const turmasNativas = await buscarTurmasCadastradas();
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean);
@@ -2589,6 +2644,7 @@ function renderListaAtividadesCadastro(){
         '<div class="turma-card-topo"><h3>'+escapeHTML(a.nomeAtividade||'(sem nome)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
         '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'"> '+(a.ativa!==false?'Ativa':'Inativa')+'</span> <span class="badge-pendente" style="background:var(--folder-escuro);">Em dupla</span></h3>'+
         '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="gerenciar-duplas">Gerenciar duplas →</button>'+
+        '<button type="button" class="botao-texto" data-acao="editar-dupla">Editar →</button>'+
         '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
         '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span><span class="stat-mini">'+numDuplas+' dupla(s) cadastrada(s)</span></div>'+
         '<div style="margin-top:8px;">'+turmasHtmlDupla+'</div></div>';
@@ -2616,6 +2672,11 @@ function renderListaAtividadesCadastro(){
     const id = e.target.closest('.turma-card').dataset.ativId;
     const registro = atividadesCacheModulo.find(a=>a.id===id);
     if (registro) abrirModalGerenciarDuplas(registro);
+  }));
+  lista.querySelectorAll('[data-acao="editar-dupla"]').forEach(b=>b.addEventListener('click', (e)=>{
+    const id = e.target.closest('.turma-card').dataset.ativId;
+    const registro = atividadesCacheModulo.find(a=>a.id===id);
+    if (registro) abrirModalEditarDupla(registro);
   }));
   lista.querySelectorAll('[data-acao="testar-atividade"]').forEach(b=>b.addEventListener('click', (e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
