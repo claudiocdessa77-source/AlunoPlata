@@ -2558,22 +2558,34 @@ async function abrirModalGerenciarDuplas(registro){
     ? turmasAssociadas.map(t=>'<option value="'+t.id+'">'+escapeHTML(t.nome)+'</option>').join('')
     : '<option value="">— nenhuma turma associada —</option>';
 
-  const listaDuplasHtml = Object.entries(duplas).map(([duplaId, d])=>{
-    const inputsNotas = criterios.map((c,i)=>
-      '<div style="margin:0 14px 10px 0;"><label style="font-size:.78rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
-      '<input type="text" inputmode="decimal" class="input-nota-criterio" data-dupla-id="'+duplaId+'" data-idx="'+i+'" data-max="'+c.valorMax+'" value="'+(d.notas&&d.notas[i]!=null?d.notas[i]:'')+'" style="width:90px;padding:7px 9px;border:1.5px solid var(--ink);border-radius:6px;"></div>'
-    ).join('');
-    return '<div class="turma-card" data-dupla-id="'+duplaId+'" style="margin-bottom:14px;">'+
-      '<div class="turma-card-topo"><h3 style="font-size:.98rem;">'+escapeHTML(d.nome1)+' &amp; '+escapeHTML(d.nome2)+' <span class="codigo-atividade">'+escapeHTML(d.turmaNome)+'</span></h3>'+
-      '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div>'+
-      (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
-      (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
-      '<div style="display:flex;flex-wrap:wrap;margin-top:10px;">'+inputsNotas+'</div>'+
-      '<p style="font-weight:800;margin-top:4px;">Total: <span class="total-nota-dupla" data-dupla-id="'+duplaId+'">'+(d.notaTotal!=null?d.notaTotal:'—')+'</span> / '+registro.valorTotal+'</p>'+
-      '<button type="button" class="botao botao-secundario botao-pequeno" data-salvar-dupla="'+duplaId+'">Salvar notas</button> '+
-      '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button>'+
-      '</div>';
-  }).join('') || '<p class="vazio-msg">Nenhuma dupla cadastrada ainda.</p>';
+  const gruposPorTurma = {};
+  Object.entries(duplas).forEach(([duplaId, d])=>{
+    const chave = d.turmaId || d.turmaNome;
+    if (!gruposPorTurma[chave]) gruposPorTurma[chave] = {turmaNome: d.turmaNome, itens: []};
+    gruposPorTurma[chave].itens.push([duplaId, d]);
+  });
+  const gruposOrdenados = Object.values(gruposPorTurma).sort((a,b)=>a.turmaNome.localeCompare(b.turmaNome,'pt-BR'));
+  gruposOrdenados.forEach(g=>g.itens.sort((a,b)=>a[1].nome1.localeCompare(b[1].nome1,'pt-BR')));
+
+  const listaDuplasHtml = gruposOrdenados.length ? gruposOrdenados.map(g=>{
+    const cardsHtml = g.itens.map(([duplaId, d])=>{
+      const inputsNotas = criterios.map((c,i)=>
+        '<div style="margin:0 14px 10px 0;"><label style="font-size:.78rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
+        '<input type="text" inputmode="decimal" class="input-nota-criterio" data-dupla-id="'+duplaId+'" data-idx="'+i+'" data-max="'+c.valorMax+'" value="'+(d.notas&&d.notas[i]!=null?d.notas[i]:'')+'" style="width:90px;padding:7px 9px;border:1.5px solid var(--ink);border-radius:6px;"></div>'
+      ).join('');
+      return '<div class="turma-card" data-dupla-id="'+duplaId+'" style="margin-bottom:14px;">'+
+        '<div class="turma-card-topo"><h3 style="font-size:.98rem;">'+escapeHTML(d.nome1)+' &amp; '+escapeHTML(d.nome2)+'</h3>'+
+        '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div>'+
+        (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
+        (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
+        '<div style="display:flex;flex-wrap:wrap;margin-top:10px;">'+inputsNotas+'</div>'+
+        '<p style="font-weight:800;margin-top:4px;">Total: <span class="total-nota-dupla" data-dupla-id="'+duplaId+'">'+(d.notaTotal!=null?d.notaTotal:'—')+'</span> / '+registro.valorTotal+'</p>'+
+        '<button type="button" class="botao botao-secundario botao-pequeno" data-salvar-dupla="'+duplaId+'">Salvar notas</button> '+
+        '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button>'+
+        '</div>';
+    }).join('');
+    return '<h3 style="margin:20px 0 10px;font-size:1rem;border-bottom:2px solid var(--borda);padding-bottom:6px;">'+escapeHTML(g.turmaNome)+' <span class="stat-mini">('+g.itens.length+' dupla'+(g.itens.length>1?'s':'')+')</span></h3>'+cardsHtml;
+  }).join('') : '<p class="vazio-msg">Nenhuma dupla cadastrada ainda.</p>';
 
   const formNovaDuplaHtml = '<div style="border-top:1.5px solid var(--borda);padding-top:16px;margin-top:16px;">'+
     '<h4>Adicionar dupla</h4>'+
