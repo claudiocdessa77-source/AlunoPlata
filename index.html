@@ -2630,6 +2630,10 @@ async function abrirModalEditarDupla(registro){
     criteriosRec = criteriosAntigosGenericos.map(nome=>({nome}));
     criteriosCand = criteriosAntigosGenericos.map(nome=>({nome}));
     avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade foi criada antes de existir a separação por papel. Trouxe a lista de critérios que você já tinha pros dois grupos abaixo, como ponto de partida — ajuste o texto de cada um pra fazer sentido como Recrutador e como Candidato, apagando ou completando o que precisar.</p>';
+  } else if (!criteriosRec.length && !criteriosCand.length){
+    criteriosRec = CRITERIOS_RECRUTADOR_SUGERIDOS.map(nome=>({nome}));
+    criteriosCand = CRITERIOS_CANDIDATO_SUGERIDOS.map(nome=>({nome}));
+    avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade ainda não tinha critérios definidos. Preenchi os campos abaixo com sugestões, como ponto de partida — ajuste o texto de cada um do jeito que preferir.</p>';
   }
   const html =
     avisoMigracao+
@@ -2739,10 +2743,11 @@ function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec,
   const totalAtual = (avaliacao && avaliacao.notaTotal != null) ? avaliacao.notaTotal : '—';
   const opcoesLetra = (letraAtual) => '<option value="">— sem nota —</option>'+
     ['A','B','C'].map(l=>'<option value="'+l+'" '+(letraAtual===l?'selected':'')+'>'+escapeHTML(DESCRICAO_LETRA_DUPLA[l])+'</option>').join('');
-  const montarSelects = (criterios, mapaNotas, papel) => criterios.map((c,i)=>
+  const avisoSemCriteriosBloco = '<p style="font-size:.82rem;color:var(--vermelho);margin:0 0 10px;">Nenhum critério definido pra este papel ainda. Clique em "Editar →", no topo deste card, pra cadastrar os critérios — os campos de nota aparecem aqui assim que isso for feito.</p>';
+  const montarSelects = (criterios, mapaNotas, papel) => criterios.length ? criterios.map((c,i)=>
     '<div style="margin:0 0 10px;"><label style="font-size:.76rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
     '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="max-width:420px;">'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
-  ).join('');
+  ).join('') : avisoSemCriteriosBloco;
   return '<div style="border-top:1.5px solid var(--borda);padding-top:14px;margin-top:14px;">'+
     '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+'</h4>'+
     '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin-bottom:6px;">Como recrutador</p>'+
