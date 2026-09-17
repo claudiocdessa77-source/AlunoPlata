@@ -2725,13 +2725,15 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtro
   const html =
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;">Turma: '+escapeHTML(dupla.turmaNome)+'</p>'+
     '<div class="campo"><label for="edit-dupla-nome1">Nome 1</label><select id="edit-dupla-nome1" class="select-turma">'+opcoesNome(dupla.nome1)+'</select></div>'+
-    '<div class="campo"><label for="edit-dupla-pergunta1">Pergunta que o Nome 1 faz (como recrutador)</label><textarea id="edit-dupla-pergunta1" rows="2">'+escapeHTML(dupla.pergunta1||'')+'</textarea></div>'+
+    '<div class="campo"><label for="edit-dupla-pergunta1">Pergunta que o Nome 1 faz (como recrutador)</label><textarea id="edit-dupla-pergunta1" rows="2">'+escapeHTML((dupla.pergunta1||'').toUpperCase())+'</textarea></div>'+
     '<div class="campo"><label for="edit-dupla-nome2">Nome 2</label><select id="edit-dupla-nome2" class="select-turma">'+opcoesNome(dupla.nome2)+'</select></div>'+
-    '<div class="campo"><label for="edit-dupla-pergunta2">Pergunta que o Nome 2 faz (depois de inverter os papéis)</label><textarea id="edit-dupla-pergunta2" rows="2">'+escapeHTML(dupla.pergunta2||'')+'</textarea></div>'+
+    '<div class="campo"><label for="edit-dupla-pergunta2">Pergunta que o Nome 2 faz (depois de inverter os papéis)</label><textarea id="edit-dupla-pergunta2" rows="2">'+escapeHTML((dupla.pergunta2||'').toUpperCase())+'</textarea></div>'+
     ((dupla.avaliacaoNome1 && dupla.avaliacaoNome1.notaTotal!=null) || (dupla.avaliacaoNome2 && dupla.avaliacaoNome2.notaTotal!=null) ? '<p style="font-size:.78rem;color:var(--ink-suave);margin:-8px 0 16px;">Se trocar quem está na dupla, a nota já lançada de cada um é realocada para o nome novo daquela posição.</p>' : '')+
     '<p class="msg-sucesso" id="msg-editar-par-dupla" hidden></p>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-editar-par-dupla">Salvar</button></div>';
   abrirModal('Editar dupla', html);
+  ativarMaiusculoAutomatico('edit-dupla-pergunta1');
+  ativarMaiusculoAutomatico('edit-dupla-pergunta2');
   document.getElementById('btn-salvar-editar-par-dupla').addEventListener('click', async ()=>{
     const novoNome1 = document.getElementById('edit-dupla-nome1').value;
     const novoNome2 = document.getElementById('edit-dupla-nome2').value;
@@ -2854,6 +2856,8 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
   if (filtroSel) filtroSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, e.target.value || null, null); });
   const filtroDuplaSel = document.getElementById('filtro-dupla-especifica');
   if (filtroDuplaSel) filtroDuplaSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, filtroTurmaId, e.target.value || null); });
+  ativarMaiusculoAutomatico('input-dupla-pergunta1');
+  ativarMaiusculoAutomatico('input-dupla-pergunta2');
 
   function atualizarSelecaoAlunosDupla(){
     const turmaId = document.getElementById('select-turma-nova-dupla').value;
@@ -3355,6 +3359,15 @@ function abrirModal(titulo, conteudoHtml){
   document.getElementById('modal-overlay').hidden = false;
 }
 function fecharModal(){ document.getElementById('modal-overlay').hidden = true; }
+function ativarMaiusculoAutomatico(id){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', ()=>{
+    const inicio = el.selectionStart, fim = el.selectionEnd;
+    el.value = el.value.toUpperCase();
+    el.setSelectionRange(inicio, fim);
+  });
+}
 
 /* ---- Testar atividade (professor responde de verdade, como se fosse aluno, sem gravar nada) ---- */
 let respostasTeste = {};
