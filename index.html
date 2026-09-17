@@ -1390,6 +1390,18 @@ async function salvarNotasDupla(atividadeId, codigo, dupla, duplaId, notas, nota
   await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome1)).set(dados(dupla.nome1));
   await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome2)).set(dados(dupla.nome2));
 }
+async function editarDupla(registro, duplaId, duplaAntiga, nome1, nome2, pergunta1, pergunta2){
+  await db.ref('atividadesCadastradas/'+registro.id+'/duplas/'+duplaId).update({nome1, nome2, pergunta1:pergunta1||'', pergunta2:pergunta2||''});
+  if (duplaAntiga.notaTotal == null) return;
+  const turmaKey = turmaSlug(duplaAntiga.turmaNome);
+  const nomesAntigos = [duplaAntiga.nome1, duplaAntiga.nome2];
+  const nomesNovos = [nome1, nome2];
+  for (const antigo of nomesAntigos){
+    if (!nomesNovos.includes(antigo)) await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(antigo)).remove();
+  }
+  const duplaAtualizada = Object.assign({}, duplaAntiga, {nome1, nome2});
+  await salvarNotasDupla(registro.id, registro.codigo, duplaAtualizada, duplaId, duplaAntiga.notas||{}, duplaAntiga.notaTotal);
+}
 async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosNomes, ativa){
   const criteriosAntigos = registro.criterios || [];
   const valorPorCriterio = Math.round((valorTotal/criteriosNomes.length)*100)/100;
@@ -2548,6 +2560,44 @@ function montarResultadoDupla(registro, dupla){
   html += '</section>';
   return html;
 }
+async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
+  const dupla = (registro.duplas||{})[duplaId];
+  if (!dupla) return;
+  const turmasNativas = await buscarTurmasCadastradas();
+  const turmaObj = turmasNativas.find(t=>t.id===dupla.turmaId);
+  const roster = turmaObj ? Object.values(turmaObj.alunos||{}).map(a=>a.nome) : [];
+  const jaEmOutraDupla = new Set();
+  Object.entries(registro.duplas||{}).forEach(([id,d])=>{
+    if (id!==duplaId && d.turmaId===dupla.turmaId){ jaEmOutraDupla.add(turmaSlug(d.nome1)); jaEmOutraDupla.add(turmaSlug(d.nome2)); }
+  });
+  const nomesDisponiveis = roster.filter(n=>!jaEmOutraDupla.has(turmaSlug(n))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const opcoesNome = (selecionado)=>'<option value="">— selecione —</option>'+nomesDisponiveis.map(n=>
+    '<option value="'+escapeHTML(n)+'" '+(n===selecionado?'selected':'')+'>'+escapeHTML(n)+'</option>'
+  ).join('');
+
+  const html =
+    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;">Turma: '+escapeHTML(dupla.turmaNome)+'</p>'+
+    '<div class="campo"><label for="edit-dupla-nome1">Nome 1</label><select id="edit-dupla-nome1" class="select-turma">'+opcoesNome(dupla.nome1)+'</select></div>'+
+    '<div class="campo"><label for="edit-dupla-pergunta1">Pergunta que o Nome 1 faz (como recrutador)</label><textarea id="edit-dupla-pergunta1" rows="2">'+escapeHTML(dupla.pergunta1||'')+'</textarea></div>'+
+    '<div class="campo"><label for="edit-dupla-nome2">Nome 2</label><select id="edit-dupla-nome2" class="select-turma">'+opcoesNome(dupla.nome2)+'</select></div>'+
+    '<div class="campo"><label for="edit-dupla-pergunta2">Pergunta que o Nome 2 faz (depois de inverter os papéis)</label><textarea id="edit-dupla-pergunta2" rows="2">'+escapeHTML(dupla.pergunta2||'')+'</textarea></div>'+
+    (dupla.notaTotal!=null ? '<p style="font-size:.78rem;color:var(--ink-suave);margin:-8px 0 16px;">Se trocar quem está na dupla, a nota já lançada ('+dupla.notaTotal+') é realocada para os nomes novos.</p>' : '')+
+    '<p class="msg-sucesso" id="msg-editar-par-dupla" hidden></p>'+
+    '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-editar-par-dupla">Salvar</button></div>';
+  abrirModal('Editar dupla', html);
+  document.getElementById('btn-salvar-editar-par-dupla').addEventListener('click', async ()=>{
+    const novoNome1 = document.getElementById('edit-dupla-nome1').value;
+    const novoNome2 = document.getElementById('edit-dupla-nome2').value;
+    const novaPergunta1 = document.getElementById('edit-dupla-pergunta1').value.trim();
+    const novaPergunta2 = document.getElementById('edit-dupla-pergunta2').value.trim();
+    const msg = document.getElementById('msg-editar-par-dupla');
+    if (!novoNome1 || !novoNome2){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha os dois alunos.'; return; }
+    if (novoNome1===novoNome2){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha dois alunos diferentes.'; return; }
+    await editarDupla(registro, duplaId, dupla, novoNome1, novoNome2, novaPergunta1, novaPergunta2);
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+  });
+}
 async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
   const turmasNativas = await buscarTurmasCadastradas();
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean)
@@ -2585,7 +2635,8 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
       ).join('');
       return '<div class="turma-card" data-dupla-id="'+duplaId+'" style="margin-bottom:14px;">'+
         '<div class="turma-card-topo"><h3 style="font-size:.98rem;">'+escapeHTML(d.nome1)+' &amp; '+escapeHTML(d.nome2)+'</h3>'+
-        '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div>'+
+        '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-editar-dupla="'+duplaId+'">Editar →</button>'+
+        '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div></div>'+
         (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
         (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
         '<div style="display:flex;flex-wrap:wrap;margin-top:10px;">'+inputsNotas+'</div>'+
@@ -2678,6 +2729,11 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
       await removerDupla(registro.id, btn.dataset.removerDupla);
       atividadesCacheModulo = await buscarAtividadesCadastradas();
       abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+    });
+  });
+  document.querySelectorAll('[data-editar-dupla]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      abrirModalEditarParDupla(registro, btn.dataset.editarDupla, filtroTurmaId);
     });
   });
   document.querySelectorAll('[data-ver-aluno-dupla]').forEach(btn=>{
