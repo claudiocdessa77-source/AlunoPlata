@@ -1166,12 +1166,32 @@ function visualizarAtividadeComoAluno(turmaNome, atividade){
     imprimirAtividadeEmBranco(turmaNome, atividade);
   });
 }
+let navegandoPorHistorico = false;
 function mostrarTela(id){
   document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
   document.getElementById(id).classList.add('ativa');
   document.body.classList.remove('imprimindo-relatorio');
   window.scrollTo(0,0);
+  if (id === 'tela-carregando'){ navegandoPorHistorico = false; return; }
+  const estadoAtual = history.state;
+  if (!navegandoPorHistorico && (!estadoAtual || estadoAtual.tela !== id)){
+    history.pushState({tela:id}, '', location.pathname+location.search);
+  }
+  navegandoPorHistorico = false;
 }
+window.addEventListener('popstate', (e)=>{
+  const modalOverlay = document.getElementById('modal-overlay');
+  const modalAberto = modalOverlay && !modalOverlay.hidden;
+  if (modalAberto){
+    fecharModal();
+    if (history.state) history.pushState(history.state, '', location.pathname+location.search);
+    return;
+  }
+  if (e.state && e.state.tela && document.getElementById(e.state.tela)){
+    navegandoPorHistorico = true;
+    mostrarTela(e.state.tela);
+  }
+});
 
 /* ===== FIREBASE ===== */
 let db;
