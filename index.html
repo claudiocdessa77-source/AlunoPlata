@@ -385,6 +385,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <label for="select-atividade-prof">Atividade</label>
         <select id="select-atividade-prof" class="select-turma"></select>
       </div>
+      <div id="alerta-pendencias-geral"></div>
       <div class="stats-grid" id="stats-gerais"></div>
       <div id="turmas-lista"></div>
       <div id="arquivo-secao">
@@ -1993,6 +1994,14 @@ let atividadesEfetivasProf = [];
 let ultimoSnapshotTurmas = {};
 
 let modoTodasAtividades = false;
+function atividadeTemPendencia(atividadeEfetiva){
+  const cod = atividadeEfetiva.codigo;
+  return Object.values(ultimoSnapshotTurmas||{}).some(t=>{
+    const dadosAtiv = t && t.atividades && t.atividades[cod];
+    if (!dadosAtiv || dadosAtiv.liberado) return false;
+    return Object.keys(dadosAtiv.alunos||{}).length > 0;
+  });
+}
 function popularSeletorAtividade(manterSelecao){
   const sel = document.getElementById('select-atividade-prof');
   const codAtual = manterSelecao ? (modoTodasAtividades ? 'todas' : (atividadeSelecionadaProf ? atividadeSelecionadaProf.codigo : null)) : null;
@@ -2000,15 +2009,35 @@ function popularSeletorAtividade(manterSelecao){
     sel.innerHTML = '<option value="">Nenhuma atividade cadastrada</option>';
     atividadeSelecionadaProf = null;
     modoTodasAtividades = false;
+    renderAlertaPendenciasGeral();
     return;
   }
   sel.innerHTML = '<option value="todas">— Todas as atividades —</option>'+
-    atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
-  if (codAtual === 'todas'){ modoTodasAtividades = true; sel.value = 'todas'; return; }
+    atividadesEfetivasProf.map((a,i)=>'<option value="'+i+'">'+(atividadeTemPendencia(a)?'⚠ ':'')+escapeHTML(a.titulo)+' — '+a.codigo+'</option>').join('');
+  if (codAtual === 'todas'){ modoTodasAtividades = true; sel.value = 'todas'; renderAlertaPendenciasGeral(); return; }
   const idxMantido = codAtual ? atividadesEfetivasProf.findIndex(a=>a.codigo===codAtual) : -1;
   modoTodasAtividades = false;
   atividadeSelecionadaProf = atividadesEfetivasProf[idxMantido>=0?idxMantido:0];
   sel.value = String(idxMantido>=0?idxMantido:0);
+  renderAlertaPendenciasGeral();
+}
+function renderAlertaPendenciasGeral(){
+  const el = document.getElementById('alerta-pendencias-geral');
+  if (!el) return;
+  const pendentes = atividadesEfetivasProf.filter(atividadeTemPendencia);
+  if (!pendentes.length){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="border-left:6px solid var(--folder-escuro);background:#FBF3E6;border-radius:8px;padding:12px 16px;margin:14px 0;">'+
+    '<strong>⚠ '+pendentes.length+' atividade(s) com respostas aguardando liberação:</strong> '+
+    pendentes.map((a,i)=>'<button type="button" class="botao-texto" data-ir-pendencia="'+atividadesEfetivasProf.indexOf(a)+'" style="margin-right:4px;">'+escapeHTML(a.titulo)+(i<pendentes.length-1?',':'')+'</button>').join('')+
+    '</div>';
+  el.querySelectorAll('[data-ir-pendencia]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      modoTodasAtividades = false;
+      atividadeSelecionadaProf = atividadesEfetivasProf[Number(btn.dataset.irPendencia)];
+      document.getElementById('select-atividade-prof').value = btn.dataset.irPendencia;
+      renderPainelProfessorAtual();
+    });
+  });
 }
 async function entrarProfessor(){
   const senha = document.getElementById('input-senha').value;
@@ -2033,6 +2062,7 @@ function sairProfessor(){
 
 function renderPainelProfessor(turmasRaw){
   ultimoSnapshotTurmas = turmasRaw;
+  if (atividadesEfetivasProf.length) popularSeletorAtividade(true);
   renderPainelProfessorAtual();
 }
 
