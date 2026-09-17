@@ -562,13 +562,13 @@ Texto do caso/contexto, aparece uma vez no topo.
           <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Atividade em dupla (avaliação presencial)</h2>
         </div>
         <div id="dupla-corpo" hidden style="margin-top:14px;">
-          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Para atividades feitas em sala, em dupla (como uma simulação de entrevista) — o aluno não acessa nada aqui. Você cadastra os critérios de avaliação, adiciona as duplas com as perguntas combinadas, e depois atribui a nota de cada critério — a soma vira a nota final automaticamente.</p>
+          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">Para atividades feitas em sala, em dupla (como uma simulação de entrevista) — o aluno não acessa nada aqui. Cada integrante da dupla faz os dois papéis (recrutador numa pergunta, candidato na outra) e recebe nota própria, somando o que ganhou nos dois papéis.</p>
           <div class="campo" style="max-width:420px;">
             <label for="input-nome-nova-dupla">Nome da atividade</label>
             <input type="text" id="input-nome-nova-dupla" placeholder="Ex.: Simulação de Entrevista de Emprego">
           </div>
           <div class="campo" style="max-width:200px;">
-            <label for="input-valor-nova-dupla">Valor total (nota máxima)</label>
+            <label for="input-valor-nova-dupla">Valor total (nota máxima, por aluno)</label>
             <input type="text" inputmode="decimal" id="input-valor-nova-dupla" placeholder="Ex.: 10" value="10">
           </div>
           <div class="campo">
@@ -576,9 +576,14 @@ Texto do caso/contexto, aparece uma vez no topo.
             <div id="checkboxes-turmas-nova-dupla" class="lista-selecao" style="max-height:240px;"></div>
           </div>
           <div class="campo">
-            <label>Critérios de avaliação (5 sugeridos — edite o texto se quiser outros)</label>
-            <div id="lista-criterios-dupla"></div>
+            <label>Critérios ao avaliar como Recrutador (quem está fazendo a pergunta)</label>
+            <div id="lista-criterios-recrutador-dupla"></div>
           </div>
+          <div class="campo">
+            <label>Critérios ao avaliar como Candidato (quem está respondendo)</label>
+            <div id="lista-criterios-candidato-dupla"></div>
+          </div>
+          <p style="font-size:.78rem;color:var(--ink-suave);margin:-8px 0 16px;">O valor total é dividido igualmente entre todos os critérios (dos dois papéis somados) — cada aluno é avaliado nos dois papéis e a soma vira a nota dele.</p>
           <button class="botao botao-primario" id="btn-cadastrar-dupla">Cadastrar atividade em dupla</button>
           <p class="msg-sucesso" id="msg-dupla-cadastrada" hidden></p>
         </div>
@@ -1377,74 +1382,93 @@ async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, d
   await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, disciplina:disciplina||'', nomeAtividade:nomeAtividade||'', ativa:true, criadaEm:Date.now()});
   return ref.key;
 }
-const CRITERIOS_SUGERIDOS_DUPLA = [
-  'Postura profissional e apresentação pessoal',
-  'Clareza e objetividade na comunicação',
-  'Qualidade das perguntas elaboradas',
-  'Capacidade de resposta e argumentação',
-  'Postura ética e respeito no diálogo'
+const CRITERIOS_RECRUTADOR_SUGERIDOS = [
+  'Qualidade e relevância da pergunta elaborada',
+  'Postura profissional na condução da entrevista',
+  'Clareza ao conduzir o diálogo'
 ];
-async function criarAtividadeEmDupla(nomeAtividade, valorTotal, turmasIds, criteriosNomes){
+const CRITERIOS_CANDIDATO_SUGERIDOS = [
+  'Clareza e objetividade na resposta',
+  'Capacidade de argumentação',
+  'Postura profissional diante da pergunta'
+];
+function avaliacaoVazia(){ return {notasRecrutador:{}, notasCandidato:{}, notaTotal:null}; }
+async function criarAtividadeEmDupla(nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes){
   const numero = await proximoNumeroAtividade();
   const codigo = gerarCodigoAtividade(numero);
-  const valorPorCriterio = Math.round((valorTotal/criteriosNomes.length)*100)/100;
-  const criterios = criteriosNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
+  const totalCriterios = criteriosRecrutadorNomes.length + criteriosCandidatoNomes.length;
+  const valorPorCriterio = totalCriterios ? Math.round((valorTotal/totalCriterios)*100)/100 : 0;
+  const criteriosRecrutador = criteriosRecrutadorNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
+  const criteriosCandidato = criteriosCandidatoNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
   const ref = db.ref('atividadesCadastradas').push();
   await ref.set({
     tipoEspecial:'entrevista-dupla', modeloConteudo:'', numero, codigo, valorTotal,
-    turmasIds:turmasIds||{}, nomeAtividade, criterios, duplas:{}, ativa:true, criadaEm:Date.now()
+    turmasIds:turmasIds||{}, nomeAtividade, criteriosRecrutador, criteriosCandidato, duplas:{}, ativa:true, criadaEm:Date.now()
   });
   return ref.key;
 }
 async function adicionarDupla(atividadeId, turmaId, turmaNome, nome1, nome2, pergunta1, pergunta2){
   const ref = db.ref('atividadesCadastradas/'+atividadeId+'/duplas').push();
-  await ref.set({turmaId, turmaNome, nome1, nome2, pergunta1:pergunta1||'', pergunta2:pergunta2||'', notas:{}, notaTotal:null, criadaEm:Date.now()});
+  await ref.set({turmaId, turmaNome, nome1, nome2, pergunta1:pergunta1||'', pergunta2:pergunta2||'', avaliacaoNome1:avaliacaoVazia(), avaliacaoNome2:avaliacaoVazia(), criadaEm:Date.now()});
   return ref.key;
 }
 async function removerDupla(atividadeId, duplaId){
   await db.ref('atividadesCadastradas/'+atividadeId+'/duplas/'+duplaId).remove();
 }
-async function salvarNotasDupla(atividadeId, codigo, dupla, duplaId, notas, notaTotal){
-  await db.ref('atividadesCadastradas/'+atividadeId+'/duplas/'+duplaId).update({notas, notaTotal});
+async function salvarNotasAluno(atividadeId, codigo, dupla, duplaId, slot, notasRecrutador, notasCandidato, notaTotal){
+  await db.ref('atividadesCadastradas/'+atividadeId+'/duplas/'+duplaId+'/'+slot).set({notasRecrutador, notasCandidato, notaTotal});
   const turmaKey = turmaSlug(dupla.turmaNome);
-  const dados = (nome)=>({nome, turma:dupla.turmaNome, nota:notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
-  await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome1)).set(dados(dupla.nome1));
-  await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(dupla.nome2)).set(dados(dupla.nome2));
+  const nome = slot === 'avaliacaoNome1' ? dupla.nome1 : dupla.nome2;
+  await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(nome)).set({nome, turma:dupla.turmaNome, nota:notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
 }
 async function editarDupla(registro, duplaId, duplaAntiga, nome1, nome2, pergunta1, pergunta2){
   await db.ref('atividadesCadastradas/'+registro.id+'/duplas/'+duplaId).update({nome1, nome2, pergunta1:pergunta1||'', pergunta2:pergunta2||''});
-  if (duplaAntiga.notaTotal == null) return;
   const turmaKey = turmaSlug(duplaAntiga.turmaNome);
   const nomesAntigos = [duplaAntiga.nome1, duplaAntiga.nome2];
   const nomesNovos = [nome1, nome2];
   for (const antigo of nomesAntigos){
     if (!nomesNovos.includes(antigo)) await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(antigo)).remove();
   }
-  const duplaAtualizada = Object.assign({}, duplaAntiga, {nome1, nome2});
-  await salvarNotasDupla(registro.id, registro.codigo, duplaAtualizada, duplaId, duplaAntiga.notas||{}, duplaAntiga.notaTotal);
+  const av1 = duplaAntiga.avaliacaoNome1, av2 = duplaAntiga.avaliacaoNome2;
+  if (av1 && av1.notaTotal != null){
+    await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(nome1)).set({nome:nome1, turma:duplaAntiga.turmaNome, nota:av1.notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
+  }
+  if (av2 && av2.notaTotal != null){
+    await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(nome2)).set({nome:nome2, turma:duplaAntiga.turmaNome, nota:av2.notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
+  }
 }
-async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosNomes, ativa){
-  const criteriosAntigos = registro.criterios || [];
-  const valorPorCriterio = Math.round((valorTotal/criteriosNomes.length)*100)/100;
-  const criteriosNovos = criteriosNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
-  await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criterios:criteriosNovos, ativa});
+async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes, ativa){
+  const criteriosRecAntigos = registro.criteriosRecrutador || [];
+  const criteriosCandAntigos = registro.criteriosCandidato || [];
+  const totalCriterios = criteriosRecrutadorNomes.length + criteriosCandidatoNomes.length;
+  const valorPorCriterio = totalCriterios ? Math.round((valorTotal/totalCriterios)*100)/100 : 0;
+  const criteriosRecNovos = criteriosRecrutadorNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
+  const criteriosCandNovos = criteriosCandidatoNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
+  await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criteriosRecrutador:criteriosRecNovos, criteriosCandidato:criteriosCandNovos, ativa});
 
   const valorMudou = valorTotal !== registro.valorTotal;
   const duplas = registro.duplas || {};
-  if (valorMudou){
-    for (const [duplaId, dupla] of Object.entries(duplas)){
-      if (dupla.notaTotal == null) continue;
-      const notasNovas = {}; let total = 0;
-      criteriosNovos.forEach((c,i)=>{
-        const notaAntiga = dupla.notas ? dupla.notas[i] : null;
-        const maxAntigo = criteriosAntigos[i] ? criteriosAntigos[i].valorMax : c.valorMax;
-        if (notaAntiga != null && maxAntigo){
-          const notaNova = Math.round((notaAntiga/maxAntigo)*c.valorMax*100)/100;
-          notasNovas[i] = notaNova; total += notaNova;
-        }
-      });
-      const notaTotalNova = Math.round(total*100)/100;
-      await salvarNotasDupla(registro.id, registro.codigo, dupla, duplaId, notasNovas, notaTotalNova);
+  if (!valorMudou) return;
+  function recalcularBloco(bloco, criteriosAntigos, criteriosNovos){
+    const notasNovas = {}; let total = 0;
+    criteriosNovos.forEach((c,i)=>{
+      const notaAntiga = bloco ? bloco[i] : null;
+      const maxAntigo = criteriosAntigos[i] ? criteriosAntigos[i].valorMax : c.valorMax;
+      if (notaAntiga != null && maxAntigo){
+        const notaNova = Math.round((notaAntiga/maxAntigo)*c.valorMax*100)/100;
+        notasNovas[i] = notaNova; total += notaNova;
+      }
+    });
+    return {notasNovas, total};
+  }
+  for (const [duplaId, dupla] of Object.entries(duplas)){
+    for (const slot of ['avaliacaoNome1','avaliacaoNome2']){
+      const aval = dupla[slot];
+      if (!aval || aval.notaTotal == null) continue;
+      const rRec = recalcularBloco(aval.notasRecrutador, criteriosRecAntigos, criteriosRecNovos);
+      const rCand = recalcularBloco(aval.notasCandidato, criteriosCandAntigos, criteriosCandNovos);
+      const notaTotalNova = Math.round((rRec.total + rCand.total)*100)/100;
+      await salvarNotasAluno(registro.id, registro.codigo, dupla, duplaId, slot, rRec.notasNovas, rCand.notasNovas, notaTotalNova);
     }
   }
 }
@@ -1522,7 +1546,7 @@ function construirAtividadeEfetiva(registro){
       codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
       id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
       disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
-      criterios: registro.criterios||[], duplas: registro.duplas||{}
+      criteriosRecrutador: registro.criteriosRecrutador||[], criteriosCandidato: registro.criteriosCandidato||[], duplas: registro.duplas||{}
     };
   }
   const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
@@ -2504,9 +2528,10 @@ document.getElementById('btn-cadastrar-dupla').addEventListener('click', async (
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-dupla input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-  const criteriosNomes = Array.from(document.querySelectorAll('.input-criterio-dupla')).map(i=>i.value.trim()).filter(Boolean);
-  if (!criteriosNomes.length){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Defina pelo menos um critério de avaliação.'; return; }
-  await criarAtividadeEmDupla(nome, valorTotal, turmasIds, criteriosNomes);
+  const criteriosRecrutador = Array.from(document.querySelectorAll('.input-criterio-recrutador-dupla')).map(i=>i.value.trim()).filter(Boolean);
+  const criteriosCandidato = Array.from(document.querySelectorAll('.input-criterio-candidato-dupla')).map(i=>i.value.trim()).filter(Boolean);
+  if (!criteriosRecrutador.length || !criteriosCandidato.length){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Defina pelo menos um critério em cada papel (Recrutador e Candidato).'; return; }
+  await criarAtividadeEmDupla(nome, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato);
   document.getElementById('input-nome-nova-dupla').value = '';
   document.getElementById('input-valor-nova-dupla').value = '10';
   document.querySelectorAll('#checkboxes-turmas-nova-dupla input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
@@ -2542,11 +2567,15 @@ function renderCheckboxesTurmas(containerId, turmas, selecionadas){
     '<label class="linha-checkbox"><input type="checkbox" value="'+t.id+'" '+(selecionadas&&selecionadas[t.id]?'checked':'')+'><span>'+escapeHTML(t.nome)+'</span></label>'
   ).join('');
 }
-function renderCriteriosDupla(){
-  const el = document.getElementById('lista-criterios-dupla');
-  el.innerHTML = CRITERIOS_SUGERIDOS_DUPLA.map((c,i)=>
-    '<input type="text" class="input-criterio-dupla" data-idx="'+i+'" value="'+escapeHTML(c)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">'
+function renderListaCriteriosInputs(containerId, classe, nomes){
+  const el = document.getElementById(containerId);
+  el.innerHTML = nomes.map((c,i)=>
+    '<input type="text" class="'+classe+'" data-idx="'+i+'" value="'+escapeHTML(c)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">'
   ).join('');
+}
+function renderCriteriosDupla(){
+  renderListaCriteriosInputs('lista-criterios-recrutador-dupla', 'input-criterio-recrutador-dupla', CRITERIOS_RECRUTADOR_SUGERIDOS);
+  renderListaCriteriosInputs('lista-criterios-candidato-dupla', 'input-criterio-candidato-dupla', CRITERIOS_CANDIDATO_SUGERIDOS);
 }
 async function abrirTelaAtividades(){
   mostrarTela('tela-carregando');
@@ -2586,16 +2615,20 @@ async function irParaVerDetalhes(registro, turmaKey){
   await abrirModalTurma(turmaKey, snap.val()||{}, false);
 }
 async function abrirModalEditarDupla(registro){
-  const criterios = registro.criterios || [];
+  const criteriosRec = registro.criteriosRecrutador || [];
+  const criteriosCand = registro.criteriosCandidato || [];
   const html =
     '<div class="campo"><label for="modal-dupla-nome">Nome da atividade</label><input type="text" id="modal-dupla-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
-    '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima, por aluno)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas-dupla" class="lista-selecao" style="max-height:220px;"></div></div>'+
-    '<div class="campo"><label>Critérios de avaliação</label><div id="modal-lista-criterios-dupla">'+
-      criterios.map((c,i)=>'<input type="text" class="modal-input-criterio-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
+    '<div class="campo"><label>Critérios ao avaliar como Recrutador</label><div id="modal-lista-criterios-recrutador-dupla">'+
+      criteriosRec.map((c,i)=>'<input type="text" class="modal-input-criterio-recrutador-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
+    '</div></div>'+
+    '<div class="campo"><label>Critérios ao avaliar como Candidato</label><div id="modal-lista-criterios-candidato-dupla">'+
+      criteriosCand.map((c,i)=>'<input type="text" class="modal-input-criterio-candidato-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
     '</div></div>'+
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-dupla-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa</label>'+
-    '<p style="font-size:.78rem;color:var(--ink-suave);margin:-10px 0 16px;">Se mudar o valor total, as notas das duplas já lançadas são recalculadas automaticamente, mantendo a proporção.</p>'+
+    '<p style="font-size:.78rem;color:var(--ink-suave);margin:-10px 0 16px;">Se mudar o valor total, as notas já lançadas de cada aluno são recalculadas automaticamente, mantendo a proporção.</p>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-dupla">Salvar</button></div>';
   abrirModal((registro.nomeAtividade||'Atividade em dupla')+' — '+registro.codigo, html);
   const turmasNativas = await buscarTurmasCadastradas();
@@ -2604,35 +2637,45 @@ async function abrirModalEditarDupla(registro){
     const nomeAtividade = document.getElementById('modal-dupla-nome').value.trim() || registro.nomeAtividade;
     const valorDigitado = parseFloat(document.getElementById('modal-dupla-valor').value.replace(',','.'));
     const valorTotal = isNaN(valorDigitado) ? registro.valorTotal : valorDigitado;
-    const criteriosNomes = Array.from(document.querySelectorAll('.modal-input-criterio-dupla')).map(i=>i.value.trim()).filter(Boolean);
+    const criteriosRecrutador = Array.from(document.querySelectorAll('.modal-input-criterio-recrutador-dupla')).map(i=>i.value.trim()).filter(Boolean);
+    const criteriosCandidato = Array.from(document.querySelectorAll('.modal-input-criterio-candidato-dupla')).map(i=>i.value.trim()).filter(Boolean);
     const ativa = document.getElementById('modal-dupla-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas-dupla input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
-    if (!criteriosNomes.length){ return; }
-    await atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosNomes, ativa);
+    if (!criteriosRecrutador.length || !criteriosCandidato.length){ return; }
+    await atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato, ativa);
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
   });
 }
-function montarResultadoDupla(registro, dupla){
-  if (dupla.notaTotal == null){
-    return '<p class="vazio-msg">Esta dupla ainda não foi avaliada — o resultado aparece aqui depois que as notas forem salvas em "Gerenciar duplas".</p>';
+function montarResultadoAlunoDupla(registro, nome, avaliacao){
+  if (!avaliacao || avaliacao.notaTotal == null){
+    return '<section class="historia-card"><h4 class="pergunta-titulo">'+escapeHTML(nome)+'</h4><p class="vazio-msg">Ainda não avaliado(a).</p></section>';
   }
-  const criterios = registro.criterios || [];
-  let html = '<div style="background:var(--ink);color:#fff;padding:14px 18px;border-radius:8px;font-weight:800;margin-bottom:20px;">Nota final: '+dupla.notaTotal+' / '+registro.valorTotal+'</div>';
-  html += '<section class="historia-card">';
-  html += '<h4 class="pergunta-titulo">'+escapeHTML(dupla.nome1)+' &amp; '+escapeHTML(dupla.nome2)+'</h4>';
-  html += '<p class="pergunta-enunciado">Turma: '+escapeHTML(dupla.turmaNome)+' · '+escapeHTML(registro.nomeAtividade||'')+'</p>';
-  if (dupla.pergunta1) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome1)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta1)+'</p>';
-  if (dupla.pergunta2) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome2)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta2)+'</p>';
-  html += '</section>';
-  html += '<section class="historia-card"><h4 class="pergunta-titulo">Avaliação por critério</h4>';
-  html += criterios.map((c,i)=>{
-    const nota = dupla.notas && dupla.notas[i]!=null ? dupla.notas[i] : 0;
+  const criteriosRec = registro.criteriosRecrutador || [];
+  const criteriosCand = registro.criteriosCandidato || [];
+  let html = '<section class="historia-card"><h4 class="pergunta-titulo">'+escapeHTML(nome)+' — nota: '+avaliacao.notaTotal+' / '+registro.valorTotal+'</h4>';
+  html += '<p style="font-weight:700;margin:12px 0 4px;">Como recrutador</p>';
+  html += criteriosRec.map((c,i)=>{
+    const nota = avaliacao.notasRecrutador && avaliacao.notasRecrutador[i]!=null ? avaliacao.notasRecrutador[i] : 0;
+    return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(c.nome)+'</span><span class="linha-barra-valor">'+nota+' / '+c.valorMax+'</span></div>';
+  }).join('');
+  html += '<p style="font-weight:700;margin:14px 0 4px;">Como candidato</p>';
+  html += criteriosCand.map((c,i)=>{
+    const nota = avaliacao.notasCandidato && avaliacao.notasCandidato[i]!=null ? avaliacao.notasCandidato[i] : 0;
     return '<div class="linha-barra"><span class="linha-barra-label">'+escapeHTML(c.nome)+'</span><span class="linha-barra-valor">'+nota+' / '+c.valorMax+'</span></div>';
   }).join('');
   html += '</section>';
+  return html;
+}
+function montarResultadoDupla(registro, dupla){
+  let html = '<section class="historia-card"><p class="pergunta-enunciado">Turma: '+escapeHTML(dupla.turmaNome)+' · '+escapeHTML(registro.nomeAtividade||'')+'</p>';
+  if (dupla.pergunta1) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome1)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta1)+'</p>';
+  if (dupla.pergunta2) html += '<p style="margin:10px 0;"><strong>Pergunta de '+escapeHTML(dupla.nome2)+' (como recrutador):</strong><br>'+escapeHTML(dupla.pergunta2)+'</p>';
+  html += '</section>';
+  html += montarResultadoAlunoDupla(registro, dupla.nome1, dupla.avaliacaoNome1);
+  html += montarResultadoAlunoDupla(registro, dupla.nome2, dupla.avaliacaoNome2);
   return html;
 }
 async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
@@ -2656,7 +2699,7 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
     '<div class="campo"><label for="edit-dupla-pergunta1">Pergunta que o Nome 1 faz (como recrutador)</label><textarea id="edit-dupla-pergunta1" rows="2">'+escapeHTML(dupla.pergunta1||'')+'</textarea></div>'+
     '<div class="campo"><label for="edit-dupla-nome2">Nome 2</label><select id="edit-dupla-nome2" class="select-turma">'+opcoesNome(dupla.nome2)+'</select></div>'+
     '<div class="campo"><label for="edit-dupla-pergunta2">Pergunta que o Nome 2 faz (depois de inverter os papéis)</label><textarea id="edit-dupla-pergunta2" rows="2">'+escapeHTML(dupla.pergunta2||'')+'</textarea></div>'+
-    (dupla.notaTotal!=null ? '<p style="font-size:.78rem;color:var(--ink-suave);margin:-8px 0 16px;">Se trocar quem está na dupla, a nota já lançada ('+dupla.notaTotal+') é realocada para os nomes novos.</p>' : '')+
+    ((dupla.avaliacaoNome1 && dupla.avaliacaoNome1.notaTotal!=null) || (dupla.avaliacaoNome2 && dupla.avaliacaoNome2.notaTotal!=null) ? '<p style="font-size:.78rem;color:var(--ink-suave);margin:-8px 0 16px;">Se trocar quem está na dupla, a nota já lançada de cada um é realocada para o nome novo daquela posição.</p>' : '')+
     '<p class="msg-sucesso" id="msg-editar-par-dupla" hidden></p>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-editar-par-dupla">Salvar</button></div>';
   abrirModal('Editar dupla', html);
@@ -2673,11 +2716,29 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
     abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
   });
 }
+function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal){
+  const notasRec = (avaliacao && avaliacao.notasRecrutador) || {};
+  const notasCand = (avaliacao && avaliacao.notasCandidato) || {};
+  const totalAtual = (avaliacao && avaliacao.notaTotal != null) ? avaliacao.notaTotal : '—';
+  const montarInputs = (criterios, mapaNotas, papel) => criterios.map((c,i)=>
+    '<div style="margin:0 14px 10px 0;"><label style="font-size:.76rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
+    '<input type="text" inputmode="decimal" class="input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" value="'+(mapaNotas[i]!=null?mapaNotas[i]:'')+'" style="width:85px;padding:7px 9px;border:1.5px solid var(--ink);border-radius:6px;"></div>'
+  ).join('');
+  return '<div style="border-top:1.5px solid var(--borda);padding-top:14px;margin-top:14px;">'+
+    '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+'</h4>'+
+    '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin-bottom:6px;">Como recrutador</p>'+
+    '<div style="display:flex;flex-wrap:wrap;">'+montarInputs(criteriosRec, notasRec, 'notasRecrutador')+'</div>'+
+    '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin:10px 0 6px;">Como candidato</p>'+
+    '<div style="display:flex;flex-wrap:wrap;">'+montarInputs(criteriosCand, notasCand, 'notasCandidato')+'</div>'+
+    '<p style="font-weight:800;margin-top:4px;">Nota de '+escapeHTML(nome)+': <span class="total-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'">'+totalAtual+'</span> / '+valorTotal+'</p>'+
+    '</div>';
+}
 async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
   const turmasNativas = await buscarTurmasCadastradas();
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean)
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-  const criterios = registro.criterios || [];
+  const criteriosRec = registro.criteriosRecrutador || [];
+  const criteriosCand = registro.criteriosCandidato || [];
   const duplas = registro.duplas || {};
 
   const opcoesDuplaTurma = turmasAssociadas.length
@@ -2704,20 +2765,16 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
 
   const listaDuplasHtml = gruposOrdenados.length ? gruposOrdenados.map(g=>{
     const cardsHtml = g.itens.map(([duplaId, d])=>{
-      const inputsNotas = criterios.map((c,i)=>
-        '<div style="margin:0 14px 10px 0;"><label style="font-size:.78rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
-        '<input type="text" inputmode="decimal" class="input-nota-criterio" data-dupla-id="'+duplaId+'" data-idx="'+i+'" data-max="'+c.valorMax+'" value="'+(d.notas&&d.notas[i]!=null?d.notas[i]:'')+'" style="width:90px;padding:7px 9px;border:1.5px solid var(--ink);border-radius:6px;"></div>'
-      ).join('');
-      return '<div class="turma-card" data-dupla-id="'+duplaId+'" style="margin-bottom:14px;">'+
+      return '<div class="turma-card" data-dupla-id="'+duplaId+'" style="margin-bottom:18px;">'+
         '<div class="turma-card-topo"><h3 style="font-size:.98rem;">'+escapeHTML(d.nome1)+' &amp; '+escapeHTML(d.nome2)+'</h3>'+
         '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-editar-dupla="'+duplaId+'">Editar →</button>'+
         '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div></div>'+
         (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
         (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
-        '<div style="display:flex;flex-wrap:wrap;margin-top:10px;">'+inputsNotas+'</div>'+
-        '<p style="font-weight:800;margin-top:4px;">Total: <span class="total-nota-dupla" data-dupla-id="'+duplaId+'">'+(d.notaTotal!=null?d.notaTotal:'—')+'</span> / '+registro.valorTotal+'</p>'+
-        '<button type="button" class="botao botao-secundario botao-pequeno" data-salvar-dupla="'+duplaId+'">Salvar notas</button> '+
-        '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button>'+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome1', d.nome1, d.avaliacaoNome1, criteriosRec, criteriosCand, registro.valorTotal)+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome2', d.nome2, d.avaliacaoNome2, criteriosRec, criteriosCand, registro.valorTotal)+
+        '<div style="margin-top:14px;"><button type="button" class="botao botao-primario botao-pequeno" data-salvar-dupla-toda="'+duplaId+'">Salvar notas da dupla</button> '+
+        '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button></div>'+
         '</div>';
     }).join('');
     return '<h3 style="margin:20px 0 10px;font-size:1rem;border-bottom:2px solid var(--borda);padding-bottom:6px;">'+escapeHTML(g.turmaNome)+' <span class="stat-mini">('+g.itens.length+' dupla'+(g.itens.length>1?'s':'')+')</span></h3>'+cardsHtml;
@@ -2735,7 +2792,8 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
     '</div>';
 
   abrirModal('Gerenciar duplas — '+(registro.nomeAtividade||registro.codigo),
-    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;">Critérios desta atividade: '+criterios.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
+    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:4px;"><strong>Como recrutador:</strong> '+criteriosRec.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
+    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;"><strong>Como candidato:</strong> '+criteriosCand.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
     filtroHtml + listaDuplasHtml + formNovaDuplaHtml
   );
   const filtroSel = document.getElementById('filtro-turma-duplas');
@@ -2767,33 +2825,40 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
   atualizarSelecaoAlunosDupla();
   document.getElementById('select-turma-nova-dupla').addEventListener('change', atualizarSelecaoAlunosDupla);
 
-  document.querySelectorAll('.input-nota-criterio').forEach(inp=>{
+  document.querySelectorAll('.input-nota-aluno-dupla').forEach(inp=>{
     inp.addEventListener('input', ()=>{
-      const duplaId = inp.dataset.duplaId;
+      const duplaId = inp.dataset.duplaId, slot = inp.dataset.slot;
       let total = 0;
-      document.querySelectorAll('.input-nota-criterio[data-dupla-id="'+duplaId+'"]').forEach(i2=>{
+      document.querySelectorAll('.input-nota-aluno-dupla[data-dupla-id="'+duplaId+'"][data-slot="'+slot+'"]').forEach(i2=>{
         const v = parseFloat(i2.value.replace(',','.'));
         if (!isNaN(v)) total += Math.max(0, Math.min(v, parseFloat(i2.dataset.max)));
       });
-      const span = document.querySelector('.total-nota-dupla[data-dupla-id="'+duplaId+'"]');
+      const span = document.querySelector('.total-nota-aluno-dupla[data-dupla-id="'+duplaId+'"][data-slot="'+slot+'"]');
       if (span) span.textContent = Math.round(total*100)/100;
     });
   });
-  document.querySelectorAll('[data-salvar-dupla]').forEach(btn=>{
+  document.querySelectorAll('[data-salvar-dupla-toda]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
-      const duplaId = btn.dataset.salvarDupla;
+      const duplaId = btn.dataset.salvarDuplaToda;
       const dupla = duplas[duplaId];
-      const inputs = document.querySelectorAll('.input-nota-criterio[data-dupla-id="'+duplaId+'"]');
-      const notas = {}; let total = 0, algumPreenchido = false;
-      inputs.forEach(inp=>{
-        const v = parseFloat(inp.value.replace(',','.'));
-        if (!isNaN(v)){
-          const vClamp = Math.max(0, Math.min(v, parseFloat(inp.dataset.max)));
-          notas[inp.dataset.idx] = vClamp; total += vClamp; algumPreenchido = true;
-        }
-      });
-      total = Math.round(total*100)/100;
-      await salvarNotasDupla(registro.id, registro.codigo, dupla, duplaId, notas, algumPreenchido?total:null);
+      function coletar(slot, papel){
+        const inputs = document.querySelectorAll('.input-nota-aluno-dupla[data-dupla-id="'+duplaId+'"][data-slot="'+slot+'"][data-papel="'+papel+'"]');
+        const notas = {}; let total = 0, algumPreenchido = false;
+        inputs.forEach(inp=>{
+          const v = parseFloat(inp.value.replace(',','.'));
+          if (!isNaN(v)){
+            const vClamp = Math.max(0, Math.min(v, parseFloat(inp.dataset.max)));
+            notas[inp.dataset.idx] = vClamp; total += vClamp; algumPreenchido = true;
+          }
+        });
+        return {notas, total, algumPreenchido};
+      }
+      for (const slot of ['avaliacaoNome1','avaliacaoNome2']){
+        const rRec = coletar(slot, 'notasRecrutador');
+        const rCand = coletar(slot, 'notasCandidato');
+        const notaTotal = (rRec.algumPreenchido || rCand.algumPreenchido) ? Math.round((rRec.total+rCand.total)*100)/100 : null;
+        await salvarNotasAluno(registro.id, registro.codigo, dupla, duplaId, slot, rRec.notas, rCand.notas, notaTotal);
+      }
       atividadesCacheModulo = await buscarAtividadesCadastradas();
       abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
     });
