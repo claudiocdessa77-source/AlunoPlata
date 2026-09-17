@@ -2756,8 +2756,13 @@ function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec,
     '<div style="margin:0 0 10px;"><label style="font-size:.76rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
     '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="width:100%;">'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
   ).join('') : avisoSemCriteriosBloco;
-  const blocoRecrutador = '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin-bottom:6px;">Como recrutador</p>'+montarSelects(criteriosRec, notasRec, 'notasRecrutador');
-  const blocoCandidato = '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin:10px 0 6px;">Como candidato</p>'+montarSelects(criteriosCand, notasCand, 'notasCandidato');
+  const montarPapelBloco = (rotulo, cor, corFundo, criterios, mapaNotas, papel) =>
+    '<div style="border-left:4px solid '+cor+';background:'+corFundo+';border-radius:6px;padding:12px 14px;margin-bottom:12px;">'+
+    '<span style="display:inline-block;background:'+cor+';color:#fff;font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px;">'+rotulo+'</span>'+
+    montarSelects(criterios, mapaNotas, papel)+
+    '</div>';
+  const blocoRecrutador = montarPapelBloco('Como recrutador', 'var(--verde)', '#EAF3EC', criteriosRec, notasRec, 'notasRecrutador');
+  const blocoCandidato = montarPapelBloco('Como candidato', 'var(--folder-escuro)', '#FBF3E6', criteriosCand, notasCand, 'notasCandidato');
   return '<div style="flex:1;min-width:240px;">'+
     '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+'</h4>'+
     (ordemInvertida ? (blocoCandidato+blocoRecrutador) : (blocoRecrutador+blocoCandidato))+
