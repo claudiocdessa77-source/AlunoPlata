@@ -1617,6 +1617,20 @@ let respostasAtuais = {};
 function salvarIdentidadeLocal(){ localStorage.setItem('ta_identidade', JSON.stringify(identidade)); }
 function carregarIdentidadeLocal(){ try{ const r=localStorage.getItem('ta_identidade'); return r?JSON.parse(r):null; }catch(e){ return null; } }
 function limparIdentidadeLocal(){ localStorage.removeItem('ta_identidade'); }
+function salvarProgressoDesafio(){
+  if (!atividadeAtual) return;
+  identidade.emAndamento = {codigo: atividadeAtual.codigo, respostas: respostasAtuais};
+  salvarIdentidadeLocal();
+}
+function limparProgressoDesafio(){
+  if (identidade.emAndamento){ delete identidade.emAndamento; salvarIdentidadeLocal(); }
+}
+function aplicarSelecoesRestauradas(){
+  Object.entries(respostasAtuais).forEach(([num, valor])=>{
+    document.querySelectorAll('.item-selecao[data-pergunta="'+num+'"][data-opcao="'+valor+'"], .chip[data-historia="'+num+'"][data-pensador="'+valor+'"]').forEach(b=>b.classList.add('selecionado'));
+  });
+  if (Object.keys(respostasAtuais).length){ document.getElementById('btn-enviar').hidden = false; }
+}
 
 async function mostrarEscolhaTurma(){
   pararEscutaLiberado();
@@ -1782,7 +1796,8 @@ async function entrarNaAtividade(){
       });
     }
   } else {
-    respostasAtuais = {};
+    const progressoSalvo = identidade.emAndamento;
+    respostasAtuais = (progressoSalvo && progressoSalvo.codigo === atividadeAtual.codigo) ? Object.assign({}, progressoSalvo.respostas) : {};
     renderHistoriasDesafio();
     mostrarTela('tela-desafio');
   }
@@ -1852,8 +1867,10 @@ function renderHistoriasDesafio(){
       document.getElementById('aviso-desafio').hidden = true;
       document.getElementById('confirmacao-envio').hidden = true;
       document.getElementById('btn-enviar').hidden = false;
+      salvarProgressoDesafio();
     });
   });
+  aplicarSelecoesRestauradas();
 }
 
 function renderPerguntasDesafio(main){
@@ -1887,6 +1904,7 @@ function renderPerguntasDesafio(main){
       document.getElementById('aviso-desafio').hidden = true;
       document.getElementById('confirmacao-envio').hidden = true;
       document.getElementById('btn-enviar').hidden = false;
+      salvarProgressoDesafio();
     });
   });
   main.querySelectorAll('.textarea-discursiva').forEach(ta=>{
@@ -1895,8 +1913,10 @@ function renderPerguntasDesafio(main){
       document.getElementById('aviso-desafio').hidden = true;
       document.getElementById('confirmacao-envio').hidden = true;
       document.getElementById('btn-enviar').hidden = false;
+      salvarProgressoDesafio();
     });
   });
+  aplicarSelecoesRestauradas();
 }
 
 function pedirConfirmacaoEnvio(){
@@ -1926,6 +1946,7 @@ async function confirmarEnvio(){
   const dados = {nome:identidade.nome, turma:identidade.turmaNome, respostas:respostasAtuais, acertos, nota, enviadoEm:Date.now()};
   const chave = turmaSlug(identidade.nome);
   await salvarSubmissaoAtividade(identidade.turmaKey, atividadeAtual.codigo, chave, dados);
+  limparProgressoDesafio();
   await entrarNaAtividade();
 }
 
@@ -3457,6 +3478,9 @@ async function iniciar(){
       const turmas = await buscarTurmasCadastradas();
       turmaEscolhidaTemp = turmas.find(t=>turmaSlug(t.nome)===salvo.turmaKey) || {id:null, nome:salvo.turmaNome, alunos:{}};
       await mostrarEscolhaAtividade();
+      if (salvo.emAndamento && atividadesDisponiveisTemp.some(a=>a.codigo===salvo.emAndamento.codigo)){
+        escolherAtividade(salvo.emAndamento.codigo);
+      }
       return;
     } catch(e){
       document.getElementById('erro-texto').textContent = 'Erro ao restaurar sessão: '+e.message;
