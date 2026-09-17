@@ -2745,7 +2745,7 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtro
     abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, filtroDuplaId);
   });
 }
-function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal){
+function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal, ordemInvertida){
   const notasRec = (avaliacao && avaliacao.notasRecrutador) || {};
   const notasCand = (avaliacao && avaliacao.notasCandidato) || {};
   const totalAtual = (avaliacao && avaliacao.notaTotal != null) ? avaliacao.notaTotal : '—';
@@ -2754,14 +2754,13 @@ function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec,
   const avisoSemCriteriosBloco = '<p style="font-size:.82rem;color:var(--vermelho);margin:0 0 10px;">Nenhum critério definido pra este papel ainda. Clique em "Editar →", no topo deste card, pra cadastrar os critérios — os campos de nota aparecem aqui assim que isso for feito.</p>';
   const montarSelects = (criterios, mapaNotas, papel) => criterios.length ? criterios.map((c,i)=>
     '<div style="margin:0 0 10px;"><label style="font-size:.76rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
-    '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="max-width:420px;">'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
+    '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="width:100%;">'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
   ).join('') : avisoSemCriteriosBloco;
-  return '<div style="border-top:1.5px solid var(--borda);padding-top:14px;margin-top:14px;">'+
+  const blocoRecrutador = '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin-bottom:6px;">Como recrutador</p>'+montarSelects(criteriosRec, notasRec, 'notasRecrutador');
+  const blocoCandidato = '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin:10px 0 6px;">Como candidato</p>'+montarSelects(criteriosCand, notasCand, 'notasCandidato');
+  return '<div style="flex:1;min-width:240px;">'+
     '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+'</h4>'+
-    '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin-bottom:6px;">Como recrutador</p>'+
-    montarSelects(criteriosRec, notasRec, 'notasRecrutador')+
-    '<p style="font-size:.8rem;font-weight:700;color:var(--ink-suave);margin:10px 0 6px;">Como candidato</p>'+
-    montarSelects(criteriosCand, notasCand, 'notasCandidato')+
+    (ordemInvertida ? (blocoCandidato+blocoRecrutador) : (blocoRecrutador+blocoCandidato))+
     '<p style="font-weight:800;margin-top:4px;">Nota de '+escapeHTML(nome)+': <span class="total-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'">'+totalAtual+'</span> / '+valorTotal+'</p>'+
     '</div>';
 }
@@ -2815,8 +2814,10 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
         '<button type="button" class="link-zerar" data-remover-dupla="'+duplaId+'">Remover</button></div></div>'+
         (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
         (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
-        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome1', d.nome1, d.avaliacaoNome1, criteriosRec, criteriosCand, registro.valorTotal)+
-        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome2', d.nome2, d.avaliacaoNome2, criteriosRec, criteriosCand, registro.valorTotal)+
+        '<div style="display:flex;flex-wrap:wrap;gap:28px;border-top:1.5px solid var(--borda);padding-top:14px;margin-top:14px;">'+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome1', d.nome1, d.avaliacaoNome1, criteriosRec, criteriosCand, registro.valorTotal, false)+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome2', d.nome2, d.avaliacaoNome2, criteriosRec, criteriosCand, registro.valorTotal, true)+
+        '</div>'+
         '<div style="margin-top:14px;"><button type="button" class="botao botao-primario botao-pequeno" data-salvar-dupla-toda="'+duplaId+'">Salvar notas da dupla</button> '+
         '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button></div>'+
         '</div>';
