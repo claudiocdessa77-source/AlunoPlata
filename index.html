@@ -2040,7 +2040,8 @@ function atividadeTemPendencia(atividadeEfetiva){
   return Object.values(ultimoSnapshotTurmas||{}).some(t=>{
     const dadosAtiv = t && t.atividades && t.atividades[cod];
     if (!dadosAtiv || dadosAtiv.liberado) return false;
-    return Object.keys(dadosAtiv.alunos||{}).length > 0;
+    const alunos = dadosAtiv.alunos || {};
+    return Object.values(alunos).some(a=>!a.liberadoIndividual);
   });
 }
 function popularSeletorAtividade(manterSelecao){
@@ -2124,10 +2125,11 @@ function renderCardsTurmasParaAtividade(atividadeEfetiva, turmas){
     const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
     const media = (n && itens.length) ? (Math.round((soma/(n*itens.length))*100)+'%') : '—';
     const nomeTurma = n?Object.values(alunos)[0].turma:tk;
-    const pendente = !t.liberado && n>0;
+    const pendente = !t.liberado && n>0 && Object.values(alunos).some(a=>!a.liberadoIndividual);
     const estiloAlerta = pendente ? ' style="border-left:6px solid var(--folder-escuro);background:#FBF3E6;"' : '';
+    const badgeTexto = t.liberado ? 'Liberado' : (pendente ? '⚠ Aguardando liberação' : 'Liberado individualmente');
     return '<div class="turma-card" data-turma="'+tk+'"'+estiloAlerta+'>'+
-      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'⚠ Aguardando liberação')+'</span></h3>'+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(pendente?'badge-pendente':'badge-liberado')+'">'+badgeTexto+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao botao-secundario botao-pequeno" data-acao="liberar">'+(t.liberado?'Bloquear novamente':'Liberar respostas')+'</button>'+
       '<button type="button" class="link-zerar" data-acao="arquivar" style="color:var(--folder-escuro);">Arquivar</button>'+
       '<button type="button" class="link-zerar" data-acao="zerar">Zerar respostas</button></div></div>'+
