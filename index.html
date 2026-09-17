@@ -2850,7 +2850,7 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
     avisoSemCriterios+
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:4px;"><strong>Como recrutador:</strong> '+(criteriosRec.length?criteriosRec.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;"><strong>Como candidato:</strong> '+(criteriosCand.length?criteriosCand.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
-    filtroHtml + filtroDuplaHtml + listaDuplasHtml + formNovaDuplaHtml
+    filtroHtml + filtroDuplaHtml + formNovaDuplaHtml + listaDuplasHtml
   );
   const filtroSel = document.getElementById('filtro-turma-duplas');
   if (filtroSel) filtroSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, e.target.value || null, null); });
