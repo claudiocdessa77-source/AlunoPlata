@@ -2699,7 +2699,7 @@ function montarResultadoDupla(registro, dupla){
   html += montarResultadoAlunoDupla(registro, dupla.nome2, dupla.avaliacaoNome2);
   return html;
 }
-async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
+async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtroDuplaId){
   const dupla = (registro.duplas||{})[duplaId];
   if (!dupla) return;
   const turmasNativas = await buscarTurmasCadastradas();
@@ -2734,7 +2734,7 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId){
     if (novoNome1===novoNome2){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Escolha dois alunos diferentes.'; return; }
     await editarDupla(registro, duplaId, dupla, novoNome1, novoNome2, novaPergunta1, novaPergunta2);
     atividadesCacheModulo = await buscarAtividadesCadastradas();
-    abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+    abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, filtroDuplaId);
   });
 }
 function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal){
@@ -2757,7 +2757,7 @@ function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec,
     '<p style="font-weight:800;margin-top:4px;">Nota de '+escapeHTML(nome)+': <span class="total-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'">'+totalAtual+'</span> / '+valorTotal+'</p>'+
     '</div>';
 }
-async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
+async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId){
   const turmasNativas = await buscarTurmasCadastradas();
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean)
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
@@ -2771,12 +2771,24 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
 
   const opcoesFiltro = '<option value="">— Todas as turmas —</option>'+
     turmasAssociadas.map(t=>'<option value="'+t.id+'" '+(filtroTurmaId===t.id?'selected':'')+'>'+escapeHTML(t.nome)+'</option>').join('');
-  const filtroHtml = '<div class="campo" style="max-width:320px;"><label for="filtro-turma-duplas">Filtrar por turma</label>'+
+  const filtroHtml = '<div class="campo" style="max-width:320px;display:inline-block;margin-right:20px;"><label for="filtro-turma-duplas">Filtrar por turma</label>'+
     '<select id="filtro-turma-duplas" class="select-turma">'+opcoesFiltro+'</select></div>';
 
-  const duplasFiltradas = filtroTurmaId
-    ? Object.fromEntries(Object.entries(duplas).filter(([,d])=>d.turmaId===filtroTurmaId))
-    : duplas;
+  const duplasDaTurmaFiltrada = filtroTurmaId
+    ? Object.entries(duplas).filter(([,d])=>d.turmaId===filtroTurmaId)
+    : Object.entries(duplas);
+  const duplasOrdenadasParaFiltro = duplasDaTurmaFiltrada.slice().sort((a,b)=>a[1].nome1.localeCompare(b[1].nome1,'pt-BR'));
+  const opcoesFiltroDupla = '<option value="">— Todas as duplas —</option>'+
+    duplasOrdenadasParaFiltro.map(([id,d])=>{
+      const rotulo = escapeHTML(d.nome1)+' & '+escapeHTML(d.nome2)+(filtroTurmaId?'':' ('+escapeHTML(d.turmaNome)+')');
+      return '<option value="'+id+'" '+(filtroDuplaId===id?'selected':'')+'>'+rotulo+'</option>';
+    }).join('');
+  const filtroDuplaHtml = '<div class="campo" style="max-width:400px;display:inline-block;"><label for="filtro-dupla-especifica">Filtrar por dupla</label>'+
+    '<select id="filtro-dupla-especifica" class="select-turma">'+opcoesFiltroDupla+'</select></div>';
+
+  const duplasFiltradas = Object.fromEntries(
+    duplasDaTurmaFiltrada.filter(([id])=>!filtroDuplaId || id===filtroDuplaId)
+  );
 
   const gruposPorTurma = {};
   Object.entries(duplasFiltradas).forEach(([duplaId, d])=>{
@@ -2822,10 +2834,12 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
     avisoSemCriterios+
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:4px;"><strong>Como recrutador:</strong> '+(criteriosRec.length?criteriosRec.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;"><strong>Como candidato:</strong> '+(criteriosCand.length?criteriosCand.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
-    filtroHtml + listaDuplasHtml + formNovaDuplaHtml
+    filtroHtml + filtroDuplaHtml + listaDuplasHtml + formNovaDuplaHtml
   );
   const filtroSel = document.getElementById('filtro-turma-duplas');
-  if (filtroSel) filtroSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, e.target.value || null); });
+  if (filtroSel) filtroSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, e.target.value || null, null); });
+  const filtroDuplaSel = document.getElementById('filtro-dupla-especifica');
+  if (filtroDuplaSel) filtroDuplaSel.addEventListener('change', (e)=>{ abrirModalGerenciarDuplas(registro, filtroTurmaId, e.target.value || null); });
 
   function atualizarSelecaoAlunosDupla(){
     const turmaId = document.getElementById('select-turma-nova-dupla').value;
@@ -2888,7 +2902,7 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
         await salvarNotasAluno(registro.id, registro.codigo, dupla, duplaId, slot, rRec.notas, rCand.notas, notaTotal);
       }
       atividadesCacheModulo = await buscarAtividadesCadastradas();
-      abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+      abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, filtroDuplaId);
     });
   });
   document.querySelectorAll('[data-remover-dupla]').forEach(btn=>{
@@ -2896,12 +2910,12 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
       if (!confirm('Remover esta dupla? As notas lançadas pra ela também somem.')) return;
       await removerDupla(registro.id, btn.dataset.removerDupla);
       atividadesCacheModulo = await buscarAtividadesCadastradas();
-      abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+      abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, filtroDuplaId===btn.dataset.removerDupla?null:filtroDuplaId);
     });
   });
   document.querySelectorAll('[data-editar-dupla]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      abrirModalEditarParDupla(registro, btn.dataset.editarDupla, filtroTurmaId);
+      abrirModalEditarParDupla(registro, btn.dataset.editarDupla, filtroTurmaId, filtroDuplaId);
     });
   });
   document.querySelectorAll('[data-ver-aluno-dupla]').forEach(btn=>{
@@ -2930,7 +2944,7 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
     }
     await adicionarDupla(registro.id, turmaId, turmaObj.nome, nome1, nome2, pergunta1, pergunta2);
     atividadesCacheModulo = await buscarAtividadesCadastradas();
-    abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId);
+    abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, null);
   });
 }
 function renderListaAtividadesCadastro(){
