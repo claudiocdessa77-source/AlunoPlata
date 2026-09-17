@@ -2629,22 +2629,24 @@ async function abrirModalEditarDupla(registro){
   if (!criteriosRec.length && !criteriosCand.length && criteriosAntigosGenericos.length){
     criteriosRec = criteriosAntigosGenericos.map(nome=>({nome}));
     criteriosCand = criteriosAntigosGenericos.map(nome=>({nome}));
-    avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade foi criada antes de existir a separação por papel. Trouxe a lista de critérios que você já tinha pros dois grupos abaixo, como ponto de partida — ajuste o texto de cada um pra fazer sentido como Recrutador e como Candidato, apagando ou completando o que precisar.</p>';
+    avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade foi criada antes de existir a separação por papel. Trouxe a lista de critérios que você já tinha pros dois grupos abaixo, como ponto de partida — ajuste o texto de cada um pra fazer sentido como Recrutador e como Candidato, apagando ou completando o que precisar. Se preferir, use o botão abaixo pra substituir tudo pelos critérios sugeridos.</p>';
   } else if (!criteriosRec.length && !criteriosCand.length){
     criteriosRec = CRITERIOS_RECRUTADOR_SUGERIDOS.map(nome=>({nome}));
     criteriosCand = CRITERIOS_CANDIDATO_SUGERIDOS.map(nome=>({nome}));
     avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade ainda não tinha critérios definidos. Preenchi os campos abaixo com sugestões, como ponto de partida — ajuste o texto de cada um do jeito que preferir.</p>';
   }
+  const inputCriterio = (classe, nome, i) => '<input type="text" class="'+classe+'" data-idx="'+i+'" value="'+escapeHTML(nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">';
   const html =
     avisoMigracao+
     '<div class="campo"><label for="modal-dupla-nome">Nome da atividade</label><input type="text" id="modal-dupla-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
     '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima, por aluno)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas-dupla" class="lista-selecao" style="max-height:220px;"></div></div>'+
+    '<button type="button" class="botao-texto" id="btn-usar-criterios-sugeridos" style="margin-bottom:14px;">↺ Substituir pelos critérios sugeridos</button>'+
     '<div class="campo"><label>Critérios ao avaliar como Recrutador</label><div id="modal-lista-criterios-recrutador-dupla">'+
-      criteriosRec.map((c,i)=>'<input type="text" class="modal-input-criterio-recrutador-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
+      criteriosRec.map((c,i)=>inputCriterio('modal-input-criterio-recrutador-dupla', c.nome, i)).join('')+
     '</div></div>'+
     '<div class="campo"><label>Critérios ao avaliar como Candidato</label><div id="modal-lista-criterios-candidato-dupla">'+
-      criteriosCand.map((c,i)=>'<input type="text" class="modal-input-criterio-candidato-dupla" data-idx="'+i+'" value="'+escapeHTML(c.nome)+'" style="width:100%;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;margin-bottom:8px;">').join('')+
+      criteriosCand.map((c,i)=>inputCriterio('modal-input-criterio-candidato-dupla', c.nome, i)).join('')+
     '</div></div>'+
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-dupla-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa</label>'+
     '<p style="font-size:.78rem;color:var(--ink-suave);margin:-10px 0 16px;">Se mudar o valor total, as notas já lançadas de cada aluno são recalculadas automaticamente, mantendo a proporção.</p>'+
@@ -2652,6 +2654,12 @@ async function abrirModalEditarDupla(registro){
   abrirModal((registro.nomeAtividade||'Atividade em dupla')+' — '+registro.codigo, html);
   const turmasNativas = await buscarTurmasCadastradas();
   renderCheckboxesTurmas('modal-checkboxes-turmas-dupla', turmasNativas, registro.turmasIds);
+  document.getElementById('btn-usar-criterios-sugeridos').addEventListener('click', ()=>{
+    document.getElementById('modal-lista-criterios-recrutador-dupla').innerHTML =
+      CRITERIOS_RECRUTADOR_SUGERIDOS.map((nome,i)=>inputCriterio('modal-input-criterio-recrutador-dupla', nome, i)).join('');
+    document.getElementById('modal-lista-criterios-candidato-dupla').innerHTML =
+      CRITERIOS_CANDIDATO_SUGERIDOS.map((nome,i)=>inputCriterio('modal-input-criterio-candidato-dupla', nome, i)).join('');
+  });
   document.getElementById('btn-salvar-edicao-dupla').addEventListener('click', async ()=>{
     const nomeAtividade = document.getElementById('modal-dupla-nome').value.trim() || registro.nomeAtividade;
     const valorDigitado = parseFloat(document.getElementById('modal-dupla-valor').value.replace(',','.'));
