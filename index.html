@@ -2615,9 +2615,17 @@ async function irParaVerDetalhes(registro, turmaKey){
   await abrirModalTurma(turmaKey, snap.val()||{}, false);
 }
 async function abrirModalEditarDupla(registro){
-  const criteriosRec = registro.criteriosRecrutador || [];
-  const criteriosCand = registro.criteriosCandidato || [];
+  const criteriosAntigosGenericos = (registro.criterios||[]).map(c=>c.nome);
+  let criteriosRec = registro.criteriosRecrutador || [];
+  let criteriosCand = registro.criteriosCandidato || [];
+  let avisoMigracao = '';
+  if (!criteriosRec.length && !criteriosCand.length && criteriosAntigosGenericos.length){
+    criteriosRec = criteriosAntigosGenericos.map(nome=>({nome}));
+    criteriosCand = criteriosAntigosGenericos.map(nome=>({nome}));
+    avisoMigracao = '<p style="font-size:.8rem;color:var(--folder-escuro);background:#FBF3E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade foi criada antes de existir a separação por papel. Trouxe a lista de critérios que você já tinha pros dois grupos abaixo, como ponto de partida — ajuste o texto de cada um pra fazer sentido como Recrutador e como Candidato, apagando ou completando o que precisar.</p>';
+  }
   const html =
+    avisoMigracao+
     '<div class="campo"><label for="modal-dupla-nome">Nome da atividade</label><input type="text" id="modal-dupla-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
     '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima, por aluno)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas-dupla" class="lista-selecao" style="max-height:220px;"></div></div>'+
@@ -2791,9 +2799,13 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId){
     '<p class="msg-sucesso" id="msg-dupla-adicionada" hidden></p>'+
     '</div>';
 
+  const avisoSemCriterios = (!criteriosRec.length || !criteriosCand.length)
+    ? '<p style="font-size:.85rem;color:var(--vermelho);background:#F7E8E6;border-radius:6px;padding:10px 12px;margin-bottom:14px;">Esta atividade ainda não tem os critérios de avaliação definidos (Recrutador e/ou Candidato) — por isso os campos de nota não aparecem abaixo. Clique em "Editar →" no card desta atividade, na lista de Atividades, pra definir os critérios primeiro.</p>'
+    : '';
   abrirModal('Gerenciar duplas — '+(registro.nomeAtividade||registro.codigo),
-    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:4px;"><strong>Como recrutador:</strong> '+criteriosRec.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
-    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;"><strong>Como candidato:</strong> '+criteriosCand.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · ')+'</p>'+
+    avisoSemCriterios+
+    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:4px;"><strong>Como recrutador:</strong> '+(criteriosRec.length?criteriosRec.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
+    '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;"><strong>Como candidato:</strong> '+(criteriosCand.length?criteriosCand.map(c=>escapeHTML(c.nome)+' (até '+c.valorMax+')').join(' · '):'nenhum critério definido')+'</p>'+
     filtroHtml + listaDuplasHtml + formNovaDuplaHtml
   );
   const filtroSel = document.getElementById('filtro-turma-duplas');
