@@ -2053,8 +2053,10 @@ function renderCardsTurmasParaAtividade(atividadeEfetiva, turmas){
     const soma=Object.values(alunos).reduce((s,a)=>s+(a.acertos||0),0);
     const media = (n && itens.length) ? (Math.round((soma/(n*itens.length))*100)+'%') : '—';
     const nomeTurma = n?Object.values(alunos)[0].turma:tk;
-    return '<div class="turma-card" data-turma="'+tk+'">'+
-      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'Aguardando correção')+'</span></h3>'+
+    const pendente = !t.liberado && n>0;
+    const estiloAlerta = pendente ? ' style="border-left:6px solid var(--folder-escuro);background:#FBF3E6;"' : '';
+    return '<div class="turma-card" data-turma="'+tk+'"'+estiloAlerta+'>'+
+      '<div class="turma-card-topo"><h3>'+escapeHTML(nomeTurma)+' <span class="'+(t.liberado?'badge-liberado':'badge-pendente')+'">'+(t.liberado?'Liberado':'⚠ Aguardando liberação')+'</span></h3>'+
       '<div class="turma-card-botoes"><button type="button" class="botao botao-secundario botao-pequeno" data-acao="liberar">'+(t.liberado?'Bloquear novamente':'Liberar respostas')+'</button>'+
       '<button type="button" class="link-zerar" data-acao="arquivar" style="color:var(--folder-escuro);">Arquivar</button>'+
       '<button type="button" class="link-zerar" data-acao="zerar">Zerar respostas</button></div></div>'+
