@@ -1355,6 +1355,9 @@ async function adicionarAlunosATurma(turmaId, nomes){
 async function removerAlunoDaTurma(turmaId, alunoId){
   await db.ref('turmasCadastradas/'+turmaId+'/alunos/'+alunoId).remove();
 }
+async function marcarAlunoInabilitado(turmaId, alunoId, valor){
+  await db.ref('turmasCadastradas/'+turmaId+'/alunos/'+alunoId+'/inabilitado').set(valor);
+}
 async function removerTurmaCadastrada(turmaId){
   await db.ref('turmasCadastradas/'+turmaId).remove();
 }
@@ -1754,7 +1757,7 @@ function escolherAtividade(codigo){
 }
 
 function mostrarEscolhaNome(){
-  const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).filter(([,a])=>!a.inabilitado).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   alunosCache = alunos;
   document.getElementById('titulo-turma-escolhida').textContent = turmaEscolhidaTemp.nome;
   document.getElementById('filtro-nome').value = '';
@@ -2423,10 +2426,14 @@ function renderListaTurmasCadastro(turmas){
 function abrirModalGerenciarTurma(turmaId){
   const turma = turmasCacheModulo.find(t=>t.id===turmaId);
   if (!turma) return;
-  const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome,inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const listaAlunosHtml = alunos.length ? alunos.map(a=>
-    '<div class="linha-aluno-turma"><span class="linha-senha-nome">'+escapeHTML(a.nome)+'</span>'+
-    '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></div>'
+    '<div class="linha-aluno-turma"'+(a.inabilitado?' style="opacity:.6;"':'')+'><span class="linha-senha-nome">'+escapeHTML(a.nome)+
+    (a.inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);">Abandonou</span>':'')+'</span>'+
+    '<span>'+(a.inabilitado
+      ? '<button type="button" class="botao-texto" data-reabilitar-aluno="'+a.id+'">Reabilitar</button> '
+      : '<button type="button" class="botao-texto" data-abandonou-aluno="'+a.id+'">Abandonou</button> ')+
+    '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></span></div>'
   ).join('') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const html =
     '<div class="campo"><label for="select-curso-turma">Curso</label>'+
@@ -2463,6 +2470,22 @@ function abrirModalGerenciarTurma(turmaId){
   document.querySelectorAll('[data-remover-aluno]').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
       await removerAlunoDaTurma(turmaId, e.target.dataset.removerAluno);
+      await recarregarTurmasModulo();
+      abrirModalGerenciarTurma(turmaId);
+    });
+  });
+  document.querySelectorAll('[data-abandonou-aluno]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const nomeAluno = (alunos.find(a=>a.id===e.target.dataset.abandonouAluno)||{}).nome || 'este aluno';
+      if (!confirm('Marcar "'+nomeAluno+'" como abandonou? A pessoa some da lista de login dos alunos e não pode mais ser escalada em duplas novas, mas as notas e respostas que já existem ficam guardadas.')) return;
+      await marcarAlunoInabilitado(turmaId, e.target.dataset.abandonouAluno, true);
+      await recarregarTurmasModulo();
+      abrirModalGerenciarTurma(turmaId);
+    });
+  });
+  document.querySelectorAll('[data-reabilitar-aluno]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await marcarAlunoInabilitado(turmaId, e.target.dataset.reabilitarAluno, false);
       await recarregarTurmasModulo();
       abrirModalGerenciarTurma(turmaId);
     });
@@ -2712,15 +2735,18 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtro
   if (!dupla) return;
   const turmasNativas = await buscarTurmasCadastradas();
   const turmaObj = turmasNativas.find(t=>t.id===dupla.turmaId);
-  const roster = turmaObj ? Object.values(turmaObj.alunos||{}).map(a=>a.nome) : [];
+  const roster = turmaObj ? Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado).map(a=>a.nome) : [];
   const jaEmOutraDupla = new Set();
   Object.entries(registro.duplas||{}).forEach(([id,d])=>{
     if (id!==duplaId && d.turmaId===dupla.turmaId){ jaEmOutraDupla.add(turmaSlug(d.nome1)); jaEmOutraDupla.add(turmaSlug(d.nome2)); }
   });
-  const nomesDisponiveis = roster.filter(n=>!jaEmOutraDupla.has(turmaSlug(n))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const opcoesNome = (selecionado)=>'<option value="">— selecione —</option>'+nomesDisponiveis.map(n=>
-    '<option value="'+escapeHTML(n)+'" '+(n===selecionado?'selected':'')+'>'+escapeHTML(n)+'</option>'
-  ).join('');
+  const nomesDisponiveisBase = roster.filter(n=>!jaEmOutraDupla.has(turmaSlug(n))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const opcoesNome = (selecionado)=>{
+    const nomes = nomesDisponiveisBase.includes(selecionado) || !selecionado ? nomesDisponiveisBase : [selecionado, ...nomesDisponiveisBase];
+    return '<option value="">— selecione —</option>'+nomes.map(n=>
+      '<option value="'+escapeHTML(n)+'" '+(n===selecionado?'selected':'')+'>'+escapeHTML(n)+'</option>'
+    ).join('');
+  };
 
   const html =
     '<p style="font-size:.85rem;color:var(--ink-suave);margin-bottom:14px;">Turma: '+escapeHTML(dupla.turmaNome)+'</p>'+
@@ -2810,7 +2836,7 @@ async function abrirModalAdicionarDupla(registro){
     Object.values(duplasAtuais).forEach(d=>{
       if (d.turmaId === turmaId){ jaEmDupla.add(turmaSlug(d.nome1)); jaEmDupla.add(turmaSlug(d.nome2)); }
     });
-    const nomesDisponiveis = Object.values(turmaObj.alunos||{}).map(a=>a.nome)
+    const nomesDisponiveis = Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado).map(a=>a.nome)
       .filter(nome=>!jaEmDupla.has(turmaSlug(nome)))
       .sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const opcoesHtml = nomesDisponiveis.length
@@ -3284,7 +3310,7 @@ async function renderizarTabelaNotas(idx){
   const registros = await buscarAtividadesCadastradas();
   const atividadesDaTurma = registros.filter(a=>a.turmasIds && a.turmasIds[turma.id]).map(construirAtividadeEfetiva).filter(Boolean)
     .sort((a,b)=>(a.numero||0)-(b.numero||0));
-  const alunos = Object.values(turma.alunos||{}).map(a=>a.nome).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const alunos = Object.values(turma.alunos||{}).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   atividadesCacheNotas = atividadesDaTurma;
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
@@ -3303,7 +3329,7 @@ async function renderizarTabelaNotas(idx){
   }
 
   const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+'">Ativ. '+a.numero+'</th>').join('');
-  const linhas = alunos.map(nome=>{
+  const linhas = alunos.map(({nome, inabilitado})=>{
     const chave = turmaSlug(nome);
     let total = 0, temNota = false;
     const celulas = atividadesDaTurma.map(ativ=>{
@@ -3312,7 +3338,8 @@ async function renderizarTabelaNotas(idx){
       return '<td style="color:var(--ink-suave);">—</td>';
     }).join('');
     const totalTxt = temNota ? (Math.round(total*100)/100) : '—';
-    return '<tr><td>'+escapeHTML(nome)+'</td>'+celulas+'<td><strong>'+totalTxt+'</strong></td></tr>';
+    const nomeCelula = escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'');
+    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+'<td><strong>'+totalTxt+'</strong></td></tr>';
   }).join('');
 
   container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
@@ -3515,10 +3542,11 @@ async function abrirModalTurma(tk, t, arquivado){
     if (turmaNativa){
       nomeTurmaExibir = turmaNativa.nome;
       const porChave = {}; submissoes.forEach(s=>{ porChave[s.id]=s; });
-      const registrados = Object.values(turmaNativa.alunos||{}).map(a=>a.nome);
-      linhas = registrados.map(nome=>{
+      const registrados = Object.values(turmaNativa.alunos||{}).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado}));
+      linhas = registrados.map(({nome, inabilitado})=>{
         const chave = turmaSlug(nome);
-        return porChave[chave] || {respondeu:false, id:chave, nome:nome, turma:turmaNativa.nome};
+        const existente = porChave[chave];
+        return existente ? Object.assign({}, existente, {inabilitado}) : {respondeu:false, id:chave, nome:nome, turma:turmaNativa.nome, inabilitado};
       }).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     } else {
       linhas = submissoes.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
@@ -3543,8 +3571,9 @@ async function abrirModalTurma(tk, t, arquivado){
 
   const tabelaHtml = linhas.length ? ('<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Status</th><th>Nota</th><th>Enviado em</th>'+(arquivado?'':'<th>Liberado</th><th></th>')+'</tr></thead><tbody>'+
     linhas.map(a=>{
+      const nomeCelula = escapeHTML(a.nome)+(a.inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'');
       if (!a.respondeu){
-        return '<tr><td>'+escapeHTML(a.nome)+'</td><td><span class="badge-pendente">Não respondeu</span></td><td>—</td><td>—</td>'+(arquivado?'':'<td></td><td></td>')+'</tr>';
+        return '<tr'+(a.inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td><td><span class="badge-pendente">Não respondeu</span></td><td>—</td><td>—</td>'+(arquivado?'':'<td></td><td></td>')+'</tr>';
       }
       let celulaLiberado = '';
       if (!arquivado){
@@ -3555,7 +3584,7 @@ async function abrirModalTurma(tk, t, arquivado){
       const acoesHtml = arquivado ? '' :
         '<td style="white-space:nowrap;"><button type="button" class="botao-texto" data-acao="ver-imprimir" data-caminho="'+caminhoBase+a.id+'">Ver/Imprimir</button> · '+
         '<button type="button" class="link-zerar" data-remover-caminho="'+caminhoBase+a.id+'" data-remover-nome="'+escapeHTML(a.nome)+'">Zerar</button></td>';
-      return '<tr><td>'+escapeHTML(a.nome)+'</td><td><span class="badge-liberado" style="background:var(--folder-escuro);">Respondeu — '+a.acertos+'/'+itens.length+'</span></td>'+
+      return '<tr'+(a.inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td><td><span class="badge-liberado" style="background:var(--folder-escuro);">Respondeu — '+a.acertos+'/'+itens.length+'</span></td>'+
       '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
       '<td>'+formatarData(a.enviadoEm)+'</td>'+celulaLiberado+acoesHtml+
       '</tr>';
