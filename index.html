@@ -3329,6 +3329,26 @@ async function abrirTelaNotas(){
   mostrarTela('tela-professor-notas');
   await renderizarTabelaNotas(0);
 }
+function atualizarTotalLinhaNotas(inputCurso){
+  const linha = inputCurso.closest('tr');
+  const celulaCurso = inputCurso.closest('td');
+  const celulas = Array.from(linha.querySelectorAll('td'));
+  let total = 0, temNota = false;
+  for (let i=1; i<celulas.length-1; i++){
+    const celula = celulas[i];
+    if (celula === celulaCurso){
+      const v = parseFloat(inputCurso.value.replace(',','.'));
+      if (!isNaN(v)){ total += v; temNota = true; }
+    } else {
+      const texto = celula.textContent.trim();
+      if (texto !== '—' && texto !== ''){
+        const v = parseFloat(texto);
+        if (!isNaN(v)){ total += v; temNota = true; }
+      }
+    }
+  }
+  celulas[celulas.length-1].innerHTML = '<strong>'+(temNota ? (Math.round(total*100)/100) : '—')+'</strong>';
+}
 async function renderizarTabelaNotas(idx){
   const turma = turmasCacheNotas[idx];
   const container = document.getElementById('tabela-notas-container');
@@ -3381,7 +3401,7 @@ async function renderizarTabelaNotas(idx){
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim().replace(',','.');
       await salvarNotaCursoExtra(turmaKey, e.target.dataset.chaveAluno, val===''?null:val);
-      await renderizarTabelaNotas(idx);
+      atualizarTotalLinhaNotas(e.target);
     });
   });
   const btnRecalc = document.getElementById('btn-recalcular-notas-turma');
