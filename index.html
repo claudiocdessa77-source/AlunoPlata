@@ -1310,12 +1310,25 @@ async function removerDisciplinaCadastrada(id){
 async function buscarTurmasCadastradas(){
   const snap = await db.ref('turmasCadastradas').once('value');
   const dados = snap.val() || {};
-  return Object.entries(dados).map(([id,t])=>({id, nome:t.nome, curso:t.curso||'', disciplina:t.disciplina||'', alunos:t.alunos||{}}))
-    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const turmas = Object.entries(dados).map(([id,t])=>({id, nome:t.nome, curso:t.curso||'', disciplina:t.disciplina||'', alunos:t.alunos||{}}));
+  for (const t of turmas){
+    const temAnonimo = Object.values(t.alunos).some(a=>a.especial);
+    if (!temAnonimo){
+      const key = await criarAlunoAnonimo(t.id);
+      t.alunos = Object.assign({}, t.alunos, {[key]: {nome:'Anônimo', especial:true}});
+    }
+  }
+  return turmas.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+async function criarAlunoAnonimo(turmaId){
+  const ref = db.ref('turmasCadastradas/'+turmaId+'/alunos').push();
+  await ref.set({nome:'Anônimo', especial:true});
+  return ref.key;
 }
 async function criarTurmaCadastrada(nome){
   const ref = db.ref('turmasCadastradas').push();
   await ref.set({nome, criadaEm:Date.now()});
+  await criarAlunoAnonimo(ref.key);
   return ref.key;
 }
 async function definirCursoDisciplinaDaTurma(turmaId, curso, disciplina){
@@ -1441,8 +1454,9 @@ async function removerDupla(atividadeId, duplaId){
 }
 async function salvarNotasAluno(atividadeId, codigo, dupla, duplaId, slot, notasRecrutador, notasCandidato, notaTotal){
   await db.ref('atividadesCadastradas/'+atividadeId+'/duplas/'+duplaId+'/'+slot).set({notasRecrutador, notasCandidato, notaTotal});
-  const turmaKey = turmaSlug(dupla.turmaNome);
   const nome = slot === 'avaliacaoNome1' ? dupla.nome1 : dupla.nome2;
+  if (nome === 'Anônimo') return;
+  const turmaKey = turmaSlug(dupla.turmaNome);
   await db.ref('turmas/'+turmaKey+'/atividades/'+codigo+'/alunos/'+turmaSlug(nome)).set({nome, turma:dupla.turmaNome, nota:notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
 }
 async function editarDupla(registro, duplaId, duplaAntiga, nome1, nome2, pergunta1, pergunta2){
@@ -1454,10 +1468,10 @@ async function editarDupla(registro, duplaId, duplaAntiga, nome1, nome2, pergunt
     if (!nomesNovos.includes(antigo)) await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(antigo)).remove();
   }
   const av1 = duplaAntiga.avaliacaoNome1, av2 = duplaAntiga.avaliacaoNome2;
-  if (av1 && av1.notaTotal != null){
+  if (av1 && av1.notaTotal != null && nome1 !== 'Anônimo'){
     await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(nome1)).set({nome:nome1, turma:duplaAntiga.turmaNome, nota:av1.notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
   }
-  if (av2 && av2.notaTotal != null){
+  if (av2 && av2.notaTotal != null && nome2 !== 'Anônimo'){
     await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(nome2)).set({nome:nome2, turma:duplaAntiga.turmaNome, nota:av2.notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
   }
 }
@@ -1769,7 +1783,7 @@ function escolherAtividade(codigo){
 }
 
 function mostrarEscolhaNome(){
-  const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).filter(([,a])=>!a.inabilitado).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).filter(([,a])=>!a.inabilitado && !a.especial).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   alunosCache = alunos;
   document.getElementById('titulo-turma-escolhida').textContent = turmaEscolhidaTemp.nome;
   document.getElementById('filtro-nome').value = '';
@@ -2335,7 +2349,7 @@ async function carregarListaSenhas(){
   if (!turma){ lista.innerHTML=''; return; }
   lista.innerHTML = '<p class="vazio-msg">Carregando…</p>';
   try{
-    const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    const alunos = Object.entries(turma.alunos||{}).filter(([,a])=>!a.especial).map(([id,a])=>({id,nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
     const turmaKey = turmaSlug(turma.nome);
     const senhasSalvas = await buscarSenhasDaTurma(turmaKey);
     if (!alunos.length){ lista.innerHTML = '<p class="vazio-msg">Nenhum aluno nesta turma.</p>'; return; }
@@ -2438,7 +2452,7 @@ function renderListaTurmasCadastro(turmas){
 function abrirModalGerenciarTurma(turmaId){
   const turma = turmasCacheModulo.find(t=>t.id===turmaId);
   if (!turma) return;
-  const alunos = Object.entries(turma.alunos||{}).map(([id,a])=>({id,nome:a.nome,inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.entries(turma.alunos||{}).filter(([,a])=>!a.especial).map(([id,a])=>({id,nome:a.nome,inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const listaAlunosHtml = alunos.length ? alunos.map(a=>
     '<div class="linha-aluno-turma"'+(a.inabilitado?' style="opacity:.6;"':'')+'><span class="linha-senha-nome">'+escapeHTML(a.nome)+
     (a.inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);">Abandonou</span>':'')+'</span>'+
@@ -2747,12 +2761,15 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtro
   if (!dupla) return;
   const turmasNativas = await buscarTurmasCadastradas();
   const turmaObj = turmasNativas.find(t=>t.id===dupla.turmaId);
-  const roster = turmaObj ? Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado).map(a=>a.nome) : [];
+  const rosterCompleto = turmaObj ? Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado) : [];
   const jaEmOutraDupla = new Set();
   Object.entries(registro.duplas||{}).forEach(([id,d])=>{
     if (id!==duplaId && d.turmaId===dupla.turmaId){ jaEmOutraDupla.add(turmaSlug(d.nome1)); jaEmOutraDupla.add(turmaSlug(d.nome2)); }
   });
-  const nomesDisponiveisBase = roster.filter(n=>!jaEmOutraDupla.has(turmaSlug(n))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const nomesDisponiveisBase = rosterCompleto
+    .filter(a=>a.especial || !jaEmOutraDupla.has(turmaSlug(a.nome)))
+    .map(a=>a.nome)
+    .sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const opcoesNome = (selecionado)=>{
     const nomes = nomesDisponiveisBase.includes(selecionado) || !selecionado ? nomesDisponiveisBase : [selecionado, ...nomesDisponiveisBase];
     return '<option value="">— selecione —</option>'+nomes.map(n=>
@@ -2848,8 +2865,9 @@ async function abrirModalAdicionarDupla(registro){
     Object.values(duplasAtuais).forEach(d=>{
       if (d.turmaId === turmaId){ jaEmDupla.add(turmaSlug(d.nome1)); jaEmDupla.add(turmaSlug(d.nome2)); }
     });
-    const nomesDisponiveis = Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado).map(a=>a.nome)
-      .filter(nome=>!jaEmDupla.has(turmaSlug(nome)))
+    const nomesDisponiveis = Object.values(turmaObj.alunos||{}).filter(a=>!a.inabilitado)
+      .filter(a=>a.especial || !jaEmDupla.has(turmaSlug(a.nome)))
+      .map(a=>a.nome)
       .sort((a,b)=>a.localeCompare(b,'pt-BR'));
     const opcoesHtml = nomesDisponiveis.length
       ? '<option value="">— selecione —</option>'+nomesDisponiveis.map(n=>'<option value="'+escapeHTML(n)+'">'+escapeHTML(n)+'</option>').join('')
@@ -3322,7 +3340,7 @@ async function renderizarTabelaNotas(idx){
   const registros = await buscarAtividadesCadastradas();
   const atividadesDaTurma = registros.filter(a=>a.turmasIds && a.turmasIds[turma.id]).map(construirAtividadeEfetiva).filter(Boolean)
     .sort((a,b)=>(a.numero||0)-(b.numero||0));
-  const alunos = Object.values(turma.alunos||{}).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.values(turma.alunos||{}).filter(a=>!a.especial).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   atividadesCacheNotas = atividadesDaTurma;
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
