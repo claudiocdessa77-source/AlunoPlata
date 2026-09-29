@@ -1507,6 +1507,9 @@ async function contarRespostasNoBanco(codigo){
 }
 /* Quando o valor (nota máxima) de uma atividade muda, recalcula e regrava a nota de quem já respondeu,
    em todas as turmas onde essa atividade foi aplicada — mantém proporção acertos/total. */
+async function salvarNotaCursoExtra(turmaKey, chaveAluno, valor){
+  await db.ref('turmas/'+turmaKey+'/cursoExtra/'+chaveAluno).set(valor);
+}
 async function recalcularNotasDaAtividade(codigo, valorTotalNovo, atividadeEfetiva){
   const totalItens = itensAtividade(atividadeEfetiva).length;
   if (!totalItens) return 0;
@@ -3314,10 +3317,9 @@ async function renderizarTabelaNotas(idx){
   atividadesCacheNotas = atividadesDaTurma;
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
-  if (!atividadesDaTurma.length){ container.innerHTML = '<p class="vazio-msg">Nenhuma atividade associada a esta turma ainda.</p>'; return; }
 
   legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' — valor '+a.valorTotal+' ('+a.codigo+')</div>').join('')+
-    '<button type="button" class="botao-texto" id="btn-recalcular-notas-turma" style="margin-top:6px;">Recalcular todas as notas desta turma com os valores atuais</button>';
+    (atividadesDaTurma.length ? '<button type="button" class="botao-texto" id="btn-recalcular-notas-turma" style="margin-top:6px;">Recalcular todas as notas desta turma com os valores atuais</button>' : '');
 
   const notasPorAtividade = {};
   for (const ativ of atividadesDaTurma){
@@ -3327,6 +3329,8 @@ async function renderizarTabelaNotas(idx){
     Object.entries(dados).forEach(([chave, sub])=>{ mapa[chave] = sub.nota; });
     notasPorAtividade[ativ.codigo] = mapa;
   }
+  const cursoExtraSnap = await db.ref('turmas/'+turmaKey+'/cursoExtra').once('value');
+  const cursoExtraDados = cursoExtraSnap.val() || {};
 
   const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+'">Ativ. '+a.numero+'</th>').join('');
   const linhas = alunos.map(({nome, inabilitado})=>{
@@ -3337,12 +3341,22 @@ async function renderizarTabelaNotas(idx){
       if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td>'+escapeHTML(String(nota))+'</td>'; }
       return '<td style="color:var(--ink-suave);">—</td>';
     }).join('');
+    const cursoValor = cursoExtraDados[chave];
+    if (cursoValor!=null && cursoValor!==''){ total += parseFloat(cursoValor)||0; temNota = true; }
+    const celulaCurso = '<td><input type="text" inputmode="decimal" class="input-nota-curso-extra" data-chave-aluno="'+chave+'" value="'+(cursoValor!=null?escapeHTML(String(cursoValor)):'')+'" placeholder="—" style="width:70px;"></td>';
     const totalTxt = temNota ? (Math.round(total*100)/100) : '—';
     const nomeCelula = escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'');
-    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+'<td><strong>'+totalTxt+'</strong></td></tr>';
+    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td><strong>'+totalTxt+'</strong></td></tr>';
   }).join('');
 
-  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  document.querySelectorAll('.input-nota-curso-extra').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const val = e.target.value.trim().replace(',','.');
+      await salvarNotaCursoExtra(turmaKey, e.target.dataset.chaveAluno, val===''?null:val);
+      await renderizarTabelaNotas(idx);
+    });
+  });
   const btnRecalc = document.getElementById('btn-recalcular-notas-turma');
   if (btnRecalc){
     btnRecalc.addEventListener('click', async ()=>{
