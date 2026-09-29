@@ -974,7 +974,7 @@ function calcularAcertos(respostas, atividade){
 }
 function calcularNota(acertos, totalItens, valorTotal){
   if (!valorTotal) return null;
-  return Math.round((acertos/totalItens)*valorTotal*10)/10;
+  return Math.min(Math.round((acertos/totalItens)*valorTotal*10)/10, valorTotal);
 }
 function formatarData(ts){
   if(!ts) return '—';
@@ -1477,7 +1477,7 @@ async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, tu
       if (!aval || aval.notaTotal == null) continue;
       const rRec = recalcularBloco(aval.notasRecrutador, criteriosRecNovos);
       const rCand = recalcularBloco(aval.notasCandidato, criteriosCandNovos);
-      const notaTotalNova = arredondar2(rRec.total + rCand.total);
+      const notaTotalNova = Math.min(arredondar2(rRec.total + rCand.total), valorTotal);
       await salvarNotasAluno(registro.id, registro.codigo, dupla, duplaId, slot, rRec.notasNovas, rCand.notasNovas, notaTotalNova);
     }
   }
@@ -2962,7 +2962,7 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
         if (CONVERSAO_LETRA_DUPLA[letra] != null) total += CONVERSAO_LETRA_DUPLA[letra]*parseFloat(i2.dataset.max);
       });
       const span = document.querySelector('.total-nota-aluno-dupla[data-dupla-id="'+duplaId+'"][data-slot="'+slot+'"]');
-      if (span) span.textContent = arredondar2(total);
+      if (span) span.textContent = Math.min(arredondar2(total), registro.valorTotal);
     });
   });
   document.querySelectorAll('[data-salvar-dupla-toda]').forEach(btn=>{
@@ -2984,7 +2984,7 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
       for (const slot of ['avaliacaoNome1','avaliacaoNome2']){
         const rRec = coletar(slot, 'notasRecrutador');
         const rCand = coletar(slot, 'notasCandidato');
-        const notaTotal = (rRec.algumPreenchido || rCand.algumPreenchido) ? arredondar2(rRec.total+rCand.total) : null;
+        const notaTotal = (rRec.algumPreenchido || rCand.algumPreenchido) ? Math.min(arredondar2(rRec.total+rCand.total), registro.valorTotal) : null;
         await salvarNotasAluno(registro.id, registro.codigo, dupla, duplaId, slot, rRec.notas, rCand.notas, notaTotal);
       }
       atividadesCacheModulo = await buscarAtividadesCadastradas();
