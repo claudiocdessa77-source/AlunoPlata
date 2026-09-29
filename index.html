@@ -214,6 +214,15 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
   body.imprimindo-relatorio .folha-impressao{display:block !important;}
   .acoes,.chip,.painel-topo-acoes,footer{display:none;}
   body{padding:0;background:#fff;}
+  body.imprimindo-notas *{visibility:hidden;}
+  body.imprimindo-notas .notas-imprimivel-area,body.imprimindo-notas .notas-imprimivel-area *{visibility:visible;}
+  body.imprimindo-notas .notas-imprimivel-area{display:block !important;position:absolute;top:0;left:0;width:100%;padding:6px;}
+  .tabela-notas-impressao{width:100%;border-collapse:collapse;font-size:8pt;}
+  .tabela-notas-impressao th,.tabela-notas-impressao td{border:1px solid #999;padding:1.5px 3px;text-align:center;}
+  .tabela-notas-impressao th{background:#eee;font-weight:700;}
+  .tabela-notas-impressao td:first-child,.tabela-notas-impressao th:first-child{text-align:left;}
+  .titulo-impressao-notas{font-size:12pt;font-weight:800;margin:0 0 2px;}
+  .subtitulo-impressao-notas{font-size:8pt;color:#555;margin:0 0 6px;}
 }
 </style>
 </head>
@@ -610,7 +619,9 @@ Texto do caso/contexto, aparece uma vez no topo.
         <select id="select-turma-notas" class="select-turma"></select>
       </div>
       <div id="legenda-notas" style="margin:14px 0 6px;"></div>
+      <button type="button" class="botao botao-secundario botao-pequeno no-print" id="btn-imprimir-notas" style="margin-bottom:10px;">🖨 Imprimir notas desta turma</button>
       <div id="tabela-notas-container" style="overflow-x:auto;"></div>
+      <div class="notas-imprimivel-area" id="notas-imprimivel" style="display:none;"></div>
     </div>
   </div>
 </section>
@@ -1037,7 +1048,7 @@ async function imprimirAtividadeRespondida(turmaNome, nomeAluno, atividade, dado
   document.body.classList.add('imprimindo-relatorio');
   window.print();
 }
-window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-relatorio'));
+window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-relatorio','imprimindo-notas'));
 
 /* ---- Visualização da atividade "como o aluno vê", acessada pelo professor — vem como gabarito já marcado ---- */
 function montarVisualizacaoAtividade(atividade){
@@ -3369,6 +3380,30 @@ async function renderizarTabelaNotas(idx){
     });
   }
 }
+function imprimirNotasTurma(){
+  const sel = document.getElementById('select-turma-notas');
+  const nomeTurma = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+  const tabelaAtual = document.querySelector('#tabela-notas-container table');
+  if (!tabelaAtual) return;
+  const clone = tabelaAtual.cloneNode(true);
+  clone.classList.add('tabela-notas-impressao');
+  clone.querySelectorAll('.input-nota-curso-extra').forEach(inp=>{
+    const span = document.createElement('span');
+    span.textContent = inp.value || '—';
+    inp.replaceWith(span);
+  });
+  clone.querySelectorAll('.badge-pendente').forEach(b=>{
+    const span = document.createElement('span');
+    span.textContent = ' ('+b.textContent+')';
+    b.replaceWith(span);
+  });
+  const html = '<p class="titulo-impressao-notas">Notas — '+escapeHTML(nomeTurma)+'</p>'+
+    '<p class="subtitulo-impressao-notas">Gerado em '+new Date().toLocaleDateString('pt-BR')+'</p>'+
+    clone.outerHTML;
+  document.getElementById('notas-imprimivel').innerHTML = html;
+  document.body.classList.add('imprimindo-notas');
+  window.print();
+}
 
 async function abrirTelaRelatorios(){
   document.getElementById('relatorio-conteudo').innerHTML = '';
@@ -3734,6 +3769,7 @@ document.getElementById('btn-voltar-painel-relatorios').addEventListener('click'
 document.getElementById('btn-modulo-notas').addEventListener('click', abrirTelaNotas);
 document.getElementById('btn-voltar-painel-notas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
 document.getElementById('select-turma-notas').addEventListener('change', (e)=>{ renderizarTabelaNotas(Number(e.target.value)); });
+document.getElementById('btn-imprimir-notas').addEventListener('click', imprimirNotasTurma);
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') fecharModal(); });
 
