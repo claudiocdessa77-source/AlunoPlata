@@ -1468,9 +1468,7 @@ async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, tu
   const criteriosCandNovos = criteriosCandidatoNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
   await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criteriosRecrutador:criteriosRecNovos, criteriosCandidato:criteriosCandNovos, ativa});
 
-  const valorMudou = valorTotal !== registro.valorTotal;
   const duplas = registro.duplas || {};
-  if (!valorMudou) return;
   function recalcularBloco(bloco, criteriosNovos){
     const notasNovas = {}; let total = 0;
     criteriosNovos.forEach((c,i)=>{
