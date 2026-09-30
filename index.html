@@ -1927,9 +1927,19 @@ async function mostrarMediaFinal(){
     const valorTxt = resultado.temAlguma ? (Math.round(resultado.soma*100)/100) : '—';
     return '<div class="historia-card"><h4 class="pergunta-titulo">'+rotulo+'</h4><p style="font-size:1.7rem;font-weight:800;margin:6px 0 0;">'+valorTxt+'</p></div>';
   }
+  let blocoTotal = '';
+  if (liberado1 && liberado2){
+    const temAlgumaTotal = u1.temAlguma || u2.temAlguma;
+    const somaTotal = u1.soma + u2.soma;
+    const totalTxt = temAlgumaTotal ? (Math.round(somaTotal*100)/100) : '—';
+    blocoTotal = '<div class="historia-card" style="background:var(--ink);border-color:var(--ink);">'+
+      '<h4 class="pergunta-titulo" style="color:#fff;">Soma geral (1ª + 2ª Unidade)</h4>'+
+      '<p style="font-size:2rem;font-weight:800;margin:6px 0 0;color:#fff;">'+totalTxt+'</p></div>';
+  }
   document.getElementById('conteudo-media-final').innerHTML =
     blocoUnidade('1ª Unidade', liberado1, u1) +
-    blocoUnidade('2ª Unidade', liberado2, u2);
+    blocoUnidade('2ª Unidade', liberado2, u2) +
+    blocoTotal;
   mostrarTela('tela-media-final');
 }
 
