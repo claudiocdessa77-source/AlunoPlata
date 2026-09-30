@@ -1415,7 +1415,14 @@ async function removerTurmaCadastrada(turmaId){
 async function buscarAtividadesCadastradas(){
   const snap = await db.ref('atividadesCadastradas').once('value');
   const dados = snap.val() || {};
-  return Object.entries(dados).map(([id,a])=>Object.assign({id}, a)).sort((a,b)=>(a.numero||0)-(b.numero||0));
+  const lista = Object.entries(dados).map(([id,a])=>Object.assign({id}, a));
+  for (const a of lista){
+    if (!a.unidade){
+      await db.ref('atividadesCadastradas/'+a.id+'/unidade').set('1');
+      a.unidade = '1';
+    }
+  }
+  return lista.sort((a,b)=>(a.numero||0)-(b.numero||0));
 }
 async function proximoNumeroAtividade(){
   const lista = await buscarAtividadesCadastradas();
@@ -1904,8 +1911,12 @@ async function mostrarMediaFinal(){
     }
     return {soma, temAlguma};
   }
-  const u1 = await calcularUnidade('1');
+  const u1Base = await calcularUnidade('1');
   const u2 = await calcularUnidade('2');
+  const cursoSnap = await db.ref('turmas/'+turmaKey+'/cursoExtra/'+chave).once('value');
+  const cursoValor = cursoSnap.val();
+  const temCurso = cursoValor!=null && cursoValor!=='';
+  const u1 = {soma: u1Base.soma + (temCurso?(parseFloat(cursoValor)||0):0), temAlguma: u1Base.temAlguma || temCurso};
   const liberado1 = !!mediaLiberada['1'] || !!(mediaLiberadaIndiv['1']&&mediaLiberadaIndiv['1'][chave]);
   const liberado2 = !!mediaLiberada['2'] || !!(mediaLiberadaIndiv['2']&&mediaLiberadaIndiv['2'][chave]);
 
@@ -3440,17 +3451,23 @@ async function abrirTelaNotas(){
 function atualizarTotalLinhaNotas(inputCurso){
   const linha = inputCurso.closest('tr');
   let total = 0, temNota = false;
+  let totalU1 = 0, temNotaU1 = false;
   linha.querySelectorAll('.celula-ativ-nota').forEach(celula=>{
     const texto = celula.textContent.trim();
     if (texto !== '—' && texto !== ''){
       const v = parseFloat(texto);
-      if (!isNaN(v)){ total += v; temNota = true; }
+      if (!isNaN(v)){
+        total += v; temNota = true;
+        if (celula.classList.contains('celula-ativ-u1')){ totalU1 += v; temNotaU1 = true; }
+      }
     }
   });
   const v = parseFloat(inputCurso.value.replace(',','.'));
-  if (!isNaN(v)){ total += v; temNota = true; }
+  if (!isNaN(v)){ total += v; temNota = true; totalU1 += v; temNotaU1 = true; }
   const celulaTotal = linha.querySelector('.celula-total-notas');
   if (celulaTotal) celulaTotal.innerHTML = '<strong>'+(temNota ? (Math.round(total*100)/100) : '—')+'</strong>';
+  const celulaU1Valor = linha.querySelector('.celula-media-u1 .valor-media-unidade');
+  if (celulaU1Valor) celulaU1Valor.innerHTML = temNotaU1 ? '<strong>'+(Math.round(totalU1*100)/100)+'</strong>' : '<span style="color:var(--ink-suave);">—</span>';
 }
 function celulaMediaUnidade(unidade, mediaValor, temNotaUnidade, turmaLiberada, chaveAluno, individualLiberado){
   const valorTxt = temNotaUnidade ? (Math.round(mediaValor*100)/100) : '—';
@@ -3462,7 +3479,7 @@ function celulaMediaUnidade(unidade, mediaValor, temNotaUnidade, turmaLiberada, 
   } else {
     statusHtml = '<button type="button" class="botao-texto" data-liberar-media data-unidade="'+unidade+'" data-chave="'+chaveAluno+'" style="font-size:.68rem;">Liberar</button>';
   }
-  return '<td>'+(temNotaUnidade?'<strong>'+valorTxt+'</strong>':'<span style="color:var(--ink-suave);">—</span>')+'<br>'+statusHtml+'</td>';
+  return '<td class="celula-media-u'+unidade+'"><span class="valor-media-unidade">'+(temNotaUnidade?'<strong>'+valorTxt+'</strong>':'<span style="color:var(--ink-suave);">—</span>')+'</span><br>'+statusHtml+'</td>';
 }
 async function renderizarTabelaNotas(idx){
   const turma = turmasCacheNotas[idx];
@@ -3512,8 +3529,9 @@ async function renderizarTabelaNotas(idx){
     let total = 0, temNota = false;
     const celulas = atividadesDaTurma.map(ativ=>{
       const nota = notasPorAtividade[ativ.codigo][chave];
-      if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td class="celula-ativ-nota">'+escapeHTML(String(nota))+'</td>'; }
-      return '<td style="color:var(--ink-suave);">—</td>';
+      const classeUnidade = (ativ.unidade||'1')==='2' ? 'celula-ativ-nota celula-ativ-u2' : 'celula-ativ-nota celula-ativ-u1';
+      if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td class="'+classeUnidade+'">'+escapeHTML(String(nota))+'</td>'; }
+      return '<td class="'+classeUnidade+'" style="color:var(--ink-suave);">—</td>';
     }).join('');
     const cursoValor = cursoExtraDados[chave];
     if (cursoValor!=null && cursoValor!==''){ total += parseFloat(cursoValor)||0; temNota = true; }
@@ -3529,15 +3547,17 @@ async function renderizarTabelaNotas(idx){
       });
       return {soma, temAlguma};
     }
-    const u1 = somaUnidade(atividadesUnidade1);
+    const u1Base = somaUnidade(atividadesUnidade1);
     const u2 = somaUnidade(atividadesUnidade2);
+    const temCurso = cursoValor!=null && cursoValor!=='';
+    const u1 = {soma: u1Base.soma + (temCurso?(parseFloat(cursoValor)||0):0), temAlguma: u1Base.temAlguma || temCurso};
     const celulaU1 = celulaMediaUnidade('1', u1.soma, u1.temAlguma, !!mediaLiberada['1'], chave, !!(mediaLiberadaIndiv['1']&&mediaLiberadaIndiv['1'][chave]));
     const celulaU2 = celulaMediaUnidade('2', u2.soma, u2.temAlguma, !!mediaLiberada['2'], chave, !!(mediaLiberadaIndiv['2']&&mediaLiberadaIndiv['2'][chave]));
 
     return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td class="celula-total-notas"><strong>'+totalTxt+'</strong></td>'+celulaU1+celulaU2+'</tr>';
   }).join('');
 
-  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th><th>Média 1ª Unidade</th><th>Média 2ª Unidade</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th><th title="Soma das atividades da 1ª Unidade + Curso">Média 1ª Unidade</th><th title="Soma das atividades da 2ª Unidade">Média 2ª Unidade</th></tr></thead><tbody>'+linhas+'</tbody></table>';
   document.querySelectorAll('.input-nota-curso-extra').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim().replace(',','.');
