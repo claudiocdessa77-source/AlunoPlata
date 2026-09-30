@@ -1407,6 +1407,9 @@ async function removerAlunoDaTurma(turmaId, alunoId){
 async function marcarAlunoInabilitado(turmaId, alunoId, valor){
   await db.ref('turmasCadastradas/'+turmaId+'/alunos/'+alunoId+'/inabilitado').set(valor);
 }
+async function marcarAlunoInfrequente(turmaId, alunoId, valor){
+  await db.ref('turmasCadastradas/'+turmaId+'/alunos/'+alunoId+'/infrequente').set(valor);
+}
 async function removerTurmaCadastrada(turmaId){
   await db.ref('turmasCadastradas/'+turmaId).remove();
 }
@@ -1811,17 +1814,33 @@ async function mostrarEscolhaAtividade(){
   }
 }
 
-function escolherAtividade(codigo){
+async function escolherAtividade(codigo){
   modoVerMedia = false;
   atividadeAtual = atividadesDisponiveisTemp.find(a=>a.codigo===codigo);
   const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   if (identidade.turmaKey===turmaKey && identidade.nome){
+    if (!(await verificarAlunoAindaAtivo())){ await encerrarAcessoAbandonou(); return; }
     entrarNaAtividade();
   } else {
     mostrarEscolhaNome();
   }
 }
 
+async function verificarAlunoAindaAtivo(){
+  if (!identidade.turmaKey || !identidade.nome) return false;
+  const turmas = await buscarTurmasCadastradas();
+  const turma = turmas.find(t=>turmaSlug(t.nome)===identidade.turmaKey);
+  if (!turma) return false;
+  turmaEscolhidaTemp = turma;
+  const aluno = Object.values(turma.alunos||{}).find(a=>turmaSlug(a.nome)===turmaSlug(identidade.nome));
+  return !!(aluno && !aluno.inabilitado);
+}
+async function encerrarAcessoAbandonou(){
+  await mostrarEscolhaTurma();
+  const erro = document.getElementById('erro-turmas');
+  erro.hidden = false;
+  erro.textContent = 'Você não tem mais acesso a esta turma. Procure o(a) professor(a) se achar que isso é um engano.';
+}
 function mostrarEscolhaNome(){
   const alunos = Object.entries(turmaEscolhidaTemp.alunos||{}).filter(([,a])=>!a.inabilitado && !a.especial).map(([id,a])=>({id, nome:a.nome})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   alunosCache = alunos;
@@ -1877,11 +1896,12 @@ async function confirmarSenhaAluno(){
   }
 }
 
-function abrirVerMinhaMedia(){
+async function abrirVerMinhaMedia(){
   modoVerMedia = true;
   const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   if (identidade.turmaKey===turmaKey && identidade.nome){
     modoVerMedia = false;
+    if (!(await verificarAlunoAindaAtivo())){ await encerrarAcessoAbandonou(); return; }
     mostrarMediaFinal();
   } else {
     mostrarEscolhaNome();
@@ -2563,13 +2583,17 @@ function renderListaTurmasCadastro(turmas){
 function abrirModalGerenciarTurma(turmaId){
   const turma = turmasCacheModulo.find(t=>t.id===turmaId);
   if (!turma) return;
-  const alunos = Object.entries(turma.alunos||{}).filter(([,a])=>!a.especial).map(([id,a])=>({id,nome:a.nome,inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.entries(turma.alunos||{}).filter(([,a])=>!a.especial).map(([id,a])=>({id,nome:a.nome,inabilitado:!!a.inabilitado,infrequente:!!a.infrequente})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const listaAlunosHtml = alunos.length ? alunos.map(a=>
     '<div class="linha-aluno-turma"'+(a.inabilitado?' style="opacity:.6;"':'')+'><span class="linha-senha-nome">'+escapeHTML(a.nome)+
-    (a.inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);">Abandonou</span>':'')+'</span>'+
+    (a.inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);">Abandonou</span>':'')+
+    (a.infrequente?' <span class="badge-pendente" style="background:var(--folder-escuro);">Infrequente</span>':'')+'</span>'+
     '<span>'+(a.inabilitado
       ? '<button type="button" class="botao-texto" data-reabilitar-aluno="'+a.id+'">Reabilitar</button> '
       : '<button type="button" class="botao-texto" data-abandonou-aluno="'+a.id+'">Abandonou</button> ')+
+    (a.infrequente
+      ? '<button type="button" class="botao-texto" data-desmarcar-infrequente="'+a.id+'">Desmarcar infrequente</button> '
+      : '<button type="button" class="botao-texto" data-marcar-infrequente="'+a.id+'">Infrequente</button> ')+
     '<button type="button" class="link-zerar" data-remover-aluno="'+a.id+'">Remover</button></span></div>'
   ).join('') : '<p class="vazio-msg">Nenhum aluno ainda.</p>';
   const html =
@@ -2623,6 +2647,20 @@ function abrirModalGerenciarTurma(turmaId){
   document.querySelectorAll('[data-reabilitar-aluno]').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
       await marcarAlunoInabilitado(turmaId, e.target.dataset.reabilitarAluno, false);
+      await recarregarTurmasModulo();
+      abrirModalGerenciarTurma(turmaId);
+    });
+  });
+  document.querySelectorAll('[data-marcar-infrequente]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await marcarAlunoInfrequente(turmaId, e.target.dataset.marcarInfrequente, true);
+      await recarregarTurmasModulo();
+      abrirModalGerenciarTurma(turmaId);
+    });
+  });
+  document.querySelectorAll('[data-desmarcar-infrequente]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await marcarAlunoInfrequente(turmaId, e.target.dataset.desmarcarInfrequente, false);
       await recarregarTurmasModulo();
       abrirModalGerenciarTurma(turmaId);
     });
@@ -3502,7 +3540,7 @@ async function renderizarTabelaNotas(idx){
   const registros = await buscarAtividadesCadastradas();
   const atividadesDaTurma = registros.filter(a=>a.turmasIds && a.turmasIds[turma.id]).map(construirAtividadeEfetiva).filter(Boolean)
     .sort((a,b)=>(a.numero||0)-(b.numero||0));
-  const alunos = Object.values(turma.alunos||{}).filter(a=>!a.especial).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const alunos = Object.values(turma.alunos||{}).filter(a=>!a.especial).map(a=>({nome:a.nome, inabilitado:!!a.inabilitado, infrequente:!!a.infrequente})).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   atividadesCacheNotas = atividadesDaTurma;
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
@@ -3534,7 +3572,7 @@ async function renderizarTabelaNotas(idx){
   const atividadesUnidade2 = atividadesDaTurma.filter(a=>a.unidade==='2');
 
   const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+' — '+(a.unidade==='2'?'2ª':'1ª')+' Unidade">Ativ. '+a.numero+'</th>').join('');
-  const linhas = alunos.map(({nome, inabilitado})=>{
+  const linhas = alunos.map(({nome, inabilitado, infrequente})=>{
     const chave = turmaSlug(nome);
     let total = 0, temNota = false;
     const celulas = atividadesDaTurma.map(ativ=>{
@@ -3547,7 +3585,7 @@ async function renderizarTabelaNotas(idx){
     if (cursoValor!=null && cursoValor!==''){ total += parseFloat(cursoValor)||0; temNota = true; }
     const celulaCurso = '<td><input type="text" inputmode="decimal" class="input-nota-curso-extra" data-chave-aluno="'+chave+'" value="'+(cursoValor!=null?escapeHTML(String(cursoValor)):'')+'" placeholder="—" style="width:70px;" '+(inabilitado?'disabled title="Aluno abandonou — lançamento bloqueado"':'')+'></td>';
     const totalTxt = temNota ? (Math.round(total*100)/100) : '—';
-    const nomeCelula = escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'');
+    const nomeCelula = escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'')+(infrequente?' <span class="badge-pendente" style="background:var(--folder-escuro);font-size:.6rem;">Infrequente</span>':'');
 
     function somaUnidade(lista){
       let soma = 0, temAlguma = false;
@@ -3941,6 +3979,7 @@ async function iniciar(){
     try{
       const turmas = await buscarTurmasCadastradas();
       turmaEscolhidaTemp = turmas.find(t=>turmaSlug(t.nome)===salvo.turmaKey) || {id:null, nome:salvo.turmaNome, alunos:{}};
+      if (!(await verificarAlunoAindaAtivo())){ await encerrarAcessoAbandonou(); return; }
       await mostrarEscolhaAtividade();
       if (salvo.emAndamento && atividadesDisponiveisTemp.some(a=>a.codigo===salvo.emAndamento.codigo)){
         escolherAtividade(salvo.emAndamento.codigo);
