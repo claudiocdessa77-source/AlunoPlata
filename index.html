@@ -248,6 +248,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
     <p class="subtitulo">escolha a atividade</p>
     <div id="lista-atividades" class="lista-selecao" style="max-height:none;"></div>
     <p class="erro-msg" id="erro-atividades" hidden></p>
+    <button type="button" class="link-discreto" id="btn-ver-minha-media" style="margin-top:18px;display:block;">📊 Ver minha média final</button>
   </div>
 </section>
 
@@ -352,6 +353,16 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
     <footer>
       Atividade elaborada para apoiar o estudo de Gestão de Pessoas.
     </footer>
+  </div>
+</section>
+
+<!-- ===== TELA: MINHA MÉDIA FINAL ===== -->
+<section id="tela-media-final" class="tela">
+  <div class="cartao-central">
+    <button class="botao-voltar-canto" id="btn-voltar-media-final" type="button" aria-label="Voltar">←</button>
+    <h1 id="titulo-media-final">Minha média final</h1>
+    <p class="subtitulo" id="subtitulo-media-final"></p>
+    <div id="conteudo-media-final"></div>
   </div>
 </section>
 
@@ -557,6 +568,13 @@ Texto do caso/contexto, aparece uma vez no topo.
           <label for="input-valor-nova-atividade">Valor (nota máxima)</label>
           <input type="text" inputmode="decimal" id="input-valor-nova-atividade" placeholder="Ex.: 10">
         </div>
+        <div class="campo" style="max-width:200px;">
+          <label for="select-unidade-nova-atividade">Unidade</label>
+          <select id="select-unidade-nova-atividade" class="select-turma">
+            <option value="1">1ª Unidade</option>
+            <option value="2">2ª Unidade</option>
+          </select>
+        </div>
         <div class="campo">
           <label>Turmas com acesso</label>
           <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
@@ -580,6 +598,13 @@ Texto do caso/contexto, aparece uma vez no topo.
           <div class="campo" style="max-width:200px;">
             <label for="input-valor-nova-dupla">Valor total (nota máxima, por aluno)</label>
             <input type="text" inputmode="decimal" id="input-valor-nova-dupla" placeholder="Ex.: 10" value="10">
+          </div>
+          <div class="campo" style="max-width:200px;">
+            <label for="select-unidade-nova-dupla">Unidade</label>
+            <select id="select-unidade-nova-dupla" class="select-turma">
+              <option value="1">1ª Unidade</option>
+              <option value="2">2ª Unidade</option>
+            </select>
           </div>
           <div class="campo">
             <label>Turmas com acesso</label>
@@ -1403,11 +1428,11 @@ function gerarCodigoAtividade(numero){
   const yyyy = hoje.getFullYear();
   return 'ATIV'+String(numero).padStart(3,'0')+dd+mm+yyyy;
 }
-async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade){
+async function criarAtividadeCadastrada(modeloConteudo, valorTotal, turmasIds, disciplina, nomeAtividade, unidade){
   const numero = await proximoNumeroAtividade();
   const codigo = gerarCodigoAtividade(numero);
   const ref = db.ref('atividadesCadastradas').push();
-  await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, disciplina:disciplina||'', nomeAtividade:nomeAtividade||'', ativa:true, criadaEm:Date.now()});
+  await ref.set({modeloConteudo, valorTotal, numero, codigo, turmasIds:turmasIds||{}, disciplina:disciplina||'', nomeAtividade:nomeAtividade||'', unidade:unidade||'1', ativa:true, criadaEm:Date.now()});
   return ref.key;
 }
 const CRITERIOS_RECRUTADOR_SUGERIDOS = [
@@ -1430,7 +1455,7 @@ const DESCRICAO_LETRA_DUPLA = {
 };
 function arredondar2(x){ return Math.round((x+(x>=0?1e-9:-1e-9))*100)/100; }
 function avaliacaoVazia(){ return {notasRecrutador:{}, notasCandidato:{}, notaTotal:null}; }
-async function criarAtividadeEmDupla(nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes){
+async function criarAtividadeEmDupla(nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes, unidade){
   const numero = await proximoNumeroAtividade();
   const codigo = gerarCodigoAtividade(numero);
   const totalCriterios = criteriosRecrutadorNomes.length + criteriosCandidatoNomes.length;
@@ -1440,7 +1465,7 @@ async function criarAtividadeEmDupla(nomeAtividade, valorTotal, turmasIds, crite
   const ref = db.ref('atividadesCadastradas').push();
   await ref.set({
     tipoEspecial:'entrevista-dupla', modeloConteudo:'', numero, codigo, valorTotal,
-    turmasIds:turmasIds||{}, nomeAtividade, criteriosRecrutador, criteriosCandidato, duplas:{}, ativa:true, criadaEm:Date.now()
+    turmasIds:turmasIds||{}, nomeAtividade, unidade:unidade||'1', criteriosRecrutador, criteriosCandidato, duplas:{}, ativa:true, criadaEm:Date.now()
   });
   return ref.key;
 }
@@ -1475,12 +1500,12 @@ async function editarDupla(registro, duplaId, duplaAntiga, nome1, nome2, pergunt
     await db.ref('turmas/'+turmaKey+'/atividades/'+registro.codigo+'/alunos/'+turmaSlug(nome2)).set({nome:nome2, turma:duplaAntiga.turmaNome, nota:av2.notaTotal, respostas:{}, acertos:0, enviadoEm:Date.now()});
   }
 }
-async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes, ativa){
+async function atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutadorNomes, criteriosCandidatoNomes, ativa, unidade){
   const totalCriterios = criteriosRecrutadorNomes.length + criteriosCandidatoNomes.length;
   const valorPorCriterio = totalCriterios ? arredondar2(valorTotal/totalCriterios) : 0;
   const criteriosRecNovos = criteriosRecrutadorNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
   const criteriosCandNovos = criteriosCandidatoNomes.map(nome=>({nome, valorMax:valorPorCriterio}));
-  await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criteriosRecrutador:criteriosRecNovos, criteriosCandidato:criteriosCandNovos, ativa});
+  await db.ref('atividadesCadastradas/'+registro.id).update({nomeAtividade, valorTotal, turmasIds:turmasIds||{}, criteriosRecrutador:criteriosRecNovos, criteriosCandidato:criteriosCandNovos, ativa, unidade:unidade||registro.unidade||'1'});
 
   const duplas = registro.duplas || {};
   function recalcularBloco(bloco, criteriosNovos){
@@ -1533,6 +1558,12 @@ async function contarRespostasNoBanco(codigo){
 async function salvarNotaCursoExtra(turmaKey, chaveAluno, valor){
   await db.ref('turmas/'+turmaKey+'/cursoExtra/'+chaveAluno).set(valor);
 }
+async function definirMediaLiberadaTurma(turmaKey, unidade, valor){
+  await db.ref('turmas/'+turmaKey+'/mediaLiberada/'+unidade).set(valor);
+}
+async function definirMediaLiberadaIndividual(turmaKey, unidade, chaveAluno, valor){
+  await db.ref('turmas/'+turmaKey+'/mediaLiberadaIndividual/'+unidade+'/'+chaveAluno).set(valor);
+}
 async function recalcularNotasDaAtividade(codigo, valorTotalNovo, atividadeEfetiva){
   const totalItens = itensAtividade(atividadeEfetiva).length;
   if (!totalItens) return 0;
@@ -1579,7 +1610,7 @@ function construirAtividadeEfetiva(registro){
     return {
       tipoEspecial:'entrevista-dupla', tipo:'entrevista-dupla',
       titulo: registro.nomeAtividade || 'Simulação em dupla', nomeAtividade: registro.nomeAtividade||'',
-      codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
+      codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal, unidade:registro.unidade||'1',
       id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
       disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
       criteriosRecrutador: registro.criteriosRecrutador||[], criteriosCandidato: registro.criteriosCandidato||[], duplas: registro.duplas||{}
@@ -1588,7 +1619,7 @@ function construirAtividadeEfetiva(registro){
   const modelo = MODELOS_CONTEUDO_RUNTIME[registro.modeloConteudo];
   if (!modelo) return null;
   return Object.assign({}, modelo, {
-    codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal,
+    codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal, unidade:registro.unidade||'1',
     id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
     disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
     titulo: registro.nomeAtividade || modelo.titulo, nomeAtividade: registro.nomeAtividade||''
@@ -1672,6 +1703,7 @@ let atividadesDisponiveisTemp = []; // atividades efetivas disponíveis para a t
 let atividadeAtual = null;
 let nomeEscolhidoPendente = null;
 let alunosCache = [];
+let modoVerMedia = false;
 let respostasAtuais = {};
 
 function salvarIdentidadeLocal(){ localStorage.setItem('ta_identidade', JSON.stringify(identidade)); }
@@ -1773,6 +1805,7 @@ async function mostrarEscolhaAtividade(){
 }
 
 function escolherAtividade(codigo){
+  modoVerMedia = false;
   atividadeAtual = atividadesDisponiveisTemp.find(a=>a.codigo===codigo);
   const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   if (identidade.turmaKey===turmaKey && identidade.nome){
@@ -1829,7 +1862,64 @@ async function confirmarSenhaAluno(){
   }
   identidade = {turmaKey, turmaNome:turmaEscolhidaTemp.nome, nome:nomeEscolhidoPendente};
   salvarIdentidadeLocal();
-  await entrarNaAtividade();
+  if (modoVerMedia){
+    modoVerMedia = false;
+    await mostrarMediaFinal();
+  } else {
+    await entrarNaAtividade();
+  }
+}
+
+function abrirVerMinhaMedia(){
+  modoVerMedia = true;
+  const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
+  if (identidade.turmaKey===turmaKey && identidade.nome){
+    modoVerMedia = false;
+    mostrarMediaFinal();
+  } else {
+    mostrarEscolhaNome();
+  }
+}
+
+async function mostrarMediaFinal(){
+  mostrarTela('tela-carregando');
+  const turmaKey = identidade.turmaKey;
+  const chave = turmaSlug(identidade.nome);
+  document.getElementById('subtitulo-media-final').textContent = identidade.nome+' · '+identidade.turmaNome;
+  const registros = await buscarAtividadesCadastradas();
+  const turmaId = turmaEscolhidaTemp && turmaEscolhidaTemp.id;
+  const atividadesDaTurma = registros.filter(r=>turmaId && r.turmasIds && r.turmasIds[turmaId]).map(construirAtividadeEfetiva).filter(Boolean);
+
+  const mediaLiberadaSnap = await db.ref('turmas/'+turmaKey+'/mediaLiberada').once('value');
+  const mediaLiberada = mediaLiberadaSnap.val() || {};
+  const mediaLiberadaIndivSnap = await db.ref('turmas/'+turmaKey+'/mediaLiberadaIndividual').once('value');
+  const mediaLiberadaIndiv = mediaLiberadaIndivSnap.val() || {};
+
+  async function calcularUnidade(unidadeAlvo){
+    const lista = atividadesDaTurma.filter(a=>(a.unidade||'1')===unidadeAlvo);
+    let soma = 0, temAlguma = false;
+    for (const a of lista){
+      const dados = await buscarSubmissaoAtividade(turmaKey, a.codigo, chave);
+      if (dados && dados.nota!=null && dados.nota!==''){ soma += parseFloat(dados.nota)||0; temAlguma = true; }
+    }
+    return {soma, temAlguma};
+  }
+  const u1 = await calcularUnidade('1');
+  const u2 = await calcularUnidade('2');
+  const liberado1 = !!mediaLiberada['1'] || !!(mediaLiberadaIndiv['1']&&mediaLiberadaIndiv['1'][chave]);
+  const liberado2 = !!mediaLiberada['2'] || !!(mediaLiberadaIndiv['2']&&mediaLiberadaIndiv['2'][chave]);
+
+  function blocoUnidade(rotulo, liberado, resultado){
+    if (!liberado){
+      return '<div class="historia-card"><h4 class="pergunta-titulo">'+rotulo+'</h4><p class="vazio-msg">Ainda não liberada pelo(a) professor(a).</p></div>';
+    }
+    const valorTxt = resultado.temAlguma ? (Math.round(resultado.soma*100)/100) : '—';
+    return '<div class="historia-card"><h4 class="pergunta-titulo">'+rotulo+'</h4><p style="font-size:1.7rem;font-weight:800;margin:6px 0 0;">'+valorTxt+'</p></div>';
+  }
+  document.getElementById('conteudo-media-final').innerHTML =
+    blocoUnidade('1ª Unidade', liberado1, u1) +
+    blocoUnidade('2ª Unidade', liberado2, u2);
+  mostrarTela('tela-media-final');
 }
 
 async function entrarNaAtividade(){
@@ -2584,10 +2674,11 @@ document.getElementById('btn-cadastrar-dupla').addEventListener('click', async (
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-dupla input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+  const unidade = document.getElementById('select-unidade-nova-dupla').value;
   const criteriosRecrutador = Array.from(document.querySelectorAll('.input-criterio-recrutador-dupla')).map(i=>i.value.trim()).filter(Boolean);
   const criteriosCandidato = Array.from(document.querySelectorAll('.input-criterio-candidato-dupla')).map(i=>i.value.trim()).filter(Boolean);
   if (!criteriosRecrutador.length || !criteriosCandidato.length){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Defina pelo menos um critério em cada papel (Recrutador e Candidato).'; return; }
-  await criarAtividadeEmDupla(nome, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato);
+  await criarAtividadeEmDupla(nome, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato, unidade);
   document.getElementById('input-nome-nova-dupla').value = '';
   document.getElementById('input-valor-nova-dupla').value = '10';
   document.querySelectorAll('#checkboxes-turmas-nova-dupla input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
@@ -2689,6 +2780,10 @@ async function abrirModalEditarDupla(registro){
     avisoMigracao+
     '<div class="campo"><label for="modal-dupla-nome">Nome da atividade</label><input type="text" id="modal-dupla-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
     '<div class="campo" style="max-width:200px;"><label for="modal-dupla-valor">Valor total (nota máxima, por aluno)</label><input type="text" inputmode="decimal" id="modal-dupla-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo" style="max-width:200px;"><label>Unidade</label><select id="modal-dupla-select-unidade" class="select-turma">'+
+    '<option value="1" '+((registro.unidade||'1')==='1'?'selected':'')+'>1ª Unidade</option>'+
+    '<option value="2" '+(registro.unidade==='2'?'selected':'')+'>2ª Unidade</option>'+
+    '</select></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas-dupla" class="lista-selecao" style="max-height:220px;"></div></div>'+
     '<button type="button" class="botao-texto" id="btn-usar-criterios-sugeridos" style="margin-bottom:14px;">↺ Substituir pelos critérios sugeridos</button>'+
     '<div class="campo"><label>Critérios ao avaliar como Recrutador</label><div id="modal-lista-criterios-recrutador-dupla">'+
@@ -2716,10 +2811,11 @@ async function abrirModalEditarDupla(registro){
     const criteriosRecrutador = Array.from(document.querySelectorAll('.modal-input-criterio-recrutador-dupla')).map(i=>i.value.trim()).filter(Boolean);
     const criteriosCandidato = Array.from(document.querySelectorAll('.modal-input-criterio-candidato-dupla')).map(i=>i.value.trim()).filter(Boolean);
     const ativa = document.getElementById('modal-dupla-checkbox-ativa').checked;
+    const unidade = document.getElementById('modal-dupla-select-unidade').value;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas-dupla input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
     if (!criteriosRecrutador.length || !criteriosCandidato.length){ return; }
-    await atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato, ativa);
+    await atualizarAtividadeEmDupla(registro, nomeAtividade, valorTotal, turmasIds, criteriosRecrutador, criteriosCandidato, ativa, unidade);
     fecharModal();
     atividadesCacheModulo = await buscarAtividadesCadastradas();
     renderListaAtividadesCadastro();
@@ -2802,7 +2898,7 @@ async function abrirModalEditarParDupla(registro, duplaId, filtroTurmaId, filtro
     abrirModalGerenciarDuplas(atividadesCacheModulo.find(a=>a.id===registro.id), filtroTurmaId, filtroDuplaId);
   });
 }
-function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal, ordemInvertida){
+function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec, criteriosCand, valorTotal, ordemInvertida, inabilitado){
   const notasRec = (avaliacao && avaliacao.notasRecrutador) || {};
   const notasCand = (avaliacao && avaliacao.notasCandidato) || {};
   const totalAtual = (avaliacao && avaliacao.notaTotal != null) ? avaliacao.notaTotal : '—';
@@ -2811,17 +2907,17 @@ function montarBlocoAvaliacaoAluno(duplaId, slot, nome, avaliacao, criteriosRec,
   const avisoSemCriteriosBloco = '<p style="font-size:.82rem;color:var(--vermelho);margin:0 0 10px;">Nenhum critério definido pra este papel ainda. Clique em "Editar →", no topo deste card, pra cadastrar os critérios — os campos de nota aparecem aqui assim que isso for feito.</p>';
   const montarSelects = (criterios, mapaNotas, papel) => criterios.length ? criterios.map((c,i)=>
     '<div style="margin:0 0 10px;"><label style="font-size:.76rem;display:block;color:var(--ink-suave);">'+escapeHTML(c.nome)+' (máx. '+c.valorMax+')</label>'+
-    '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="width:100%;">'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
+    '<select class="select-turma input-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'" data-papel="'+papel+'" data-idx="'+i+'" data-max="'+c.valorMax+'" style="width:100%;" '+(inabilitado?'disabled title="Aluno abandonou — lançamento bloqueado"':'')+'>'+opcoesLetra(mapaNotas[i]?mapaNotas[i].letra:null)+'</select></div>'
   ).join('') : avisoSemCriteriosBloco;
   const montarPapelBloco = (rotulo, cor, corFundo, criterios, mapaNotas, papel) =>
-    '<div style="border-left:4px solid '+cor+';background:'+corFundo+';border-radius:6px;padding:12px 14px;margin-bottom:12px;">'+
+    '<div style="border-left:4px solid '+cor+';background:'+corFundo+';border-radius:6px;padding:12px 14px;margin-bottom:12px;'+(inabilitado?'opacity:.6;':'')+'">'+
     '<span style="display:inline-block;background:'+cor+';color:#fff;font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px;">'+rotulo+'</span>'+
     montarSelects(criterios, mapaNotas, papel)+
     '</div>';
   const blocoRecrutador = montarPapelBloco('Como recrutador', 'var(--verde)', '#EAF3EC', criteriosRec, notasRec, 'notasRecrutador');
   const blocoCandidato = montarPapelBloco('Como candidato', 'var(--folder-escuro)', '#FBF3E6', criteriosCand, notasCand, 'notasCandidato');
   return '<div style="flex:1;min-width:240px;">'+
-    '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+'</h4>'+
+    '<h4 style="margin-bottom:8px;">'+escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'')+'</h4>'+
     (ordemInvertida ? (blocoCandidato+blocoRecrutador) : (blocoRecrutador+blocoCandidato))+
     '<p style="font-weight:800;margin-top:4px;">Nota de '+escapeHTML(nome)+': <span class="total-nota-aluno-dupla" data-dupla-id="'+duplaId+'" data-slot="'+slot+'">'+totalAtual+'</span> / '+valorTotal+'</p>'+
     '</div>';
@@ -2911,6 +3007,12 @@ async function abrirModalAdicionarDupla(registro){
 }
 async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId){
   const turmasNativas = await buscarTurmasCadastradas();
+  function alunoInabilitado(turmaId, nomeAluno){
+    const t = turmasNativas.find(tt=>tt.id===turmaId);
+    if (!t) return false;
+    const a = Object.values(t.alunos||{}).find(aa=>turmaSlug(aa.nome)===turmaSlug(nomeAluno));
+    return !!(a && a.inabilitado);
+  }
   const turmasAssociadas = Object.keys(registro.turmasIds||{}).map(tid=>turmasNativas.find(t=>t.id===tid)).filter(Boolean)
     .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const criteriosRec = registro.criteriosRecrutador || [];
@@ -2956,8 +3058,8 @@ async function abrirModalGerenciarDuplas(registro, filtroTurmaId, filtroDuplaId)
         (d.pergunta1 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome1)+' (como recrutador):</strong> '+escapeHTML(d.pergunta1)+'</p>' : '')+
         (d.pergunta2 ? '<p style="font-size:.85rem;margin:4px 0;"><strong>Pergunta de '+escapeHTML(d.nome2)+' (como recrutador):</strong> '+escapeHTML(d.pergunta2)+'</p>' : '')+
         '<div style="display:flex;flex-wrap:wrap;gap:28px;border-top:1.5px solid var(--borda);padding-top:14px;margin-top:14px;">'+
-        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome1', d.nome1, d.avaliacaoNome1, criteriosRec, criteriosCand, registro.valorTotal, false)+
-        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome2', d.nome2, d.avaliacaoNome2, criteriosRec, criteriosCand, registro.valorTotal, true)+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome1', d.nome1, d.avaliacaoNome1, criteriosRec, criteriosCand, registro.valorTotal, false, alunoInabilitado(d.turmaId, d.nome1))+
+        montarBlocoAvaliacaoAluno(duplaId, 'avaliacaoNome2', d.nome2, d.avaliacaoNome2, criteriosRec, criteriosCand, registro.valorTotal, true, alunoInabilitado(d.turmaId, d.nome2))+
         '</div>'+
         '<div style="margin-top:14px;"><button type="button" class="botao botao-primario botao-pequeno" data-salvar-dupla-toda="'+duplaId+'">Salvar notas da dupla</button> '+
         '<button type="button" class="botao-texto" data-ver-aluno-dupla="'+duplaId+'">Ver como aluno →</button></div>'+
@@ -3167,6 +3269,10 @@ function abrirModalEditarAtividade(id){
     '<div class="campo"><label>Disciplina</label><select id="modal-select-disciplina" class="select-turma"><option value="">— nenhuma —</option>'+
     disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(registro.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+'</select></div>'+
     '<div class="campo"><label>Valor (nota máxima)</label><input type="text" inputmode="decimal" id="modal-input-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo" style="max-width:200px;"><label>Unidade</label><select id="modal-select-unidade" class="select-turma">'+
+    '<option value="1" '+((registro.unidade||'1')==='1'?'selected':'')+'>1ª Unidade</option>'+
+    '<option value="2" '+(registro.unidade==='2'?'selected':'')+'>2ª Unidade</option>'+
+    '</select></div>'+
     '<div class="campo"><label>Turmas com acesso</label><div id="modal-checkboxes-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="modal-checkbox-ativa" style="width:18px;height:18px;" '+(registro.ativa!==false?'checked':'')+'> Atividade ativa (aparece para os alunos)</label>'+
     '<div class="acoes"><button type="button" class="botao botao-primario botao-pequeno" id="btn-salvar-edicao-atividade">Salvar</button></div>';
@@ -3178,11 +3284,12 @@ function abrirModalEditarAtividade(id){
     const nomeAtividade = document.getElementById('modal-input-nome').value.trim();
     const modeloConteudo = document.getElementById('modal-select-conteudo').value;
     const disciplina = document.getElementById('modal-select-disciplina').value;
+    const unidade = document.getElementById('modal-select-unidade').value;
     const ativa = document.getElementById('modal-checkbox-ativa').checked;
     const turmasIds = {};
     document.querySelectorAll('#modal-checkboxes-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
     const valorMudou = valorTotal !== registro.valorTotal;
-    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, modeloConteudo, ativa, turmasIds});
+    await atualizarAtividadeCadastrada(registro.id, {valorTotal, disciplina, nomeAtividade, modeloConteudo, ativa, turmasIds, unidade});
     if (valorMudou && modeloConteudo){
       const efetiva = construirAtividadeEfetiva(Object.assign({}, registro, {modeloConteudo}));
       if (efetiva) await recalcularNotasDaAtividade(registro.codigo, valorTotal, efetiva);
@@ -3287,6 +3394,7 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   const valorDigitado = parseFloat(document.getElementById('input-valor-nova-atividade').value.replace(',','.'));
   const valorTotal = isNaN(valorDigitado) ? 10 : valorDigitado;
   const disciplina = document.getElementById('select-disciplina-nova-atividade').value;
+  const unidade = document.getElementById('select-unidade-nova-atividade').value;
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
 
@@ -3294,7 +3402,7 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
   await carregarConteudosCadastrados();
   const chaveConteudo = 'custom:'+ref.key;
-  await criarAtividadeCadastrada(chaveConteudo, valorTotal, turmasIds, disciplina, nomeAtividade);
+  await criarAtividadeCadastrada(chaveConteudo, valorTotal, turmasIds, disciplina, nomeAtividade, unidade);
 
   document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
@@ -3331,23 +3439,30 @@ async function abrirTelaNotas(){
 }
 function atualizarTotalLinhaNotas(inputCurso){
   const linha = inputCurso.closest('tr');
-  const celulaCurso = inputCurso.closest('td');
-  const celulas = Array.from(linha.querySelectorAll('td'));
   let total = 0, temNota = false;
-  for (let i=1; i<celulas.length-1; i++){
-    const celula = celulas[i];
-    if (celula === celulaCurso){
-      const v = parseFloat(inputCurso.value.replace(',','.'));
+  linha.querySelectorAll('.celula-ativ-nota').forEach(celula=>{
+    const texto = celula.textContent.trim();
+    if (texto !== '—' && texto !== ''){
+      const v = parseFloat(texto);
       if (!isNaN(v)){ total += v; temNota = true; }
-    } else {
-      const texto = celula.textContent.trim();
-      if (texto !== '—' && texto !== ''){
-        const v = parseFloat(texto);
-        if (!isNaN(v)){ total += v; temNota = true; }
-      }
     }
+  });
+  const v = parseFloat(inputCurso.value.replace(',','.'));
+  if (!isNaN(v)){ total += v; temNota = true; }
+  const celulaTotal = linha.querySelector('.celula-total-notas');
+  if (celulaTotal) celulaTotal.innerHTML = '<strong>'+(temNota ? (Math.round(total*100)/100) : '—')+'</strong>';
+}
+function celulaMediaUnidade(unidade, mediaValor, temNotaUnidade, turmaLiberada, chaveAluno, individualLiberado){
+  const valorTxt = temNotaUnidade ? (Math.round(mediaValor*100)/100) : '—';
+  let statusHtml;
+  if (turmaLiberada){
+    statusHtml = '<span class="badge-liberado" style="font-size:.58rem;padding:2px 6px;">Liberado</span>';
+  } else if (individualLiberado){
+    statusHtml = '<button type="button" class="botao-texto" data-revogar-media data-unidade="'+unidade+'" data-chave="'+chaveAluno+'" style="font-size:.68rem;">✓ Liberado</button>';
+  } else {
+    statusHtml = '<button type="button" class="botao-texto" data-liberar-media data-unidade="'+unidade+'" data-chave="'+chaveAluno+'" style="font-size:.68rem;">Liberar</button>';
   }
-  celulas[celulas.length-1].innerHTML = '<strong>'+(temNota ? (Math.round(total*100)/100) : '—')+'</strong>';
+  return '<td>'+(temNotaUnidade?'<strong>'+valorTxt+'</strong>':'<span style="color:var(--ink-suave);">—</span>')+'<br>'+statusHtml+'</td>';
 }
 async function renderizarTabelaNotas(idx){
   const turma = turmasCacheNotas[idx];
@@ -3365,8 +3480,17 @@ async function renderizarTabelaNotas(idx){
 
   if (!alunos.length){ container.innerHTML = '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>'; return; }
 
-  legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' — valor '+a.valorTotal+' ('+a.codigo+')</div>').join('')+
-    (atividadesDaTurma.length ? '<button type="button" class="botao-texto" id="btn-recalcular-notas-turma" style="margin-top:6px;">Recalcular todas as notas desta turma com os valores atuais</button>' : '');
+  const mediaLiberadaSnap = await db.ref('turmas/'+turmaKey+'/mediaLiberada').once('value');
+  const mediaLiberada = mediaLiberadaSnap.val() || {};
+  const mediaLiberadaIndivSnap = await db.ref('turmas/'+turmaKey+'/mediaLiberadaIndividual').once('value');
+  const mediaLiberadaIndiv = mediaLiberadaIndivSnap.val() || {};
+
+  legenda.innerHTML = atividadesDaTurma.map(a=>'<div class="stat-mini">Ativ. '+a.numero+' = '+escapeHTML(a.titulo)+' — valor '+a.valorTotal+' — '+(a.unidade==='2'?'2ª':'1ª')+' Unidade ('+a.codigo+')</div>').join('')+
+    (atividadesDaTurma.length ? '<button type="button" class="botao-texto" id="btn-recalcular-notas-turma" style="margin-top:6px;display:block;">Recalcular todas as notas desta turma com os valores atuais</button>' : '')+
+    '<div style="margin-top:10px;">'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-liberar-media-turma-1" style="margin-right:8px;">'+(mediaLiberada['1']?'Bloquear':'Liberar')+' média da 1ª Unidade pra toda a turma</button>'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-liberar-media-turma-2">'+(mediaLiberada['2']?'Bloquear':'Liberar')+' média da 2ª Unidade pra toda a turma</button>'+
+    '</div>';
 
   const notasPorAtividade = {};
   for (const ativ of atividadesDaTurma){
@@ -3379,29 +3503,58 @@ async function renderizarTabelaNotas(idx){
   const cursoExtraSnap = await db.ref('turmas/'+turmaKey+'/cursoExtra').once('value');
   const cursoExtraDados = cursoExtraSnap.val() || {};
 
-  const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+'">Ativ. '+a.numero+'</th>').join('');
+  const atividadesUnidade1 = atividadesDaTurma.filter(a=>(a.unidade||'1')==='1');
+  const atividadesUnidade2 = atividadesDaTurma.filter(a=>a.unidade==='2');
+
+  const cabecalho = atividadesDaTurma.map(a=>'<th title="'+escapeHTML(a.titulo)+' — '+(a.unidade==='2'?'2ª':'1ª')+' Unidade">Ativ. '+a.numero+'</th>').join('');
   const linhas = alunos.map(({nome, inabilitado})=>{
     const chave = turmaSlug(nome);
     let total = 0, temNota = false;
     const celulas = atividadesDaTurma.map(ativ=>{
       const nota = notasPorAtividade[ativ.codigo][chave];
-      if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td>'+escapeHTML(String(nota))+'</td>'; }
+      if (nota!=null && nota!==''){ total += parseFloat(nota)||0; temNota = true; return '<td class="celula-ativ-nota">'+escapeHTML(String(nota))+'</td>'; }
       return '<td style="color:var(--ink-suave);">—</td>';
     }).join('');
     const cursoValor = cursoExtraDados[chave];
     if (cursoValor!=null && cursoValor!==''){ total += parseFloat(cursoValor)||0; temNota = true; }
-    const celulaCurso = '<td><input type="text" inputmode="decimal" class="input-nota-curso-extra" data-chave-aluno="'+chave+'" value="'+(cursoValor!=null?escapeHTML(String(cursoValor)):'')+'" placeholder="—" style="width:70px;"></td>';
+    const celulaCurso = '<td><input type="text" inputmode="decimal" class="input-nota-curso-extra" data-chave-aluno="'+chave+'" value="'+(cursoValor!=null?escapeHTML(String(cursoValor)):'')+'" placeholder="—" style="width:70px;" '+(inabilitado?'disabled title="Aluno abandonou — lançamento bloqueado"':'')+'></td>';
     const totalTxt = temNota ? (Math.round(total*100)/100) : '—';
     const nomeCelula = escapeHTML(nome)+(inabilitado?' <span class="badge-pendente" style="background:var(--vermelho);font-size:.6rem;">Abandonou</span>':'');
-    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td><strong>'+totalTxt+'</strong></td></tr>';
+
+    function somaUnidade(lista){
+      let soma = 0, temAlguma = false;
+      lista.forEach(ativ=>{
+        const nota = notasPorAtividade[ativ.codigo][chave];
+        if (nota!=null && nota!==''){ soma += parseFloat(nota)||0; temAlguma = true; }
+      });
+      return {soma, temAlguma};
+    }
+    const u1 = somaUnidade(atividadesUnidade1);
+    const u2 = somaUnidade(atividadesUnidade2);
+    const celulaU1 = celulaMediaUnidade('1', u1.soma, u1.temAlguma, !!mediaLiberada['1'], chave, !!(mediaLiberadaIndiv['1']&&mediaLiberadaIndiv['1'][chave]));
+    const celulaU2 = celulaMediaUnidade('2', u2.soma, u2.temAlguma, !!mediaLiberada['2'], chave, !!(mediaLiberadaIndiv['2']&&mediaLiberadaIndiv['2'][chave]));
+
+    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td class="celula-total-notas"><strong>'+totalTxt+'</strong></td>'+celulaU1+celulaU2+'</tr>';
   }).join('');
 
-  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th><th>Média 1ª Unidade</th><th>Média 2ª Unidade</th></tr></thead><tbody>'+linhas+'</tbody></table>';
   document.querySelectorAll('.input-nota-curso-extra').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim().replace(',','.');
       await salvarNotaCursoExtra(turmaKey, e.target.dataset.chaveAluno, val===''?null:val);
       atualizarTotalLinhaNotas(e.target);
+    });
+  });
+  document.querySelectorAll('[data-liberar-media]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await definirMediaLiberadaIndividual(turmaKey, e.target.dataset.unidade, e.target.dataset.chave, true);
+      await renderizarTabelaNotas(idx);
+    });
+  });
+  document.querySelectorAll('[data-revogar-media]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      await definirMediaLiberadaIndividual(turmaKey, e.target.dataset.unidade, e.target.dataset.chave, false);
+      await renderizarTabelaNotas(idx);
     });
   });
   const btnRecalc = document.getElementById('btn-recalcular-notas-turma');
@@ -3415,6 +3568,14 @@ async function renderizarTabelaNotas(idx){
       await renderizarTabelaNotas(idx);
     });
   }
+  document.getElementById('btn-liberar-media-turma-1').addEventListener('click', async ()=>{
+    await definirMediaLiberadaTurma(turmaKey, '1', !mediaLiberada['1']);
+    await renderizarTabelaNotas(idx);
+  });
+  document.getElementById('btn-liberar-media-turma-2').addEventListener('click', async ()=>{
+    await definirMediaLiberadaTurma(turmaKey, '2', !mediaLiberada['2']);
+    await renderizarTabelaNotas(idx);
+  });
 }
 function imprimirNotasTurma(){
   const sel = document.getElementById('select-turma-notas');
@@ -3670,7 +3831,7 @@ async function abrirModalTurma(tk, t, arquivado){
         '<td style="white-space:nowrap;"><button type="button" class="botao-texto" data-acao="ver-imprimir" data-caminho="'+caminhoBase+a.id+'">Ver/Imprimir</button> · '+
         '<button type="button" class="link-zerar" data-remover-caminho="'+caminhoBase+a.id+'" data-remover-nome="'+escapeHTML(a.nome)+'">Zerar</button></td>';
       return '<tr'+(a.inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td><td><span class="badge-liberado" style="background:var(--folder-escuro);">Respondeu — '+a.acertos+'/'+itens.length+'</span></td>'+
-      '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—"></td>'+
+      '<td><input type="text" inputmode="decimal" class="input-nota" data-caminho="'+caminhoBase+a.id+'" value="'+(a.nota!=null?escapeHTML(String(a.nota)):'')+'" placeholder="—" '+(a.inabilitado?'disabled title="Aluno abandonou — lançamento bloqueado"':'')+'></td>'+
       '<td>'+formatarData(a.enviadoEm)+'</td>'+celulaLiberado+acoesHtml+
       '</tr>';
     }).join('')+'</tbody></table>') : '<p class="vazio-msg">Nenhum aluno cadastrado nesta turma.</p>';
@@ -3770,6 +3931,8 @@ document.getElementById('btn-voltar-senha').addEventListener('click', ()=>{ nome
 document.getElementById('btn-voltar-desafio').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-voltar-aguardando').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-voltar-resultado').addEventListener('click', mostrarEscolhaAtividade);
+document.getElementById('btn-ver-minha-media').addEventListener('click', abrirVerMinhaMedia);
+document.getElementById('btn-voltar-media-final').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-enviar').addEventListener('click', pedirConfirmacaoEnvio);
 document.getElementById('filtro-nome').addEventListener('input', (e)=>{
   const termo = e.target.value.trim().toLowerCase();
