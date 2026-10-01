@@ -546,6 +546,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
         <button class="botao botao-primario botao-pequeno" id="btn-criar-turma" style="margin-bottom:16px;">Criar turma</button>
       </div>
       <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="botao botao-secundario botao-pequeno" id="btn-importar-outro-prof">Importar turmas de outro professor</button>
         <button class="botao botao-secundario botao-pequeno" id="btn-importar-professorhub">Importar do ProfessorHub</button>
         <button class="botao botao-secundario botao-pequeno" id="btn-aplicar-disciplinas">Aplicar disciplinas conhecidas</button>
       </div>
@@ -2841,6 +2842,7 @@ document.getElementById('btn-criar-turma').addEventListener('click', async ()=>{
   document.getElementById('input-nova-turma').value = '';
   await recarregarTurmasModulo();
 });
+document.getElementById('btn-importar-outro-prof').addEventListener('click', abrirModalImportarOutroProfessor);
 document.getElementById('btn-importar-professorhub').addEventListener('click', async ()=>{
   const msg = document.getElementById('msg-importacao');
   const btn = document.getElementById('btn-importar-professorhub');
@@ -4469,6 +4471,196 @@ async function cadastrarProfessorAdmin(){
     falha('Não foi possível cadastrar: '+e.message);
   }
   btn.disabled = false;
+}
+
+/* ===== IMPORTAR TURMAS DE OUTRO PROFESSOR (workspace → workspace) ===== */
+let impOrigemTurmas = [];
+let impOrigemWs = null;
+
+async function listarOutrosProfessores(){
+  const lista = [];
+  (CONFIG.professores||[]).forEach(p=>lista.push({ws:p.workspace, nome:p.nome}));
+  try{
+    const banco = (await dbReal.ref('professores').once('value')).val() || {};
+    Object.entries(banco).forEach(([ws,p])=>{ if (p && !lista.some(x=>x.ws===ws)) lista.push({ws, nome:p.nome||ws}); });
+  } catch(e){}
+  return lista.filter(p=>p.ws!==workspaceAtual).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+}
+
+async function abrirModalImportarOutroProfessor(){
+  let profs;
+  try{ profs = await listarOutrosProfessores(); }
+  catch(e){ abrirModal('Importar turmas de outro professor', '<p class="erro-msg">Erro: '+escapeHTML(e.message)+'</p>'); return; }
+  if (!profs.length){
+    abrirModal('Importar turmas de outro professor', '<p class="vazio-msg">Não há outros professores cadastrados na plataforma.</p>');
+    return;
+  }
+  abrirModal('Importar turmas de outro professor',
+    '<div class="campo"><label for="imp-origem">Professor de origem</label>'+
+    '<select id="imp-origem" class="select-turma">'+
+    profs.map(p=>'<option value="'+escapeHTML(p.ws)+'">'+escapeHTML(p.nome)+' ('+escapeHTML(p.ws)+')</option>').join('')+
+    '</select></div>'+
+    '<label class="admin-check"><input type="checkbox" id="imp-mostrar-arquivadas"> Mostrar também turmas arquivadas</label>'+
+    '<div id="imp-lista-turmas"><p class="vazio-msg">Carregando…</p></div>'+
+    '<div style="margin-top:14px;">'+
+    '<label class="admin-check"><input type="checkbox" id="imp-senhas" checked> Copiar as senhas dos alunos (data de nascimento)</label>'+
+    '<label class="admin-check"><input type="checkbox" id="imp-curso" checked> Copiar curso e disciplina da turma</label>'+
+    '</div>'+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:0 0 12px;">Serão copiados apenas o cadastro da turma e a lista de alunos. Atividades, respostas e notas do outro professor não são copiadas. Se já existir aqui uma turma com o mesmo nome, só os alunos que faltam são acrescentados; nada é sobrescrito.</p>'+
+    '<p class="erro-msg" id="imp-erro" hidden></p>'+
+    '<button type="button" class="botao botao-primario" id="imp-confirmar">Importar turmas selecionadas</button>'+
+    '<div id="imp-resultado"></div>');
+  const sel = document.getElementById('imp-origem');
+  const chkArq = document.getElementById('imp-mostrar-arquivadas');
+  sel.addEventListener('change', ()=>carregarTurmasOrigemImportacao(sel.value));
+  chkArq.addEventListener('change', renderTurmasOrigemImportacao);
+  document.getElementById('imp-confirmar').addEventListener('click', executarImportacaoOutroProfessor);
+  await carregarTurmasOrigemImportacao(sel.value);
+}
+
+async function carregarTurmasOrigemImportacao(ws){
+  impOrigemWs = ws;
+  const alvo = document.getElementById('imp-lista-turmas');
+  alvo.innerHTML = '<p class="vazio-msg">Carregando…</p>';
+  try{
+    const [tcSnap, locais] = await Promise.all([
+      dbReal.ref('workspaces/'+ws+'/turmasCadastradas').once('value'),
+      buscarTurmasCadastradas()
+    ]);
+    const nomesLocais = new Set(locais.map(t=>turmaSlug(t.nome)));
+    impOrigemTurmas = Object.entries(tcSnap.val()||{}).map(([id,t])=>({
+      id, nome:(t&&t.nome)||'(sem nome)', curso:(t&&t.curso)||'', disciplina:(t&&t.disciplina)||'',
+      arquivada:!!(t&&t.arquivada),
+      alunos:Object.values((t&&t.alunos)||{}).filter(a=>a && !a.especial && a.nome),
+      jaExiste: nomesLocais.has(turmaSlug((t&&t.nome)||''))
+    })).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    if (ws!==impOrigemWs) return;
+    renderTurmasOrigemImportacao();
+  } catch(e){
+    alvo.innerHTML = '<p class="erro-msg">Não foi possível ler as turmas desse professor: '+escapeHTML(e.message)+'</p>';
+  }
+}
+
+function renderTurmasOrigemImportacao(){
+  const alvo = document.getElementById('imp-lista-turmas');
+  if (!alvo) return;
+  const mostrarArq = document.getElementById('imp-mostrar-arquivadas').checked;
+  const visiveis = impOrigemTurmas.filter(t=>mostrarArq || !t.arquivada);
+  if (!visiveis.length){ alvo.innerHTML = '<p class="vazio-msg">Este professor não tem turmas'+(mostrarArq?'':' ativas')+' cadastradas.</p>'; return; }
+  alvo.innerHTML =
+    '<div style="display:flex;gap:12px;margin-bottom:6px;"><button type="button" class="botao-texto" id="imp-marcar-todas">Marcar todas</button><button type="button" class="botao-texto" id="imp-desmarcar-todas">Desmarcar todas</button></div>'+
+    '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th></th><th>Turma</th><th>Alunos</th><th>Disciplina</th><th>Situação aqui</th></tr></thead><tbody>'+
+    visiveis.map(t=>{
+      const idx = impOrigemTurmas.indexOf(t);
+      return '<tr><td><input type="checkbox" class="imp-chk" data-idx="'+idx+'"'+(t.arquivada?'':' checked')+' style="width:18px;height:18px;accent-color:var(--ink);"></td>'+
+        '<td>'+escapeHTML(t.nome)+(t.arquivada?' <span class="tag-status tag-inativo">Arquivada</span>':'')+'</td>'+
+        '<td><button type="button" class="num-clicavel" data-imp-alunos="'+idx+'">'+t.alunos.length+'</button></td>'+
+        '<td>'+(t.disciplina?escapeHTML(t.disciplina):'—')+'</td>'+
+        '<td>'+(t.jaExiste?'<span class="tag-status tag-admin">Já existe — completa alunos</span>':'<span class="tag-status tag-ativo">Nova</span>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div id="imp-alunos-detalhe"></div>';
+  document.getElementById('imp-marcar-todas').addEventListener('click', ()=>alvo.querySelectorAll('.imp-chk').forEach(c=>c.checked=true));
+  document.getElementById('imp-desmarcar-todas').addEventListener('click', ()=>alvo.querySelectorAll('.imp-chk').forEach(c=>c.checked=false));
+  alvo.querySelectorAll('[data-imp-alunos]').forEach(b=>b.addEventListener('click', ()=>{
+    const t = impOrigemTurmas[Number(b.dataset.impAlunos)];
+    const nomes = t.alunos.map(a=>a.nome).sort((x,y)=>x.localeCompare(y,'pt-BR'));
+    document.getElementById('imp-alunos-detalhe').innerHTML =
+      '<div style="margin-top:10px;padding:10px 12px;border:1px solid var(--borda);border-radius:8px;background:#fff;">'+
+      '<strong style="font-size:.85rem;">'+escapeHTML(t.nome)+' — '+nomes.length+' aluno(s)</strong>'+
+      (nomes.length?'<ol style="margin:6px 0 0;padding-left:22px;font-size:.85rem;">'+nomes.map(n=>'<li>'+escapeHTML(n)+'</li>').join('')+'</ol>':'<p class="vazio-msg" style="margin:6px 0 0;">Nenhum aluno.</p>')+
+      '</div>';
+  }));
+}
+
+async function garantirRegistroNome(colecao, nome){
+  if (!nome) return;
+  const atuais = colecao==='cursosCadastrados' ? await buscarCursosCadastrados() : await buscarDisciplinasCadastradas();
+  if (atuais.some(x=>turmaSlug(x.nome)===turmaSlug(nome))) return;
+  if (colecao==='cursosCadastrados') await criarCursoCadastrado(nome); else await criarDisciplinaCadastrada(nome);
+}
+
+async function executarImportacaoOutroProfessor(){
+  const erro = document.getElementById('imp-erro');
+  const btn = document.getElementById('imp-confirmar');
+  const resultado = document.getElementById('imp-resultado');
+  erro.hidden = true; resultado.innerHTML = '';
+  const selecionadas = Array.from(document.querySelectorAll('#imp-lista-turmas .imp-chk:checked')).map(c=>impOrigemTurmas[Number(c.dataset.idx)]);
+  if (!selecionadas.length){ erro.textContent='Selecione pelo menos uma turma.'; erro.hidden=false; return; }
+  const copiarSenhas = document.getElementById('imp-senhas').checked;
+  const copiarCurso = document.getElementById('imp-curso').checked;
+  const origemWs = impOrigemWs;
+  btn.disabled = true; btn.textContent = 'Importando…';
+  const relatorio = [];
+  try{
+    let locais = await buscarTurmasCadastradas();
+    for (const t of selecionadas){
+      const linha = {nome:t.nome, acao:'', alunosNovos:[], senhas:0};
+      let local = locais.find(x=>turmaSlug(x.nome)===turmaSlug(t.nome));
+      let turmaId;
+      if (local){
+        turmaId = local.id; linha.acao = 'Turma já existia — alunos completados';
+      } else {
+        turmaId = await criarTurmaCadastrada(t.nome);
+        local = {id:turmaId, nome:t.nome, curso:'', disciplina:'', alunos:{}};
+        locais.push(local);
+        linha.acao = 'Turma criada';
+      }
+      if (copiarCurso && (t.curso || t.disciplina)){
+        const curso = local.curso || t.curso || '';
+        const disciplina = local.disciplina || t.disciplina || '';
+        if (curso!==local.curso || disciplina!==local.disciplina) await definirCursoDisciplinaDaTurma(turmaId, curso, disciplina);
+        await garantirRegistroNome('cursosCadastrados', t.curso);
+        await garantirRegistroNome('disciplinasCadastradas', t.disciplina);
+      }
+      const existentes = new Set(Object.values(local.alunos||{}).filter(a=>a && a.nome).map(a=>turmaSlug(a.nome)));
+      const atualizacoes = {};
+      t.alunos.forEach(a=>{
+        const chave = turmaSlug(a.nome);
+        if (existentes.has(chave)) return;
+        existentes.add(chave);
+        const key = db.ref('turmasCadastradas/'+turmaId+'/alunos').push().key;
+        const novo = {nome:a.nome.trim()};
+        if (a.inabilitado) novo.inabilitado = a.inabilitado;
+        if (a.infrequente) novo.infrequente = a.infrequente;
+        atualizacoes[key] = novo;
+        linha.alunosNovos.push(novo.nome);
+      });
+      if (Object.keys(atualizacoes).length) await db.ref('turmasCadastradas/'+turmaId+'/alunos').update(atualizacoes);
+      if (copiarSenhas){
+        const turmaKey = turmaSlug(t.nome);
+        const [origemSenhas, destinoSenhas] = await Promise.all([
+          dbReal.ref('workspaces/'+origemWs+'/senhas/'+turmaKey).once('value').then(s=>s.val()||{}),
+          buscarSenhasDaTurma(turmaKey)
+        ]);
+        const novasSenhas = {};
+        Object.entries(origemSenhas).forEach(([k,v])=>{ if (v && !destinoSenhas[k]) novasSenhas[k] = v; });
+        await salvarSenhasDaTurma(turmaKey, novasSenhas);
+        linha.senhas = Object.keys(novasSenhas).length;
+      }
+      relatorio.push(linha);
+    }
+    const totTurmasNovas = relatorio.filter(r=>r.acao==='Turma criada').length;
+    const totAlunos = relatorio.reduce((s,r)=>s+r.alunosNovos.length,0);
+    const totSenhas = relatorio.reduce((s,r)=>s+r.senhas,0);
+    resultado.innerHTML =
+      '<div class="caixa-credenciais" style="margin-top:14px;"><p style="margin:0 0 8px;font-weight:700;">Importação concluída: '+totTurmasNovas+' turma(s) criada(s), '+totAlunos+' aluno(s) acrescentado(s)'+(copiarSenhas?', '+totSenhas+' senha(s) copiada(s)':'')+'.</p>'+
+      '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th>Turma</th><th>Resultado</th><th>Alunos novos</th>'+(copiarSenhas?'<th>Senhas</th>':'')+'</tr></thead><tbody>'+
+      relatorio.map((r,i)=>'<tr><td>'+escapeHTML(r.nome)+'</td><td>'+escapeHTML(r.acao)+'</td><td>'+
+        (r.alunosNovos.length?'<button type="button" class="num-clicavel" data-imp-res="'+i+'">'+r.alunosNovos.length+'</button>':'0')+'</td>'+
+        (copiarSenhas?'<td>'+r.senhas+'</td>':'')+'</tr>').join('')+
+      '</tbody></table></div><div id="imp-res-detalhe"></div></div>';
+    resultado.querySelectorAll('[data-imp-res]').forEach(b=>b.addEventListener('click', ()=>{
+      const r = relatorio[Number(b.dataset.impRes)];
+      document.getElementById('imp-res-detalhe').innerHTML = '<p style="margin:10px 0 4px;font-weight:700;font-size:.85rem;">'+escapeHTML(r.nome)+' — alunos acrescentados</p><ol style="margin:0;padding-left:22px;font-size:.85rem;">'+r.alunosNovos.map(n=>'<li>'+escapeHTML(n)+'</li>').join('')+'</ol>';
+    }));
+    await recarregarTurmasModulo();
+    await recarregarCursosDisciplinas();
+    await carregarTurmasOrigemImportacao(origemWs);
+  } catch(e){
+    erro.textContent = 'Erro durante a importação: '+e.message+(relatorio.length?' (as '+relatorio.length+' primeira(s) turma(s) já foram importadas).':'');
+    erro.hidden = false;
+  }
+  btn.disabled = false; btn.textContent = 'Importar turmas selecionadas';
 }
 
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
