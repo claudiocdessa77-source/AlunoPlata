@@ -127,6 +127,34 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .stat-card{background:var(--papel);border:1.5px solid var(--ink);border-radius:10px;padding:18px;text-align:left;font-family:var(--font-display);cursor:pointer;}
 .stat-card:hover{background:#F0EDE4;}
 .stat-card-info{cursor:default;}
+/* ---- botão "Ver minha média" em destaque ---- */
+.botao-media-destaque{display:flex;align-items:center;gap:14px;width:100%;margin-top:20px;padding:16px 18px;border:2px solid var(--ink);border-radius:12px;background:linear-gradient(135deg,var(--folder) 0%,var(--folder-escuro) 100%);color:#fff;cursor:pointer;text-align:left;font-family:var(--font-display);box-shadow:4px 4px 0 var(--ink);transition:transform .12s ease,box-shadow .12s ease;position:relative;}
+.botao-media-destaque:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
+.botao-media-destaque:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+.botao-media-destaque:focus-visible{outline:3px solid var(--ink);outline-offset:3px;}
+.botao-media-destaque .bmd-icone{flex:0 0 52px;height:52px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.8rem;}
+.botao-media-destaque .bmd-titulo{display:block;font-size:1.15rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em;}
+.botao-media-destaque .bmd-sub{display:block;font-size:.8rem;opacity:.92;margin-top:2px;}
+.botao-media-destaque .bmd-seta{margin-left:auto;font-size:1.5rem;font-weight:900;}
+.bmd-novidade{position:absolute;top:-11px;right:14px;background:var(--verde);color:#fff;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 10px;border-radius:12px;border:2px solid var(--ink);animation:pulsoNovidade 1.6s ease-in-out infinite;}
+@keyframes pulsoNovidade{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+@media (prefers-reduced-motion:reduce){.bmd-novidade{animation:none;}.botao-media-destaque{transition:none;}}
+/* ---- tela da média ---- */
+.media-card{border:1.5px solid var(--ink);border-radius:12px;padding:16px 18px;margin-bottom:12px;background:var(--papel);}
+.media-card h4{margin:0;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-suave);}
+.media-card .media-valor{font-size:2rem;font-weight:900;margin:4px 0 0;line-height:1.1;}
+.media-card .media-pendente{margin:6px 0 0;font-style:italic;color:var(--ink-suave);font-size:.92rem;}
+.media-grid-unidades{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.media-grid-unidades .media-card{margin-bottom:0;}
+.media-card-final{background:var(--ink);color:#fff;border-color:var(--ink);margin-top:12px;padding:20px 20px;}
+.media-card-final h4{color:rgba(255,255,255,.75);}
+.media-card-final .media-valor{font-size:2.8rem;}
+.media-card-final .media-formula{font-size:.78rem;opacity:.7;margin:4px 0 0;font-family:var(--font-mono);}
+.media-card-final .media-pendente{color:rgba(255,255,255,.75);}
+@media (max-width:420px){.media-grid-unidades{grid-template-columns:1fr;}}
+/* ---- visualizações da média (professor) ---- */
+.chip-visto{display:inline-block;font-size:.62rem;font-weight:800;padding:1px 6px;border-radius:8px;margin:1px 2px 1px 0;border:1px solid var(--verde);color:var(--verde);background:#E6F2EC;white-space:nowrap;}
+.chip-nao-visto{border-color:var(--borda);color:var(--ink-suave);background:#fff;}
 /* ---- administração de professores ---- */
 .admin-secao{margin-top:28px;}
 .admin-secao h2{font-size:1rem;text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px;}
@@ -290,7 +318,12 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
     <p class="subtitulo">escolha a atividade</p>
     <div id="lista-atividades" class="lista-selecao" style="max-height:none;"></div>
     <p class="erro-msg" id="erro-atividades" hidden></p>
-    <button type="button" class="link-discreto" id="btn-ver-minha-media" style="margin-top:18px;display:block;">📊 Ver minha média final</button>
+    <button type="button" class="botao-media-destaque" id="btn-ver-minha-media">
+      <span class="bmd-novidade" id="bmd-novidade" hidden>Nota liberada!</span>
+      <span class="bmd-icone" aria-hidden="true">📊</span>
+      <span><span class="bmd-titulo">Ver minha média</span><span class="bmd-sub" id="bmd-sub">1ª Unidade · 2ª Unidade · Média final</span></span>
+      <span class="bmd-seta" aria-hidden="true">→</span>
+    </button>
   </div>
 </section>
 
@@ -402,7 +435,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 <section id="tela-media-final" class="tela">
   <div class="cartao-central">
     <button class="botao-voltar-canto" id="btn-voltar-media-final" type="button" aria-label="Voltar">←</button>
-    <h1 id="titulo-media-final">Minha média final</h1>
+    <h1 id="titulo-media-final">Minha média</h1>
     <p class="subtitulo" id="subtitulo-media-final"></p>
     <div id="conteudo-media-final"></div>
   </div>
@@ -1887,6 +1920,7 @@ async function mostrarEscolhaTurma(){
 
 async function mostrarEscolhaAtividade(){
   document.getElementById('titulo-turma-atividade').textContent = turmaEscolhidaTemp.nome;
+  atualizarBotaoMediaAluno();
   mostrarTela('tela-carregando');
   const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
   const identificado = identidade.turmaKey===turmaKey && identidade.nome;
@@ -2067,25 +2101,68 @@ async function mostrarMediaFinal(){
 
   function blocoUnidade(rotulo, liberado, resultado){
     if (!liberado){
-      return '<div class="historia-card"><h4 class="pergunta-titulo">'+rotulo+'</h4><p class="vazio-msg">Ainda não liberada pelo(a) professor(a).</p></div>';
+      return '<div class="media-card"><h4>'+rotulo+'</h4><p class="media-pendente">Ainda não liberada pelo(a) professor(a).</p></div>';
     }
-    const valorTxt = resultado.temAlguma ? (Math.round(resultado.soma*100)/100) : '—';
-    return '<div class="historia-card"><h4 class="pergunta-titulo">'+rotulo+'</h4><p style="font-size:1.7rem;font-weight:800;margin:6px 0 0;">'+valorTxt+'</p></div>';
+    const valorTxt = resultado.temAlguma ? formatarNotaMedia(resultado.soma) : '—';
+    return '<div class="media-card"><h4>'+rotulo+'</h4><p class="media-valor">'+valorTxt+'</p></div>';
   }
-  let blocoTotal = '';
+  let blocoFinal;
   if (liberado1 && liberado2){
-    const temAlgumaTotal = u1.temAlguma || u2.temAlguma;
-    const somaTotal = u1.soma + u2.soma;
-    const totalTxt = temAlgumaTotal ? (Math.round(somaTotal*100)/100) : '—';
-    blocoTotal = '<div class="historia-card" style="background:var(--ink);border-color:var(--ink);">'+
-      '<h4 class="pergunta-titulo" style="color:#fff;">Soma geral (1ª + 2ª Unidade)</h4>'+
-      '<p style="font-size:2rem;font-weight:800;margin:6px 0 0;color:#fff;">'+totalTxt+'</p></div>';
+    const temAlguma = u1.temAlguma || u2.temAlguma;
+    blocoFinal = '<div class="media-card media-card-final"><h4>Média final</h4>'+
+      '<p class="media-valor">'+(temAlguma ? formatarNotaMedia(calcularMediaFinal(u1.soma, u2.soma)) : '—')+'</p>'+
+      '<p class="media-formula">(1ª Unidade + 2ª Unidade) ÷ 2</p></div>';
+  } else {
+    blocoFinal = '<div class="media-card media-card-final"><h4>Média final</h4>'+
+      '<p class="media-pendente">Disponível quando as duas unidades forem liberadas.</p></div>';
   }
   document.getElementById('conteudo-media-final').innerHTML =
-    blocoUnidade('1ª Unidade', liberado1, u1) +
-    blocoUnidade('2ª Unidade', liberado2, u2) +
-    blocoTotal;
+    '<div class="media-grid-unidades">'+blocoUnidade('1ª Unidade', liberado1, u1)+blocoUnidade('2ª Unidade', liberado2, u2)+'</div>'+
+    blocoFinal;
   mostrarTela('tela-media-final');
+  registrarVisualizacaoMedia(turmaKey, chave, identidade.nome, liberado1, liberado2).catch(()=>{});
+}
+
+/* ---- média final e registro de visualização ---- */
+function calcularMediaFinal(somaU1, somaU2){ return (somaU1 + somaU2) / 2; }
+function formatarNotaMedia(v){ return (Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:1, maximumFractionDigits:2}); }
+async function registrarVisualizacaoMedia(turmaKey, chave, nome, liberado1, liberado2){
+  const ref = db.ref('turmas/'+turmaKey+'/visualizacoesMedia/'+chave);
+  const atual = (await ref.once('value')).val() || {};
+  const agora = Date.now();
+  const dados = {nome, ultimaVez:agora, vezes:(atual.vezes||0)+1, primeiraVez:atual.primeiraVez||agora};
+  if (liberado1 && !atual.u1Em) dados.u1Em = agora;
+  if (liberado2 && !atual.u2Em) dados.u2Em = agora;
+  if (liberado1 && liberado2 && !atual.finalEm) dados.finalEm = agora;
+  await ref.update(dados);
+}
+async function atualizarBotaoMediaAluno(){
+  const novidade = document.getElementById('bmd-novidade');
+  const sub = document.getElementById('bmd-sub');
+  novidade.hidden = true;
+  sub.textContent = '1ª Unidade · 2ª Unidade · Média final';
+  if (!turmaEscolhidaTemp) return;
+  const turmaKey = turmaSlug(turmaEscolhidaTemp.nome);
+  try{
+    const [ml, mli] = await Promise.all([
+      db.ref('turmas/'+turmaKey+'/mediaLiberada').once('value').then(x=>x.val()||{}),
+      db.ref('turmas/'+turmaKey+'/mediaLiberadaIndividual').once('value').then(x=>x.val()||{})
+    ]);
+    const identificado = identidade.turmaKey===turmaKey && identidade.nome;
+    const chave = identificado ? turmaSlug(identidade.nome) : null;
+    const lib1 = !!ml['1'] || !!(chave && mli['1'] && mli['1'][chave]);
+    const lib2 = !!ml['2'] || !!(chave && mli['2'] && mli['2'][chave]);
+    const partes = [];
+    if (lib1) partes.push('1ª Unidade liberada');
+    if (lib2) partes.push('2ª Unidade liberada');
+    if (lib1 && lib2) partes.push('média final disponível');
+    if (partes.length) sub.textContent = partes.join(' · ');
+    if (!lib1 && !lib2) return;
+    if (!identificado){ novidade.hidden = false; return; }
+    const vis = (await db.ref('turmas/'+turmaKey+'/visualizacoesMedia/'+chave).once('value')).val() || {};
+    const pendente = (lib1 && !vis.u1Em) || (lib2 && !vis.u2Em);
+    novidade.hidden = !pendente;
+  } catch(e){}
 }
 
 async function entrarNaAtividade(){
@@ -3735,6 +3812,8 @@ function atualizarTotalLinhaNotas(inputCurso){
   if (celulaTotal) celulaTotal.innerHTML = '<strong>'+(temNota ? (Math.round(total*100)/100) : '—')+'</strong>';
   const celulaU1Valor = linha.querySelector('.celula-media-u1 .valor-media-unidade');
   if (celulaU1Valor) celulaU1Valor.innerHTML = temNotaU1 ? '<strong>'+(Math.round(totalU1*100)/100)+'</strong>' : '<span style="color:var(--ink-suave);">—</span>';
+  const celulaFinal = linha.querySelector('.celula-media-final');
+  if (celulaFinal) celulaFinal.innerHTML = temNota ? '<strong>'+formatarNotaMedia(calcularMediaFinal(totalU1, parseFloat(celulaFinal.dataset.somaU2)||0))+'</strong>' : '<strong><span style="color:var(--ink-suave);">—</span></strong>';
 }
 function celulaMediaUnidade(unidade, mediaValor, temNotaUnidade, turmaLiberada, chaveAluno, individualLiberado){
   const valorTxt = temNotaUnidade ? (Math.round(mediaValor*100)/100) : '—';
@@ -3786,6 +3865,7 @@ async function renderizarTabelaNotas(idx){
   }
   const cursoExtraSnap = await db.ref('turmas/'+turmaKey+'/cursoExtra').once('value');
   const cursoExtraDados = cursoExtraSnap.val() || {};
+  const visualizacoes = (await db.ref('turmas/'+turmaKey+'/visualizacoesMedia').once('value')).val() || {};
 
   const atividadesUnidade1 = atividadesDaTurma.filter(a=>(a.unidade||'1')==='1');
   const atividadesUnidade2 = atividadesDaTurma.filter(a=>a.unidade==='2');
@@ -3821,10 +3901,62 @@ async function renderizarTabelaNotas(idx){
     const celulaU1 = celulaMediaUnidade('1', u1.soma, u1.temAlguma, !!mediaLiberada['1'], chave, !!(mediaLiberadaIndiv['1']&&mediaLiberadaIndiv['1'][chave]));
     const celulaU2 = celulaMediaUnidade('2', u2.soma, u2.temAlguma, !!mediaLiberada['2'], chave, !!(mediaLiberadaIndiv['2']&&mediaLiberadaIndiv['2'][chave]));
 
-    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td class="celula-total-notas"><strong>'+totalTxt+'</strong></td>'+celulaU1+celulaU2+'</tr>';
+    const temFinal = u1.temAlguma || u2.temAlguma;
+    const celulaFinal = '<td class="celula-media-final" data-soma-u2="'+u2.soma+'"><strong>'+(temFinal?formatarNotaMedia(calcularMediaFinal(u1.soma,u2.soma)):'<span style="color:var(--ink-suave);">—</span>')+'</strong></td>';
+    const vis = visualizacoes[chave];
+    const celulaVis = '<td><button type="button" class="num-clicavel" data-ver-visualizacao="'+escapeHTML(chave)+'" data-nome-aluno="'+escapeHTML(nome)+'" style="text-decoration:none;text-align:left;">'+
+      (vis ? (vis.u1Em?'<span class="chip-visto">✓ 1ª</span>':'')+
+              (vis.u2Em?'<span class="chip-visto">✓ 2ª</span>':'')+(vis.finalEm?'<span class="chip-visto">✓ Final</span>':'')+
+              ((!vis.u1Em&&!vis.u2Em)?'<span class="chip-visto chip-nao-visto">Abriu sem nota liberada</span>':'')+
+              '<br><span style="font-size:.66rem;color:var(--ink-suave);font-weight:600;">'+(vis.vezes||1)+'x · '+dataHoraAdmin(vis.ultimaVez)+'</span>'
+           : '<span class="chip-visto chip-nao-visto">Não abriu</span>')+
+      '</button></td>';
+    return '<tr'+(inabilitado?' style="opacity:.6;"':'')+'><td>'+nomeCelula+'</td>'+celulas+celulaCurso+'<td class="celula-total-notas"><strong>'+totalTxt+'</strong></td>'+celulaU1+celulaU2+celulaFinal+celulaVis+'</tr>';
   }).join('');
 
-  container.innerHTML = '<table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th><th title="Soma das atividades da 1ª Unidade + Curso">Média 1ª Unidade</th><th title="Soma das atividades da 2ª Unidade">Média 2ª Unidade</th></tr></thead><tbody>'+linhas+'</tbody></table>';
+  const ativosVis = alunos.filter(a=>!a.inabilitado);
+  const grupoVis = {
+    u1: ativosVis.filter(a=>visualizacoes[turmaSlug(a.nome)] && visualizacoes[turmaSlug(a.nome)].u1Em),
+    u2: ativosVis.filter(a=>visualizacoes[turmaSlug(a.nome)] && visualizacoes[turmaSlug(a.nome)].u2Em),
+    fin: ativosVis.filter(a=>visualizacoes[turmaSlug(a.nome)] && visualizacoes[turmaSlug(a.nome)].finalEm),
+    nunca: ativosVis.filter(a=>!visualizacoes[turmaSlug(a.nome)])
+  };
+  const resumoVis = '<h3 style="margin:6px 0 8px;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;">Quem já viu a média</h3>'+
+    '<div class="stats-grid" style="margin:0 0 18px;">'+
+    '<button type="button" class="stat-card" data-resumo-vis="u1"><span class="stat-num">'+grupoVis.u1.length+'/'+ativosVis.length+'</span><span class="stat-label">viram a 1ª Unidade</span></button>'+
+    '<button type="button" class="stat-card" data-resumo-vis="u2"><span class="stat-num">'+grupoVis.u2.length+'/'+ativosVis.length+'</span><span class="stat-label">viram a 2ª Unidade</span></button>'+
+    '<button type="button" class="stat-card" data-resumo-vis="fin"><span class="stat-num">'+grupoVis.fin.length+'/'+ativosVis.length+'</span><span class="stat-label">viram a média final</span></button>'+
+    '<button type="button" class="stat-card" data-resumo-vis="nunca"><span class="stat-num">'+grupoVis.nunca.length+'</span><span class="stat-label">nunca abriram a média</span></button>'+
+    '</div>';
+
+  container.innerHTML = resumoVis + '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th>Nome</th>'+cabecalho+'<th title="Nota extra que você mesmo lança — não vem de nenhuma atividade, o aluno não vê">Curso</th><th>Total</th><th title="Soma das atividades da 1ª Unidade + Curso">Média 1ª Unidade</th><th title="Soma das atividades da 2ª Unidade">Média 2ª Unidade</th><th title="(1ª Unidade + 2ª Unidade) ÷ 2">Média Final</th><th title="Registra quando o aluno abriu a tela da média e quais unidades estavam liberadas">Viu a média</th></tr></thead><tbody>'+linhas+'</tbody></table></div>';
+  const rotulosVis = {u1:'Viram a média da 1ª Unidade', u2:'Viram a média da 2ª Unidade', fin:'Viram a média final', nunca:'Nunca abriram a tela da média'};
+  container.querySelectorAll('[data-resumo-vis]').forEach(b=>b.addEventListener('click', ()=>{
+    const k = b.dataset.resumoVis;
+    const campo = k==='u1'?'u1Em':k==='u2'?'u2Em':k==='fin'?'finalEm':null;
+    const lista = grupoVis[k];
+    const naoViram = campo ? ativosVis.filter(a=>!lista.includes(a)) : [];
+    let html = lista.length ? '<table class="tabela-alunos"><thead><tr><th>Aluno</th>'+(campo?'<th>Viu pela 1ª vez em</th><th>Último acesso</th><th>Acessos</th>':'')+'</tr></thead><tbody>'+
+      lista.map(a=>{ const v = visualizacoes[turmaSlug(a.nome)]||{};
+        return '<tr><td>'+escapeHTML(a.nome)+'</td>'+(campo?'<td>'+dataHoraAdmin(v[campo])+'</td><td>'+dataHoraAdmin(v.ultimaVez)+'</td><td>'+(v.vezes||1)+'</td>':'')+'</tr>'; }).join('')+
+      '</tbody></table>' : '<p class="vazio-msg">Nenhum aluno neste grupo.</p>';
+    if (campo) html += '<h4 style="margin:18px 0 8px;">Ainda não viram ('+naoViram.length+')</h4>'+
+      (naoViram.length ? '<ol style="margin:0;padding-left:22px;font-size:.88rem;">'+naoViram.map(a=>'<li>'+escapeHTML(a.nome)+'</li>').join('')+'</ol>' : '<p class="vazio-msg">Todos já viram.</p>');
+    abrirModal(rotulosVis[k]+' — '+turma.nome+' ('+lista.length+')', html);
+  }));
+  container.querySelectorAll('[data-ver-visualizacao]').forEach(b=>b.addEventListener('click', ()=>{
+    const v = visualizacoes[b.dataset.verVisualizacao];
+    const nomeAluno = b.dataset.nomeAluno;
+    const html = v ? '<table class="tabela-alunos"><tbody>'+
+      '<tr><td>Primeiro acesso à tela da média</td><td>'+dataHoraAdmin(v.primeiraVez)+'</td></tr>'+
+      '<tr><td>Último acesso</td><td>'+dataHoraAdmin(v.ultimaVez)+'</td></tr>'+
+      '<tr><td>Total de acessos</td><td>'+(v.vezes||1)+'</td></tr>'+
+      '<tr><td>Viu a 1ª Unidade em</td><td>'+dataHoraAdmin(v.u1Em)+'</td></tr>'+
+      '<tr><td>Viu a 2ª Unidade em</td><td>'+dataHoraAdmin(v.u2Em)+'</td></tr>'+
+      '<tr><td>Viu a média final em</td><td>'+dataHoraAdmin(v.finalEm)+'</td></tr>'+
+      '</tbody></table>' : '<p class="vazio-msg">Este aluno ainda não abriu a tela da média.</p>';
+    abrirModal(nomeAluno+' — visualização da média', html);
+  }));
   document.querySelectorAll('.input-nota-curso-extra').forEach(inp=>{
     inp.addEventListener('change', async (e)=>{
       const val = e.target.value.trim().replace(',','.');
