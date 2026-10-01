@@ -4878,6 +4878,7 @@ async function mostrarEscolhaDisciplina(){
       Object.values(tc).forEach(t=>{
         if (!t || t.arquivada) return;
         const disc = String(t.disciplina||'').trim();
+        if (!disc) return; // só entra na lista turma ativa com disciplina vinculada
         const chave = p.ws+'|'+turmaSlug(disc);
         let g = grupos.find(x=>x.chave===chave);
         if (!g){ g = {chave, ws:p.ws, profNome:p.nome, disciplina:disc, turmas:[]}; grupos.push(g); }
@@ -4889,7 +4890,7 @@ async function mostrarEscolhaDisciplina(){
       return a.disciplina.localeCompare(b.disciplina,'pt-BR') || a.profNome.localeCompare(b.profNome,'pt-BR');
     });
     if (!grupos.length){
-      erro.hidden = false; erro.textContent = 'Nenhuma disciplina disponível no momento. Avise o professor.'; lista.innerHTML = '';
+      erro.hidden = false; erro.textContent = 'Nenhuma disciplina disponível no momento. O professor precisa vincular a disciplina à turma no módulo Turmas.'; lista.innerHTML = '';
     } else {
       erro.hidden = true;
       lista.innerHTML = grupos.map((g,i)=>
