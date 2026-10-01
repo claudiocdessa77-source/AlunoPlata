@@ -127,6 +127,28 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .stat-card{background:var(--papel);border:1.5px solid var(--ink);border-radius:10px;padding:18px;text-align:left;font-family:var(--font-display);cursor:pointer;}
 .stat-card:hover{background:#F0EDE4;}
 .stat-card-info{cursor:default;}
+/* ---- administração de professores ---- */
+.admin-secao{margin-top:28px;}
+.admin-secao h2{font-size:1rem;text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px;}
+.admin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 16px;align-items:end;}
+.admin-form .campo{margin-bottom:12px;}
+.admin-check{display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;margin:6px 0 12px;cursor:pointer;}
+.admin-check input{width:18px;height:18px;accent-color:var(--ink);}
+.tag-status{display:inline-block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:2px 9px;border-radius:12px;border:1.5px solid var(--ink);white-space:nowrap;}
+.tag-ativo{background:#E6F2EC;color:var(--verde);border-color:var(--verde);}
+.tag-inativo{background:#FCEAE8;color:var(--vermelho);border-color:var(--vermelho);}
+.tag-mestre{background:var(--ink);color:#fff;}
+.tag-admin{background:#F0EDE4;}
+.linha-clicavel{cursor:pointer;}
+.linha-clicavel:hover td{background:#F0EDE4;}
+.num-clicavel{background:none;border:none;padding:0;font:inherit;font-weight:800;color:var(--folder-escuro);text-decoration:underline;cursor:pointer;}
+.link-copia{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.link-copia input{flex:1;min-width:0;font-family:var(--font-mono);font-size:.78rem;padding:8px 10px;border:1.5px solid var(--ink);border-radius:6px;background:#fff;color:var(--ink);}
+.botao-perigo{background:#fff;color:var(--vermelho);border-color:var(--vermelho);}
+.admin-filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.admin-tabela-wrap{overflow-x:auto;}
+.caixa-credenciais{background:#E6F2EC;border:1.5px solid var(--verde);border-radius:10px;padding:14px 16px;margin:6px 0 4px;font-size:.9rem;}
+.caixa-credenciais code{font-family:var(--font-mono);font-weight:700;}
 .stat-card-info:hover{background:var(--papel);}
 .stat-num{display:block;font-size:1.8rem;font-weight:900;}
 .stat-label{display:block;font-size:.82rem;color:var(--ink-suave);margin-top:2px;}
@@ -397,7 +419,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       <div class="painel-topo-acoes">
         <div>
           <h1 style="margin:0;">Painel do Professor</h1>
-          <p class="subtitulo" style="margin:4px 0 0;">acompanhamento das turmas</p>
+          <p class="subtitulo" style="margin:4px 0 0;" id="subtitulo-painel-prof">acompanhamento das turmas</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-turmas">Turmas</button>
@@ -405,6 +427,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-notas">Notas</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-modulo-relatorios">Relatórios</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-gerenciar-senhas">Senhas dos alunos</button>
+          <button class="botao botao-primario botao-pequeno" id="btn-modulo-admin" hidden>Professores (Admin)</button>
           <button class="botao botao-secundario botao-pequeno" id="btn-sair-professor">Sair</button>
         </div>
       </div>
@@ -450,6 +473,56 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       </div>
       <p class="msg-sucesso" id="msg-senhas-salvas" hidden>Senhas salvas!</p>
     </div>
+  </div>
+</section>
+
+<!-- ===== TELA: ADMINISTRAÇÃO DE PROFESSORES ===== -->
+<section id="tela-admin-professores" class="tela">
+  <div class="pagina-larga">
+    <div class="aba-processo">Plataforma de Atividade dos Alunos - Administração</div>
+    <div class="cabecalho">
+      <button class="botao-home-canto" id="btn-voltar-painel-admin" type="button" aria-label="Início"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></button>
+      <div class="painel-topo-acoes">
+        <div>
+          <h1 style="margin:0;">Professores</h1>
+          <p class="subtitulo" style="margin:4px 0 0;">cadastro de logins e workspaces</p>
+        </div>
+      </div>
+      <div class="stats-grid" id="admin-stats"></div>
+
+      <div class="admin-secao">
+        <h2>Novo professor</h2>
+        <div class="admin-form">
+          <div class="campo">
+            <label for="admin-nome">Nome completo</label>
+            <input type="text" id="admin-nome" autocomplete="off" placeholder="Ex.: Maria da Silva">
+          </div>
+          <div class="campo">
+            <label for="admin-ws">Workspace (identificador)</label>
+            <input type="text" id="admin-ws" autocomplete="off" placeholder="gerado a partir do nome">
+          </div>
+          <div class="campo">
+            <label for="admin-senha">Senha de acesso</label>
+            <input type="text" id="admin-senha" autocomplete="off" placeholder="mínimo 6 caracteres">
+          </div>
+          <div class="campo">
+            <button type="button" class="botao botao-secundario botao-pequeno" id="admin-gerar-senha" style="width:100%;padding:12px 14px;">Gerar senha</button>
+          </div>
+        </div>
+        <label class="admin-check"><input type="checkbox" id="admin-eh-admin"> Pode administrar professores (acesso a esta tela)</label>
+        <p style="font-size:.82rem;color:var(--ink-suave);margin:0 0 12px;">O login é feito somente pela senha, por isso ela precisa ser única entre os professores. O workspace define a área isolada de dados do professor e não pode ser alterado depois.</p>
+        <p class="erro-msg" id="admin-erro-form" hidden></p>
+        <button class="botao botao-primario" id="admin-btn-cadastrar">Cadastrar professor</button>
+        <div id="admin-credenciais"></div>
+      </div>
+
+      <div class="admin-secao">
+        <h2>Professores cadastrados</h2>
+        <div class="admin-filtros" id="admin-filtros"></div>
+        <div class="admin-tabela-wrap" id="admin-lista-prof"></div>
+      </div>
+    </div>
+    <footer>Excluir o acesso de um professor não apaga as turmas, atividades e notas do workspace dele.</footer>
   </div>
 </section>
 
@@ -739,12 +812,11 @@ const CONFIG = {
     messagingSenderId: "532542873762",
     appId: "1:532542873762:web:2d0501bf4d53779dac37fb"
   },
-  // Cada professor tem sua própria senha e seu próprio "workspace" (área isolada do banco).
-  // Para dar acesso a outra pessoa, adicione uma linha nova aqui com uma senha e um workspace exclusivos dela —
-  // o workspace pode ser qualquer texto simples (sem espaço/acento), só precisa ser único.
+  // CONTA(S) MESTRA(S): definidas aqui no código e sempre disponíveis, mesmo se o banco falhar.
+  // Os demais professores são cadastrados pela tela "Professores (Admin)" do painel e ficam salvos
+  // no Realtime Database em /professores (somente o hash da senha é gravado, nunca a senha em texto).
   professores: [
-    {senha: "Lore_2001", workspace: "claudio", nome: "Claudio Dessa"},
-    {senha: "TROQUE_ESTA_SENHA", workspace: "amiga", nome: "Nome da Amiga"}
+    {senha: "Lore_2001", workspace: "claudio", nome: "Claudio Dessa", admin: true}
   ],
   // Workspace usado pelos alunos quando o link não traz "?ws=" na URL.
   workspacePadrao: "claudio"
@@ -2313,10 +2385,37 @@ function renderAlertaPendenciasGeral(){
 async function entrarProfessor(){
   const senha = document.getElementById('input-senha').value;
   const erro = document.getElementById('erro-senha');
-  const prof = (CONFIG.professores||[]).find(p=>p.senha===senha);
-  if (!prof){ erro.hidden=false; return; }
+  const btn = document.getElementById('btn-entrar-professor');
+  const mostrarErro = (txt)=>{ erro.textContent = txt; erro.hidden = false; };
+  if (!senha){ mostrarErro('Informe a senha.'); return; }
+  let prof = (CONFIG.professores||[]).find(p=>p.senha===senha);
+  if (prof){
+    prof = {workspace:prof.workspace, nome:prof.nome, admin:!!prof.admin, mestre:true};
+  } else {
+    btn.disabled = true;
+    try{
+      const hash = await hashSenha(senha);
+      const lista = (await dbReal.ref('professores').once('value')).val() || {};
+      const achado = Object.entries(lista).find(([,p])=>p && p.senhaHash===hash);
+      if (achado){
+        const [ws, p] = achado;
+        if (p.ativo === false){ btn.disabled = false; mostrarErro('Seu acesso está desativado. Procure o administrador da plataforma.'); return; }
+        prof = {workspace:ws, nome:p.nome||ws, admin:!!p.admin, mestre:false};
+        dbReal.ref('professores/'+ws+'/ultimoAcesso').set(Date.now()).catch(()=>{});
+      }
+    } catch(e){
+      btn.disabled = false;
+      mostrarErro('Não foi possível consultar os professores cadastrados ('+e.message+').');
+      return;
+    }
+    btn.disabled = false;
+  }
+  if (!prof){ mostrarErro('Senha incorreta.'); return; }
   erro.hidden=true;
+  professorLogado = prof;
   workspaceAtual = prof.workspace;
+  document.getElementById('btn-modulo-admin').hidden = !prof.admin;
+  document.getElementById('subtitulo-painel-prof').textContent = 'acompanhamento das turmas · '+prof.nome;
   document.getElementById('input-senha').value='';
   mostrarTela('tela-carregando');
   await carregarConteudosCadastrados();
@@ -2330,6 +2429,9 @@ async function entrarProfessor(){
 }
 function sairProfessor(){
   pararEscutaTurmas();
+  professorLogado = null;
+  document.getElementById('btn-modulo-admin').hidden = true;
+  workspaceAtual = new URLSearchParams(location.search).get('ws') || CONFIG.workspacePadrao || 'claudio';
   mostrarEscolhaTurma();
 }
 
@@ -4056,6 +4158,319 @@ async function abrirModalTurma(tk, t, arquivado){
   }
 }
 
+/* ===== ADMINISTRAÇÃO DE PROFESSORES (logins e workspaces) ===== */
+let professorLogado = null;
+let cacheAdminProf = [];
+let filtroAdminProf = 'todos';
+
+async function hashSenha(senha){
+  const dados = new TextEncoder().encode('alunoplata::'+senha);
+  const buf = await crypto.subtle.digest('SHA-256', dados);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function slugWorkspace(txt){
+  return String(txt||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+}
+function gerarSenhaAleatoria(){
+  const c = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const arr = new Uint32Array(10); crypto.getRandomValues(arr);
+  return Array.from(arr, n=>c[n%c.length]).join('');
+}
+function linkAlunoWorkspace(ws){
+  const base = location.origin+location.pathname;
+  return ws===(CONFIG.workspacePadrao||'claudio') ? base : base+'?ws='+encodeURIComponent(ws);
+}
+function linkProfessorLogin(){ return location.origin+location.pathname+'?prof=1'; }
+function dataHoraAdmin(ts){ return ts ? new Date(ts).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—'; }
+async function copiarTexto(txt, botao){
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(e){ const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  if (botao){ const orig=botao.textContent; botao.textContent='Copiado!'; setTimeout(()=>{ botao.textContent=orig; },1500); }
+}
+function htmlLinkCopia(rotulo, valor){
+  return '<label style="display:block;font-weight:700;font-size:.8rem;margin-bottom:4px;">'+rotulo+'</label>'+
+    '<div class="link-copia"><input type="text" readonly value="'+escapeHTML(valor)+'">'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" data-copiar="'+escapeHTML(valor)+'">Copiar</button></div>';
+}
+function ligarBotoesCopiar(raiz){
+  raiz.querySelectorAll('[data-copiar]').forEach(b=>b.addEventListener('click', ()=>copiarTexto(b.dataset.copiar, b)));
+}
+
+async function carregarAdminProfessores(){
+  const lista = [];
+  (CONFIG.professores||[]).forEach(p=>lista.push({ws:p.workspace, nome:p.nome, ativo:true, admin:!!p.admin, mestre:true}));
+  const banco = (await dbReal.ref('professores').once('value')).val() || {};
+  Object.entries(banco).forEach(([ws,p])=>{
+    if (!p || lista.some(x=>x.ws===ws)) return;
+    lista.push({ws, nome:p.nome||ws, ativo:p.ativo!==false, admin:!!p.admin, mestre:false,
+      criadoEm:p.criadoEm||null, ultimoAcesso:p.ultimoAcesso||null, senhaHash:p.senhaHash||'', criadoPor:p.criadoPor||''});
+  });
+  await Promise.all(lista.map(async item=>{
+    try{
+      const tc = (await dbReal.ref('workspaces/'+item.ws+'/turmasCadastradas').once('value')).val() || {};
+      item.turmas = Object.entries(tc).map(([id,t])=>({
+        id, nome:(t&&t.nome)||'(sem nome)', arquivada:!!(t&&t.arquivada),
+        alunos:Object.values((t&&t.alunos)||{}).filter(a=>a && !a.especial).map(a=>a.nome||'(sem nome)')
+      })).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    } catch(e){ item.turmas = null; }
+  }));
+  lista.sort((a,b)=>(b.mestre-a.mestre) || a.nome.localeCompare(b.nome,'pt-BR'));
+  cacheAdminProf = lista;
+}
+function turmasAtivasDe(p){ return (p.turmas||[]).filter(t=>!t.arquivada); }
+function alunosAtivosDe(p){ return turmasAtivasDe(p).reduce((s,t)=>s+t.alunos.length,0); }
+
+async function abrirTelaAdminProfessores(){
+  if (!professorLogado || !professorLogado.admin) return;
+  mostrarTela('tela-carregando');
+  try{
+    await carregarAdminProfessores();
+  } catch(e){
+    mostrarTela('tela-admin-professores');
+    document.getElementById('admin-stats').innerHTML = '';
+    document.getElementById('admin-lista-prof').innerHTML = '<p class="erro-msg">Não foi possível ler o cadastro de professores ('+escapeHTML(e.message)+'). Confira se a regra do nó "professores" foi publicada no Realtime Database.</p>';
+    return;
+  }
+  mostrarTela('tela-admin-professores');
+  renderAdminProfessores();
+}
+
+function renderAdminProfessores(){
+  const lista = cacheAdminProf;
+  const ativos = lista.filter(p=>p.ativo), inativos = lista.filter(p=>!p.ativo);
+  const totTurmas = lista.reduce((s,p)=>s+turmasAtivasDe(p).length,0);
+  const totAlunos = lista.reduce((s,p)=>s+alunosAtivosDe(p),0);
+  document.getElementById('admin-stats').innerHTML =
+    '<button type="button" class="stat-card" data-admin-stat="todos"><span class="stat-num">'+lista.length+'</span><span class="stat-label">professores cadastrados</span></button>'+
+    '<button type="button" class="stat-card" data-admin-stat="ativos"><span class="stat-num">'+ativos.length+'</span><span class="stat-label">com acesso ativo</span></button>'+
+    '<button type="button" class="stat-card" data-admin-stat="inativos"><span class="stat-num">'+inativos.length+'</span><span class="stat-label">com acesso desativado</span></button>'+
+    '<button type="button" class="stat-card" data-admin-stat="turmas"><span class="stat-num">'+totTurmas+'</span><span class="stat-label">turmas ativas (todos)</span></button>'+
+    '<button type="button" class="stat-card" data-admin-stat="alunos"><span class="stat-num">'+totAlunos+'</span><span class="stat-label">alunos em turmas ativas</span></button>';
+  document.querySelectorAll('[data-admin-stat]').forEach(b=>b.addEventListener('click', ()=>{
+    const k = b.dataset.adminStat;
+    if (k==='turmas') return abrirModalTurmasAdmin(lista, 'Turmas ativas — todos os professores');
+    if (k==='alunos') return abrirModalAlunosAdmin(lista, 'Alunos em turmas ativas — todos os professores');
+    const grupo = k==='ativos' ? ativos : k==='inativos' ? inativos : lista;
+    const titulo = k==='ativos' ? 'Professores com acesso ativo' : k==='inativos' ? 'Professores com acesso desativado' : 'Todos os professores';
+    abrirModalListaProfessores(grupo, titulo);
+  }));
+
+  const filtros = [['todos','Todos ('+lista.length+')'],['ativos','Ativos ('+ativos.length+')'],['inativos','Desativados ('+inativos.length+')']];
+  document.getElementById('admin-filtros').innerHTML = filtros.map(([k,r])=>'<button type="button" class="chip'+(filtroAdminProf===k?' selecionado':'')+'" data-admin-filtro="'+k+'">'+r+'</button>').join('');
+  document.querySelectorAll('[data-admin-filtro]').forEach(b=>b.addEventListener('click', ()=>{ filtroAdminProf=b.dataset.adminFiltro; renderAdminProfessores(); }));
+
+  const visiveis = filtroAdminProf==='ativos' ? ativos : filtroAdminProf==='inativos' ? inativos : lista;
+  const alvo = document.getElementById('admin-lista-prof');
+  alvo.innerHTML = tabelaProfessoresHtml(visiveis);
+  ligarTabelaProfessores(alvo);
+}
+
+function tagsProfessor(p){
+  return (p.mestre?'<span class="tag-status tag-mestre">Conta mestra</span> ':'')+
+    (p.admin?'<span class="tag-status tag-admin">Admin</span> ':'')+
+    '<span class="tag-status '+(p.ativo?'tag-ativo':'tag-inativo')+'">'+(p.ativo?'Ativo':'Desativado')+'</span>';
+}
+function tabelaProfessoresHtml(lista){
+  if (!lista.length) return '<p class="vazio-msg">Nenhum professor neste filtro.</p>';
+  return '<table class="tabela-alunos"><thead><tr><th>Nome</th><th>Workspace</th><th>Situação</th><th>Turmas ativas</th><th>Alunos</th><th>Último acesso</th></tr></thead><tbody>'+
+    lista.map(p=>'<tr class="linha-clicavel" data-prof-ws="'+escapeHTML(p.ws)+'">'+
+      '<td><strong>'+escapeHTML(p.nome)+'</strong></td>'+
+      '<td><code>'+escapeHTML(p.ws)+'</code></td>'+
+      '<td>'+tagsProfessor(p)+'</td>'+
+      '<td>'+(p.turmas===null?'—':'<button type="button" class="num-clicavel" data-prof-turmas="'+escapeHTML(p.ws)+'">'+turmasAtivasDe(p).length+'</button>')+'</td>'+
+      '<td>'+(p.turmas===null?'—':'<button type="button" class="num-clicavel" data-prof-alunos="'+escapeHTML(p.ws)+'">'+alunosAtivosDe(p)+'</button>')+'</td>'+
+      '<td>'+(p.mestre?'—':dataHoraAdmin(p.ultimoAcesso))+'</td></tr>').join('')+
+    '</tbody></table>';
+}
+function ligarTabelaProfessores(raiz){
+  const achar = ws=>cacheAdminProf.find(p=>p.ws===ws);
+  raiz.querySelectorAll('[data-prof-turmas]').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation(); const p=achar(b.dataset.profTurmas); abrirModalTurmasAdmin([p], 'Turmas ativas — '+p.nome);
+  }));
+  raiz.querySelectorAll('[data-prof-alunos]').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation(); const p=achar(b.dataset.profAlunos); abrirModalAlunosAdmin([p], 'Alunos em turmas ativas — '+p.nome);
+  }));
+  raiz.querySelectorAll('[data-prof-ws]').forEach(tr=>tr.addEventListener('click', ()=>abrirModalProfessor(tr.dataset.profWs)));
+}
+function abrirModalListaProfessores(lista, titulo){
+  abrirModal(titulo+' ('+lista.length+')', '<div class="admin-tabela-wrap">'+tabelaProfessoresHtml(lista)+'</div>');
+  ligarTabelaProfessores(document.getElementById('modal-conteudo'));
+}
+function abrirModalTurmasAdmin(profs, titulo){
+  const linhas = [];
+  profs.forEach(p=>turmasAtivasDe(p).forEach(t=>linhas.push({p,t})));
+  const html = linhas.length ? '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th>Turma</th><th>Professor</th><th>Alunos</th></tr></thead><tbody>'+
+    linhas.map(({p,t},i)=>'<tr class="linha-clicavel" data-turma-idx="'+i+'"><td>'+escapeHTML(t.nome)+'</td><td>'+escapeHTML(p.nome)+'</td><td>'+t.alunos.length+'</td></tr>').join('')+
+    '</tbody></table></div>' : '<p class="vazio-msg">Nenhuma turma ativa.</p>';
+  abrirModal(titulo+' ('+linhas.length+')', html);
+  document.querySelectorAll('#modal-conteudo [data-turma-idx]').forEach(tr=>tr.addEventListener('click', ()=>{
+    const {p,t} = linhas[Number(tr.dataset.turmaIdx)];
+    abrirModalAlunosAdmin([{...p, turmas:[t]}], t.nome+' — '+p.nome);
+  }));
+}
+function abrirModalAlunosAdmin(profs, titulo){
+  const linhas = [];
+  profs.forEach(p=>turmasAtivasDe(p).forEach(t=>t.alunos.forEach(a=>linhas.push({aluno:a, turma:t.nome, prof:p.nome}))));
+  linhas.sort((a,b)=>a.turma.localeCompare(b.turma,'pt-BR') || a.aluno.localeCompare(b.aluno,'pt-BR'));
+  const html = linhas.length ? '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th>Aluno</th><th>Turma</th><th>Professor</th></tr></thead><tbody>'+
+    linhas.map(l=>'<tr><td>'+escapeHTML(l.aluno)+'</td><td>'+escapeHTML(l.turma)+'</td><td>'+escapeHTML(l.prof)+'</td></tr>').join('')+
+    '</tbody></table></div>' : '<p class="vazio-msg">Nenhum aluno em turmas ativas.</p>';
+  abrirModal(titulo+' ('+linhas.length+')', html);
+}
+
+function abrirModalProfessor(ws){
+  const p = cacheAdminProf.find(x=>x.ws===ws);
+  if (!p) return;
+  const ehVoce = professorLogado && professorLogado.workspace===p.ws;
+  const turmasHtml = p.turmas===null ? '<p class="vazio-msg">Não foi possível ler as turmas deste workspace.</p>' :
+    '<p style="font-size:.88rem;margin:0 0 14px;"><strong>Turmas ativas:</strong> <button type="button" class="num-clicavel" id="mp-turmas">'+turmasAtivasDe(p).length+'</button> · '+
+    '<strong>Alunos:</strong> <button type="button" class="num-clicavel" id="mp-alunos">'+alunosAtivosDe(p)+'</button> · '+
+    '<strong>Turmas arquivadas:</strong> '+(p.turmas.length-turmasAtivasDe(p).length)+'</p>';
+  let html = '<p style="margin:0 0 10px;">'+tagsProfessor(p)+'</p>'+
+    '<p style="font-size:.88rem;margin:0 0 6px;"><strong>Workspace:</strong> <code>'+escapeHTML(p.ws)+'</code>'+
+    (p.mestre?'':' · <strong>Cadastrado em:</strong> '+dataHoraAdmin(p.criadoEm)+' · <strong>Último acesso:</strong> '+dataHoraAdmin(p.ultimoAcesso))+'</p>'+
+    turmasHtml+
+    htmlLinkCopia('Link de acesso do professor', linkProfessorLogin())+
+    htmlLinkCopia('Link para os alunos deste professor', linkAlunoWorkspace(p.ws));
+  if (p.mestre){
+    html += '<p style="font-size:.85rem;color:var(--ink-suave);margin:12px 0 0;">Conta mestra: nome, senha e permissões são definidos no objeto CONFIG.professores, no início do arquivo index.html, e não podem ser alterados por esta tela.</p>';
+  } else {
+    html += '<hr style="border:none;border-top:1px solid var(--borda);margin:16px 0;">'+
+      '<div class="campo"><label for="mp-nome">Nome</label><input type="text" id="mp-nome" value="'+escapeHTML(p.nome)+'"></div>'+
+      '<div class="campo"><label for="mp-senha">Nova senha (deixe em branco para manter a atual)</label>'+
+      '<div class="link-copia"><input type="text" id="mp-senha" autocomplete="off" style="font-family:var(--font-display);font-size:1rem;">'+
+      '<button type="button" class="botao botao-secundario botao-pequeno" id="mp-gerar">Gerar</button></div></div>'+
+      '<label class="admin-check"><input type="checkbox" id="mp-ativo"'+(p.ativo?' checked':'')+(ehVoce?' disabled':'')+'> Acesso ativo</label>'+
+      '<label class="admin-check"><input type="checkbox" id="mp-admin"'+(p.admin?' checked':'')+(ehVoce?' disabled':'')+'> Pode administrar professores</label>'+
+      (ehVoce?'<p style="font-size:.8rem;color:var(--ink-suave);margin:0 0 10px;">Você não pode desativar o próprio acesso nem retirar a própria permissão de administrador.</p>':'')+
+      '<p class="erro-msg" id="mp-erro" hidden></p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;">'+
+      '<button type="button" class="botao botao-primario" id="mp-salvar">Salvar alterações</button>'+
+      (ehVoce?'':'<button type="button" class="botao botao-perigo botao-pequeno" id="mp-excluir">Excluir acesso</button>')+
+      '</div><div id="mp-credenciais"></div>';
+  }
+  abrirModal(p.nome, html);
+  const raiz = document.getElementById('modal-conteudo');
+  ligarBotoesCopiar(raiz);
+  const bt = document.getElementById('mp-turmas'), ba = document.getElementById('mp-alunos');
+  if (bt) bt.addEventListener('click', ()=>abrirModalTurmasAdmin([p], 'Turmas ativas — '+p.nome));
+  if (ba) ba.addEventListener('click', ()=>abrirModalAlunosAdmin([p], 'Alunos em turmas ativas — '+p.nome));
+  if (p.mestre) return;
+  document.getElementById('mp-gerar').addEventListener('click', ()=>{ document.getElementById('mp-senha').value = gerarSenhaAleatoria(); });
+  document.getElementById('mp-salvar').addEventListener('click', ()=>salvarProfessorAdmin(p));
+  const bx = document.getElementById('mp-excluir');
+  if (bx) bx.addEventListener('click', ()=>excluirProfessorAdmin(p));
+}
+
+async function validarSenhaNova(senha, wsIgnorar){
+  if (senha.length < 6) return {erro:'A senha deve ter pelo menos 6 caracteres.'};
+  if ((CONFIG.professores||[]).some(c=>c.senha===senha)) return {erro:'Esta senha já está em uso por outro professor. Como o login é feito apenas pela senha, ela precisa ser única.'};
+  const hash = await hashSenha(senha);
+  if (cacheAdminProf.some(x=>!x.mestre && x.ws!==wsIgnorar && x.senhaHash===hash)) return {erro:'Esta senha já está em uso por outro professor. Como o login é feito apenas pela senha, ela precisa ser única.'};
+  return {hash};
+}
+
+async function salvarProfessorAdmin(p){
+  const erro = document.getElementById('mp-erro');
+  const btn = document.getElementById('mp-salvar');
+  erro.hidden = true;
+  const nome = document.getElementById('mp-nome').value.trim();
+  const senha = document.getElementById('mp-senha').value.trim();
+  const ehVoce = professorLogado && professorLogado.workspace===p.ws;
+  if (!nome){ erro.textContent='Informe o nome.'; erro.hidden=false; return; }
+  const dados = {nome};
+  if (!ehVoce){
+    dados.ativo = document.getElementById('mp-ativo').checked;
+    dados.admin = document.getElementById('mp-admin').checked;
+  }
+  btn.disabled = true;
+  try{
+    if (senha){
+      const v = await validarSenhaNova(senha, p.ws);
+      if (v.erro){ erro.textContent=v.erro; erro.hidden=false; btn.disabled=false; return; }
+      dados.senhaHash = v.hash;
+    }
+    dados.atualizadoEm = Date.now();
+    await dbReal.ref('professores/'+p.ws).update(dados);
+    if (ehVoce){ professorLogado.nome = nome; document.getElementById('subtitulo-painel-prof').textContent = 'acompanhamento das turmas · '+nome; }
+    await carregarAdminProfessores();
+    renderAdminProfessores();
+    abrirModalProfessor(p.ws);
+    if (senha){
+      document.getElementById('mp-credenciais').innerHTML = caixaCredenciaisHtml(nome, senha, p.ws, 'Senha redefinida. Repasse ao professor — ela não poderá ser consultada depois:');
+      ligarBotoesCopiar(document.getElementById('mp-credenciais'));
+    }
+  } catch(e){
+    erro.textContent = 'Não foi possível salvar: '+e.message; erro.hidden = false; btn.disabled = false;
+  }
+}
+
+async function excluirProfessorAdmin(p){
+  if (!confirm('Excluir o acesso de "'+p.nome+'"?\n\nO professor deixará de conseguir entrar no painel. As turmas, atividades e notas do workspace "'+p.ws+'" NÃO serão apagadas: se você cadastrar novamente alguém com o mesmo workspace, os dados voltam a ficar acessíveis.')) return;
+  try{
+    await dbReal.ref('professores/'+p.ws).remove();
+    fecharModal();
+    await carregarAdminProfessores();
+    renderAdminProfessores();
+  } catch(e){ alert('Não foi possível excluir: '+e.message); }
+}
+
+function caixaCredenciaisHtml(nome, senha, ws, titulo){
+  const texto = 'Acesso à Plataforma do Aluno\n'+
+    'Professor(a): '+nome+'\n'+
+    'Endereço do painel do professor: '+linkProfessorLogin()+'\n'+
+    'Senha: '+senha+'\n'+
+    'Link para enviar aos seus alunos: '+linkAlunoWorkspace(ws);
+  return '<div class="caixa-credenciais"><p style="margin:0 0 8px;font-weight:700;">'+escapeHTML(titulo)+'</p>'+
+    '<p style="margin:0 0 4px;">Professor(a): <strong>'+escapeHTML(nome)+'</strong> · Senha: <code>'+escapeHTML(senha)+'</code></p>'+
+    '<p style="margin:0 0 4px;">Painel: <code>'+escapeHTML(linkProfessorLogin())+'</code></p>'+
+    '<p style="margin:0 0 10px;">Alunos: <code>'+escapeHTML(linkAlunoWorkspace(ws))+'</code></p>'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" data-copiar="'+escapeHTML(texto)+'">Copiar instruções de acesso</button></div>';
+}
+
+async function cadastrarProfessorAdmin(){
+  const erro = document.getElementById('admin-erro-form');
+  const btn = document.getElementById('admin-btn-cadastrar');
+  const credenciais = document.getElementById('admin-credenciais');
+  const falha = (t)=>{ erro.textContent=t; erro.hidden=false; };
+  erro.hidden = true; credenciais.innerHTML = '';
+  const nome = document.getElementById('admin-nome').value.trim();
+  const ws = slugWorkspace(document.getElementById('admin-ws').value || nome);
+  const senha = document.getElementById('admin-senha').value.trim();
+  const admin = document.getElementById('admin-eh-admin').checked;
+  if (!nome) return falha('Informe o nome do professor.');
+  if (!ws) return falha('Informe um workspace válido (letras minúsculas, números e hífen).');
+  if (cacheAdminProf.some(p=>p.ws===ws)) return falha('Já existe um professor com o workspace "'+ws+'". Escolha outro identificador.');
+  btn.disabled = true;
+  try{
+    const v = await validarSenhaNova(senha, null);
+    if (v.erro){ btn.disabled=false; return falha(v.erro); }
+    let temDados = false;
+    try{
+      const [tc, ac] = await Promise.all([
+        dbReal.ref('workspaces/'+ws+'/turmasCadastradas').once('value'),
+        dbReal.ref('workspaces/'+ws+'/atividadesCadastradas').once('value')
+      ]);
+      temDados = tc.exists() || ac.exists();
+    } catch(e){}
+    if (temDados && !confirm('O workspace "'+ws+'" já possui turmas ou atividades gravadas no banco.\n\nAo cadastrar, este professor terá acesso a esses dados. Deseja continuar?')){ btn.disabled=false; return; }
+    await dbReal.ref('professores/'+ws).set({
+      nome, senhaHash:v.hash, ativo:true, admin, criadoEm:Date.now(),
+      criadoPor:(professorLogado&&professorLogado.workspace)||''
+    });
+    ['admin-nome','admin-ws','admin-senha'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.dataset.editado=''; });
+    document.getElementById('admin-eh-admin').checked = false;
+    await carregarAdminProfessores();
+    renderAdminProfessores();
+    credenciais.innerHTML = caixaCredenciaisHtml(nome, senha, ws, 'Professor cadastrado. Repasse os dados abaixo — a senha não poderá ser consultada depois (apenas redefinida):');
+    ligarBotoesCopiar(credenciais);
+  } catch(e){
+    falha('Não foi possível cadastrar: '+e.message);
+  }
+  btn.disabled = false;
+}
+
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
 async function iniciar(){
   const params = new URLSearchParams(location.search);
@@ -4135,6 +4550,20 @@ document.getElementById('btn-modulo-notas').addEventListener('click', abrirTelaN
 document.getElementById('btn-voltar-painel-notas').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
 document.getElementById('select-turma-notas').addEventListener('change', (e)=>{ renderizarTabelaNotas(Number(e.target.value)); });
 document.getElementById('btn-imprimir-notas').addEventListener('click', imprimirNotasTurma);
+document.getElementById('btn-modulo-admin').addEventListener('click', abrirTelaAdminProfessores);
+document.getElementById('btn-voltar-painel-admin').addEventListener('click', ()=>{ mostrarTela('tela-professor-painel'); });
+document.getElementById('admin-btn-cadastrar').addEventListener('click', cadastrarProfessorAdmin);
+document.getElementById('admin-gerar-senha').addEventListener('click', ()=>{ document.getElementById('admin-senha').value = gerarSenhaAleatoria(); });
+document.getElementById('admin-nome').addEventListener('input', (e)=>{
+  const campoWs = document.getElementById('admin-ws');
+  if (!campoWs.dataset.editado) campoWs.value = slugWorkspace(e.target.value.split(' ').filter(Boolean).slice(0,2).join(' '));
+});
+document.getElementById('admin-ws').addEventListener('input', (e)=>{
+  e.target.dataset.editado = e.target.value ? '1' : '';
+  const pos = e.target.selectionStart;
+  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'');
+  e.target.setSelectionRange(pos, pos);
+});
 document.getElementById('modal-fechar').addEventListener('click', fecharModal);
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') fecharModal(); });
 
