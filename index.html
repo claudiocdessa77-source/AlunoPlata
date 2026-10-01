@@ -257,11 +257,24 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
 </head>
 <body>
 
+<!-- ===== TELA: ESCOLHER DISCIPLINA ===== -->
+<section id="tela-escolher-disciplina" class="tela">
+  <div class="cartao-central">
+    <h1>Plataforma do Aluno</h1>
+    <p class="subtitulo">escolha a disciplina</p>
+    <p class="rotulo-selecao">Qual disciplina você vai acessar?</p>
+    <div id="lista-disciplinas-aluno" class="lista-selecao"></div>
+    <p class="erro-msg" id="erro-disciplinas-aluno" hidden></p>
+    <button class="link-discreto" id="link-area-professor-disc" type="button">Área do professor</button>
+  </div>
+</section>
+
 <!-- ===== TELA: ESCOLHER TURMA ===== -->
 <section id="tela-escolher-turma" class="tela">
   <div class="cartao-central">
+    <button class="botao-voltar-canto" id="btn-voltar-disciplina" type="button" aria-label="Voltar para disciplinas" style="display:none;">←</button>
     <h1>Plataforma do Aluno</h1>
-    <p class="subtitulo">atividades de Gestão de Pessoas</p>
+    <p class="subtitulo" id="subtitulo-escolher-turma">escolha sua turma</p>
     <p class="rotulo-selecao">Escolha sua turma:</p>
     <div id="lista-turmas-prof" class="lista-selecao"></div>
     <p class="erro-msg" id="erro-turmas" hidden></p>
@@ -1827,7 +1840,7 @@ let alunosCache = [];
 let modoVerMedia = false;
 let respostasAtuais = {};
 
-function salvarIdentidadeLocal(){ localStorage.setItem('ta_identidade', JSON.stringify(identidade)); }
+function salvarIdentidadeLocal(){ identidade.ws = workspaceAtual; identidade.disciplinaAluno = disciplinaEscolhidaAluno; localStorage.setItem('ta_identidade', JSON.stringify(identidade)); }
 function carregarIdentidadeLocal(){ try{ const r=localStorage.getItem('ta_identidade'); return r?JSON.parse(r):null; }catch(e){ return null; } }
 function limparIdentidadeLocal(){ localStorage.removeItem('ta_identidade'); }
 function salvarProgressoDesafio(){
@@ -1851,11 +1864,12 @@ async function mostrarEscolhaTurma(){
   limparIdentidadeLocal();
   mostrarTela('tela-carregando');
   try{
-    const turmas = (await buscarTurmasCadastradas()).filter(t=>!t.arquivada);
+    const turmas = filtrarTurmasPelaDisciplinaEscolhida((await buscarTurmasCadastradas()).filter(t=>!t.arquivada));
     const lista = document.getElementById('lista-turmas-prof');
     const erro = document.getElementById('erro-turmas');
+    atualizarCabecalhoEscolhaTurma();
     if (!turmas.length){
-      erro.hidden=false; erro.textContent='Nenhuma turma cadastrada ainda. Avise o professor.'; lista.innerHTML='';
+      erro.hidden=false; erro.textContent= disciplinaEscolhidaAluno ? 'Nenhuma turma ativa nesta disciplina. Volte e escolha outra, ou avise o professor.' : 'Nenhuma turma cadastrada ainda. Avise o professor.'; lista.innerHTML='';
     } else {
       erro.hidden=true;
       lista.innerHTML = turmas.map(t=>'<button type="button" class="item-selecao" data-id="'+t.id+'">'+escapeHTML(t.nome)+'</button>').join('');
@@ -1881,7 +1895,7 @@ async function mostrarEscolhaAtividade(){
   const erro = document.getElementById('erro-atividades');
   try{
     const registros = await buscarAtividadesCadastradas();
-    const disponiveis = registros.filter(r=>r.ativa!==false && r.tipoEspecial!=='entrevista-dupla' && r.turmasIds && turmaEscolhidaTemp.id && r.turmasIds[turmaEscolhidaTemp.id]);
+    const disponiveis = registros.filter(r=>r.ativa!==false && r.tipoEspecial!=='entrevista-dupla' && r.turmasIds && turmaEscolhidaTemp.id && r.turmasIds[turmaEscolhidaTemp.id] && atividadeServeParaDisciplinaEscolhida(r));
     atividadesDisponiveisTemp = disponiveis.map(construirAtividadeEfetiva).filter(Boolean);
     if (!atividadesDisponiveisTemp.length){
       erro.hidden=false; erro.textContent='Nenhuma atividade disponível para esta turma no momento.'; lista.innerHTML='';
@@ -2433,7 +2447,8 @@ function sairProfessor(){
   professorLogado = null;
   document.getElementById('btn-modulo-admin').hidden = true;
   workspaceAtual = new URLSearchParams(location.search).get('ws') || CONFIG.workspacePadrao || 'claudio';
-  mostrarEscolhaTurma();
+  disciplinaEscolhidaAluno = null;
+  mostrarEntradaAluno();
 }
 
 function renderPainelProfessor(turmasRaw){
@@ -4209,8 +4224,8 @@ function gerarSenhaAleatoria(){
   return Array.from(arr, n=>c[n%c.length]).join('');
 }
 function linkAlunoWorkspace(ws){
-  const base = location.origin+location.pathname;
-  return ws===(CONFIG.workspacePadrao||'claudio') ? base : base+'?ws='+encodeURIComponent(ws);
+  // Link único: o aluno escolhe a disciplina (e, com ela, o professor) na entrada.
+  return location.origin+location.pathname;
 }
 function linkProfessorLogin(){ return location.origin+location.pathname+'?prof=1'; }
 function dataHoraAdmin(ts){ return ts ? new Date(ts).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—'; }
@@ -4363,7 +4378,7 @@ function abrirModalProfessor(ws){
     (p.mestre?'':' · <strong>Cadastrado em:</strong> '+dataHoraAdmin(p.criadoEm)+' · <strong>Último acesso:</strong> '+dataHoraAdmin(p.ultimoAcesso))+'</p>'+
     turmasHtml+
     htmlLinkCopia('Link de acesso do professor', linkProfessorLogin())+
-    htmlLinkCopia('Link para os alunos deste professor', linkAlunoWorkspace(p.ws));
+    htmlLinkCopia('Link dos alunos (único para todos os professores)', linkAlunoWorkspace(p.ws));
   if (p.mestre){
     html += '<p style="font-size:.85rem;color:var(--ink-suave);margin:12px 0 0;">Conta mestra: nome, senha e permissões são definidos no objeto CONFIG.professores, no início do arquivo index.html, e não podem ser alterados por esta tela.</p>';
   } else {
@@ -4452,7 +4467,7 @@ function caixaCredenciaisHtml(nome, senha, ws, titulo){
     'Professor(a): '+nome+'\n'+
     'Endereço do painel do professor: '+linkProfessorLogin()+'\n'+
     'Senha: '+senha+'\n'+
-    'Link para enviar aos seus alunos: '+linkAlunoWorkspace(ws);
+    'Link para enviar aos seus alunos: '+linkAlunoWorkspace(ws)+' (eles escolhem a disciplina na entrada; vincule cada turma à disciplina no módulo Turmas)';
   return '<div class="caixa-credenciais"><p style="margin:0 0 8px;font-weight:700;">'+escapeHTML(titulo)+'</p>'+
     '<p style="margin:0 0 4px;">Professor(a): <strong>'+escapeHTML(nome)+'</strong> · Senha: <code>'+escapeHTML(senha)+'</code></p>'+
     '<p style="margin:0 0 4px;">Painel: <code>'+escapeHTML(linkProfessorLogin())+'</code></p>'+
@@ -4692,10 +4707,106 @@ async function executarImportacaoOutroProfessor(){
   btn.disabled = false; btn.textContent = 'Importar turmas selecionadas';
 }
 
+/* ===== ENTRADA DO ALUNO: ESCOLHA DA DISCIPLINA (link único para todos os professores) ===== */
+let modoEscolhaDisciplina = false;   // true quando o link não traz ?ws=
+let disciplinaEscolhidaAluno = null; // {ws, profNome, disciplina}
+
+async function listarProfessoresParaAlunos(){
+  const lista = [];
+  (CONFIG.professores||[]).forEach(p=>lista.push({ws:p.workspace, nome:p.nome}));
+  try{
+    const banco = (await dbReal.ref('professores').once('value')).val() || {};
+    Object.entries(banco).forEach(([ws,p])=>{
+      if (p && p.ativo!==false && !lista.some(x=>x.ws===ws)) lista.push({ws, nome:p.nome||ws});
+    });
+  } catch(e){}
+  return lista;
+}
+
+async function mostrarEntradaAluno(){
+  if (modoEscolhaDisciplina) await mostrarEscolhaDisciplina();
+  else await mostrarEscolhaTurma();
+}
+
+async function mostrarEscolhaDisciplina(){
+  pararEscutaLiberado();
+  identidade = {turmaKey:null, turmaNome:null, nome:null};
+  limparIdentidadeLocal();
+  disciplinaEscolhidaAluno = null;
+  mostrarTela('tela-carregando');
+  const lista = document.getElementById('lista-disciplinas-aluno');
+  const erro = document.getElementById('erro-disciplinas-aluno');
+  try{
+    const profs = await listarProfessoresParaAlunos();
+    const grupos = [];
+    await Promise.all(profs.map(async p=>{
+      let tc = {};
+      try{ tc = (await dbReal.ref('workspaces/'+p.ws+'/turmasCadastradas').once('value')).val() || {}; }
+      catch(e){ return; }
+      Object.values(tc).forEach(t=>{
+        if (!t || t.arquivada) return;
+        const disc = String(t.disciplina||'').trim();
+        const chave = p.ws+'|'+turmaSlug(disc);
+        let g = grupos.find(x=>x.chave===chave);
+        if (!g){ g = {chave, ws:p.ws, profNome:p.nome, disciplina:disc, turmas:[]}; grupos.push(g); }
+        g.turmas.push(t.nome||'');
+      });
+    }));
+    grupos.sort((a,b)=>{
+      if (!a.disciplina !== !b.disciplina) return a.disciplina ? -1 : 1;
+      return a.disciplina.localeCompare(b.disciplina,'pt-BR') || a.profNome.localeCompare(b.profNome,'pt-BR');
+    });
+    if (!grupos.length){
+      erro.hidden = false; erro.textContent = 'Nenhuma disciplina disponível no momento. Avise o professor.'; lista.innerHTML = '';
+    } else {
+      erro.hidden = true;
+      lista.innerHTML = grupos.map((g,i)=>
+        '<button type="button" class="item-selecao" data-disc-idx="'+i+'">'+
+        '<strong>'+escapeHTML(g.disciplina || 'Outras turmas (sem disciplina definida)')+'</strong>'+
+        '<span style="display:block;font-size:.8rem;opacity:.8;margin-top:2px;">Prof. '+escapeHTML(g.profNome)+' · '+g.turmas.length+' turma(s)</span>'+
+        '</button>').join('');
+      lista.querySelectorAll('[data-disc-idx]').forEach(btn=>btn.addEventListener('click', async ()=>{
+        const g = grupos[Number(btn.dataset.discIdx)];
+        disciplinaEscolhidaAluno = {ws:g.ws, profNome:g.profNome, disciplina:g.disciplina};
+        workspaceAtual = g.ws;
+        mostrarTela('tela-carregando');
+        try{ await carregarConteudosCadastrados(); } catch(e){}
+        await mostrarEscolhaTurma();
+      }));
+    }
+    mostrarTela('tela-escolher-disciplina');
+  } catch(e){
+    document.getElementById('erro-texto').textContent = 'Erro ao buscar disciplinas: '+e.message;
+    mostrarTela('tela-erro');
+  }
+}
+
+function filtrarTurmasPelaDisciplinaEscolhida(turmas){
+  if (!disciplinaEscolhidaAluno) return turmas;
+  const alvo = turmaSlug(disciplinaEscolhidaAluno.disciplina||'');
+  return turmas.filter(t=>turmaSlug(t.disciplina||'')===alvo);
+}
+function atividadeServeParaDisciplinaEscolhida(r){
+  if (!disciplinaEscolhidaAluno || !disciplinaEscolhidaAluno.disciplina || !r.disciplina) return true;
+  return turmaSlug(r.disciplina)===turmaSlug(disciplinaEscolhidaAluno.disciplina);
+}
+function atualizarCabecalhoEscolhaTurma(){
+  const sub = document.getElementById('subtitulo-escolher-turma');
+  const voltar = document.getElementById('btn-voltar-disciplina');
+  if (disciplinaEscolhidaAluno){
+    sub.textContent = (disciplinaEscolhidaAluno.disciplina || 'outras turmas')+' · Prof. '+disciplinaEscolhidaAluno.profNome;
+  } else {
+    sub.textContent = 'escolha sua turma';
+  }
+  voltar.style.display = modoEscolhaDisciplina ? 'flex' : 'none';
+}
+
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
 async function iniciar(){
   const params = new URLSearchParams(location.search);
-  workspaceAtual = params.get('ws') || CONFIG.workspacePadrao || 'claudio';
+  const wsUrl = params.get('ws');
+  modoEscolhaDisciplina = !wsUrl;
+  workspaceAtual = wsUrl || CONFIG.workspacePadrao || 'claudio';
   try{
     await initFirebase();
     await carregarConteudosCadastrados();
@@ -4706,9 +4817,15 @@ async function iniciar(){
   }
   if (params.get('prof')==='1'){ mostrarTela('tela-professor-login'); return; }
 
-  const salvo = carregarIdentidadeLocal();
+  let salvo = carregarIdentidadeLocal();
+  if (salvo && wsUrl && salvo.ws && salvo.ws!==wsUrl) salvo = null; // sessão salva é de outro professor
   if (salvo && salvo.turmaKey && salvo.nome){
     identidade = salvo;
+    if (!wsUrl && salvo.ws && salvo.ws!==workspaceAtual){
+      workspaceAtual = salvo.ws;
+      try{ await carregarConteudosCadastrados(); } catch(e){}
+    }
+    disciplinaEscolhidaAluno = salvo.disciplinaAluno || null;
     try{
       const turmas = await buscarTurmasCadastradas();
       turmaEscolhidaTemp = turmas.find(t=>turmaSlug(t.nome)===salvo.turmaKey) || {id:null, nome:salvo.turmaNome, alunos:{}};
@@ -4724,10 +4841,12 @@ async function iniciar(){
       return;
     }
   }
-  await mostrarEscolhaTurma();
+  await mostrarEntradaAluno();
 }
 
 document.getElementById('btn-voltar-turma').addEventListener('click', mostrarEscolhaTurma);
+document.getElementById('btn-voltar-disciplina').addEventListener('click', mostrarEscolhaDisciplina);
+document.getElementById('link-area-professor-disc').addEventListener('click', ()=>{ location.search='?prof=1'; });
 document.getElementById('btn-voltar-atividade').addEventListener('click', mostrarEscolhaAtividade);
 document.getElementById('btn-voltar-senha').addEventListener('click', ()=>{ nomeEscolhidoPendente=null; mostrarTela('tela-escolher-nome'); });
 document.getElementById('btn-voltar-desafio').addEventListener('click', mostrarEscolhaAtividade);
