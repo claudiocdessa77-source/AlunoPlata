@@ -2713,7 +2713,7 @@ function renderListaTurmasCadastro(turmas){
         : '<button type="button" class="botao-texto" data-acao="arquivar-turma">Arquivar turma</button> ')+
       '<button type="button" class="link-zerar" data-acao="excluir-turma">Excluir</button></div></div>'+
       '<div class="turma-card-stats"><span class="stat-mini">'+n+' aluno(s) cadastrado(s)</span>'+
-      '<span class="stat-mini">'+(t.disciplina?('Disciplina: '+escapeHTML(t.disciplina)):'<em>Disciplina não definida</em>')+'</span></div></div>';
+      '<button type="button" class="stat-mini" data-acao="gerenciar" style="cursor:pointer;border:none;font:inherit;'+(t.disciplina?'':'color:var(--vermelho);')+'" title="Definir ou criar a disciplina desta turma">'+(t.disciplina?('Disciplina: '+escapeHTML(t.disciplina)+' ✎'):'<em>Disciplina não definida — clique para definir</em>')+'</button></div></div>';
   }
   let html = '';
   html += ativas.length ? ativas.map(t=>cardTurma(t,false)).join('') : '<p class="vazio-msg">Nenhuma turma ativa cadastrada ainda.</p>';
@@ -2768,6 +2768,10 @@ function abrirModalGerenciarTurma(turmaId){
     disciplinasCacheModulo.map(d=>'<option value="'+escapeHTML(d.nome)+'" '+(turma.disciplina===d.nome?'selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('')+
     '</select></div>'+
     '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-salvar-disciplina-turma">Salvar</button>'+
+    '<div style="margin-top:12px;padding:10px 12px;border:1px dashed var(--borda);border-radius:8px;">'+
+    '<label for="input-nova-disciplina-turma" style="display:block;font-weight:700;font-size:.82rem;margin-bottom:6px;">A disciplina não está na lista? Crie aqui e já vincule a esta turma:</label>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;"><input type="text" id="input-nova-disciplina-turma" placeholder="Ex.: Gestão de Pessoas" style="flex:1;min-width:180px;padding:9px 11px;border:1.5px solid var(--ink);border-radius:6px;font-family:inherit;font-size:.9rem;">'+
+    '<button type="button" class="botao botao-primario botao-pequeno" id="btn-criar-vincular-disciplina">Criar e vincular</button></div></div>'+
     '<p class="msg-sucesso" id="msg-disciplina-turma" hidden style="margin-top:8px;"></p>'+
     '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-imprimir-lista-alunos" style="margin-top:12px;display:block;">🖨 Imprimir lista de alunos</button>'+
     '<div class="lista-senhas" style="margin-top:16px;">'+listaAlunosHtml+'</div>'+
@@ -2783,6 +2787,31 @@ function abrirModalGerenciarTurma(turmaId){
     const msg = document.getElementById('msg-disciplina-turma');
     msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Salvo!';
   });
+  const btnCriarVincular = document.getElementById('btn-criar-vincular-disciplina');
+  const inputNovaDisc = document.getElementById('input-nova-disciplina-turma');
+  btnCriarVincular.addEventListener('click', async ()=>{
+    const msg = document.getElementById('msg-disciplina-turma');
+    const nome = inputNovaDisc.value.trim().replace(/\s+/g,' ');
+    if (!nome){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Digite o nome da disciplina.'; inputNovaDisc.focus(); return; }
+    btnCriarVincular.disabled = true;
+    try{
+      disciplinasCacheModulo = await buscarDisciplinasCadastradas();
+      const existente = disciplinasCacheModulo.find(d=>turmaSlug(d.nome)===turmaSlug(nome));
+      const nomeFinal = existente ? existente.nome : nome;
+      if (!existente) await criarDisciplinaCadastrada(nomeFinal);
+      await definirCursoDisciplinaDaTurma(turmaId, turma.curso||'', nomeFinal);
+      await recarregarTurmasModulo();
+      await recarregarCursosDisciplinas();
+      abrirModalGerenciarTurma(turmaId);
+      const m = document.getElementById('msg-disciplina-turma');
+      m.hidden=false; m.style.color='var(--verde)';
+      m.textContent = existente ? 'A disciplina "'+nomeFinal+'" já existia e foi vinculada à turma.' : 'Disciplina "'+nomeFinal+'" criada e vinculada à turma.';
+    } catch(e){
+      msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Erro: '+e.message;
+      btnCriarVincular.disabled = false;
+    }
+  });
+  inputNovaDisc.addEventListener('keydown', (e)=>{ if (e.key==='Enter') btnCriarVincular.click(); });
   document.getElementById('btn-imprimir-lista-alunos').addEventListener('click', ()=>imprimirListaAlunos(turma, alunos));
   document.getElementById('btn-adicionar-alunos').addEventListener('click', async ()=>{
     const nomes = document.getElementById('textarea-novos-alunos').value.split('\n').map(s=>s.trim()).filter(Boolean);
