@@ -127,6 +127,11 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .stat-card{background:var(--papel);border:1.5px solid var(--ink);border-radius:10px;padding:18px;text-align:left;font-family:var(--font-display);cursor:pointer;}
 .stat-card:hover{background:#F0EDE4;}
 .stat-card-info{cursor:default;}
+.botao-material-apoio{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;font-weight:800;font-size:.85rem;cursor:pointer;box-shadow:2px 2px 0 var(--ink);}
+.botao-material-apoio:hover{background:#F0EDE4;}
+.item-atividade .botao-material-apoio{padding:4px 10px;font-size:.75rem;box-shadow:none;}
+.bloco-material{margin:10px 0 4px;}
+.stat-material{cursor:pointer;border:none;font:inherit;background:#E6F2EC;color:var(--verde);}
 /* ---- botão "Ver minha média" em destaque ---- */
 .botao-media-destaque{display:flex;align-items:center;gap:14px;width:100%;margin-top:20px;padding:16px 18px;border:2px solid var(--ink);border-radius:12px;background:linear-gradient(135deg,var(--folder) 0%,var(--folder-escuro) 100%);color:#fff;cursor:pointer;text-align:left;font-family:var(--font-display);box-shadow:4px 4px 0 var(--ink);transition:transform .12s ease,box-shadow .12s ease;position:relative;}
 .botao-media-destaque:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);}
@@ -384,6 +389,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       <h1 id="titulo-desafio"></h1>
       <p class="subtitulo" id="subtitulo-desafio"></p>
       <p class="instrucao" id="instrucao-desafio"></p>
+      <div class="bloco-material" id="material-desafio"></div>
       <div id="aviso-desafio" hidden></div>
     </header>
     <main id="historias-desafio"></main>
@@ -408,6 +414,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
     <svg class="icone-aguardando" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="15"/><path d="M24 17v9l7 5"/><path d="M17 6h14M20 6v4M28 6v4"/></svg>
     <h2>Resposta enviada!</h2>
     <p id="aguardando-texto"></p>
+    <div class="bloco-material" id="material-aguardando"></div>
     <p class="aguardando-nota">Esta página atualiza sozinha assim que a correção for liberada — não é preciso atualizar manualmente.</p>
     <div id="outras-atividades-aguardando" class="bloco-outras-atividades"></div>
   </div>
@@ -421,6 +428,7 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
       <button class="botao-voltar-canto" id="btn-voltar-resultado" type="button" aria-label="Voltar">←</button>
       <h1 id="titulo-resultado"></h1>
       <p class="subtitulo" id="subtitulo-resultado"></p>
+      <div class="bloco-material" id="material-resultado"></div>
       <div id="pontuacao-resultado"></div>
     </header>
     <main id="historias-resultado"></main>
@@ -709,6 +717,12 @@ Texto do caso/contexto, aparece uma vez no topo.
         <div class="campo">
           <label>Turmas com acesso</label>
           <div id="checkboxes-turmas-nova-atividade" class="lista-selecao" style="max-height:240px;"></div>
+        </div>
+        <div class="campo" style="max-width:520px;">
+          <label for="input-material-nova-atividade">Material de apoio (opcional — PDF ou imagem, até 8 MB)</label>
+          <input type="file" id="input-material-nova-atividade" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*">
+          <p style="font-size:.8rem;color:var(--ink-suave);margin:6px 0 0;">Ex.: a apostila ou o texto de apoio da aula. O aluno abre pelo botão "📄 Material de apoio" na atividade.</p>
+          <p class="erro-msg" id="erro-material-nova-atividade" hidden></p>
         </div>
         <button class="botao botao-primario" id="btn-cadastrar-atividade">Cadastrar atividade</button>
       </div>
@@ -1789,7 +1803,8 @@ function construirAtividadeEfetiva(registro){
     codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal, unidade:registro.unidade||'1',
     id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
     disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
-    titulo: registro.nomeAtividade || modelo.titulo, nomeAtividade: registro.nomeAtividade||''
+    titulo: registro.nomeAtividade || modelo.titulo, nomeAtividade: registro.nomeAtividade||'',
+    materialApoio: registro.materialApoio || null
   });
 }
 
@@ -1954,9 +1969,10 @@ async function mostrarEscolhaAtividade(){
         }
         const alvo = '<span class="item-atividade-alvo" data-codigo="'+a.codigo+'">'+escapeHTML(a.titulo)+' <span class="codigo-atividade">'+a.codigo+'</span></span>';
         const imprimirBtn = podeImprimir ? '<button type="button" class="botao-texto" data-imprimir="'+a.codigo+'">Imprimir</button>' : '';
-        linhas.push('<div class="item-selecao item-atividade">'+alvo+badge+imprimirBtn+'</div>');
+        linhas.push('<div class="item-selecao item-atividade">'+alvo+badge+botaoMaterialAlunoHtml(a)+imprimirBtn+'</div>');
       }
       lista.innerHTML = linhas.join('');
+      ligarBotoesMaterialAluno(lista);
       lista.querySelectorAll('.item-atividade-alvo').forEach(el=>el.addEventListener('click',()=>escolherAtividade(el.dataset.codigo)));
       lista.querySelectorAll('[data-imprimir]').forEach(btn=>btn.addEventListener('click', async (e)=>{
         e.stopPropagation();
@@ -2202,6 +2218,7 @@ function aplicarTextoAtividade(){
   document.getElementById('instrucao-desafio').textContent = atividadeAtual.instrucao;
   document.getElementById('titulo-resultado').textContent = atividadeAtual.titulo;
   document.getElementById('subtitulo-resultado').textContent = 'resultado — '+atividadeAtual.codigo;
+  atualizarMaterialNasTelasDaAtividade();
 }
 
 async function renderizarOutrasAtividades(idContainer){
@@ -3530,12 +3547,21 @@ function renderListaAtividadesCadastro(){
     return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
       '<div class="turma-card-topo"><h3>'+escapeHTML(tituloExibir)+' <span class="codigo-atividade">'+a.codigo+'</span> '+
       '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span>'+badgeConteudo+'</h3>'+
-      '<div class="turma-card-botoes">'+botaoTestar+'<button type="button" class="botao-texto" data-acao="verificar-respostas">Verificar respostas</button>'+
+      '<div class="turma-card-botoes">'+botaoTestar+'<button type="button" class="botao-texto" data-acao="material-apoio">'+(a.materialApoio&&a.materialApoio.id?'📄 Material de apoio':'+ Material de apoio')+'</button><button type="button" class="botao-texto" data-acao="verificar-respostas">Verificar respostas</button>'+
       '<button type="button" class="botao-texto" data-acao="editar">Editar →</button>'+
       '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
-      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span></div>'+
+      '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span>'+
+      (a.materialApoio&&a.materialApoio.id?'<button type="button" class="stat-mini stat-material" data-acao="ver-material" title="Abrir o material de apoio">📄 '+escapeHTML(a.materialApoio.nome)+' · '+tamanhoLegivel(a.materialApoio.tamanho)+'</button>':'')+'</div>'+
       '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
   }).join('');
+  lista.querySelectorAll('[data-acao="material-apoio"]').forEach(b=>b.addEventListener('click', (e)=>{
+    const registro = atividadesCacheModulo.find(a=>a.id===e.target.closest('.turma-card').dataset.ativId);
+    if (registro) abrirModalMaterialAtividade(registro);
+  }));
+  lista.querySelectorAll('[data-acao="ver-material"]').forEach(b=>b.addEventListener('click', (e)=>{
+    const registro = atividadesCacheModulo.find(a=>a.id===e.target.closest('.turma-card').dataset.ativId);
+    if (registro) abrirMaterialApoio(registro.materialApoio, registro.nomeAtividade||registro.codigo);
+  }));
   lista.querySelectorAll('[data-acao="gerenciar-duplas"]').forEach(b=>b.addEventListener('click', (e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     const registro = atividadesCacheModulo.find(a=>a.id===id);
@@ -3753,11 +3779,28 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   const turmasIds = {};
   document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
 
+  const inputMaterial = document.getElementById('input-material-nova-atividade');
+  const erroMaterial = document.getElementById('erro-material-nova-atividade');
+  const arquivoMaterial = inputMaterial.files[0] || null;
+  erroMaterial.hidden = true;
+  if (arquivoMaterial){
+    const msgValid = validarArquivoMaterial(arquivoMaterial);
+    if (msgValid){ erroMaterial.textContent = msgValid; erroMaterial.hidden = false; return; }
+  }
+  const btnCad = document.getElementById('btn-cadastrar-atividade');
+  btnCad.disabled = true;
   const ref = db.ref('conteudosCadastrados').push();
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
   await carregarConteudosCadastrados();
   const chaveConteudo = 'custom:'+ref.key;
-  await criarAtividadeCadastrada(chaveConteudo, valorTotal, turmasIds, disciplina, nomeAtividade, unidade);
+  const novaAtividadeId = await criarAtividadeCadastrada(chaveConteudo, valorTotal, turmasIds, disciplina, nomeAtividade, unidade);
+  let avisoMaterial = '';
+  if (arquivoMaterial){
+    try{ await vincularMaterialAtividade(novaAtividadeId, arquivoMaterial); avisoMaterial = ' Material de apoio anexado.'; }
+    catch(e){ avisoMaterial = ' Atenção: a atividade foi criada, mas o material não foi anexado ('+e.message+'). Use o botão "Material de apoio" no card da atividade para tentar de novo.'; }
+  }
+  inputMaterial.value = '';
+  btnCad.disabled = false;
 
   document.getElementById('input-nome-nova-atividade').value = '';
   document.getElementById('input-valor-nova-atividade').value = '';
@@ -3768,7 +3811,7 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
   document.getElementById('campos-atividade-apos-preview').hidden = true;
   conteudoParseadoTemp = null;
 
-  msg.hidden=false; msg.style.color='var(--verde)'; msg.textContent='Atividade cadastrada e pronta para as turmas escolhidas!';
+  msg.hidden=false; msg.style.color=avisoMaterial.startsWith(' Atenção')?'var(--vermelho)':'var(--verde)'; msg.textContent='Atividade cadastrada e pronta para as turmas escolhidas!'+avisoMaterial;
   atividadesCacheModulo = await buscarAtividadesCadastradas();
   renderListaAtividadesCadastro();
 });
@@ -4932,6 +4975,161 @@ function atualizarCabecalhoEscolhaTurma(){
     sub.textContent = 'escolha sua turma';
   }
   voltar.style.display = modoEscolhaDisciplina ? 'flex' : 'none';
+}
+
+/* ===== MATERIAL DE APOIO DAS ATIVIDADES (PDF/imagem guardado no banco, nó /materiais) ===== */
+const MATERIAL_TAMANHO_MAX = 8 * 1024 * 1024; // 8 MB
+const MATERIAL_TIPOS_ACEITOS = '.pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*';
+let materialNovaAtividadeTemp = null; // File escolhido no formulário de criação
+const cacheBlobMaterial = {};
+
+function tamanhoLegivel(bytes){
+  if (!bytes && bytes!==0) return '';
+  if (bytes < 1024) return bytes+' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
+  return (bytes/1024/1024).toFixed(1).replace('.',',')+' MB';
+}
+function validarArquivoMaterial(file){
+  if (!file) return 'Nenhum arquivo selecionado.';
+  const ok = file.type==='application/pdf' || /^image\//.test(file.type) || /\.(pdf|png|jpe?g|webp)$/i.test(file.name);
+  if (!ok) return 'Formato não aceito. Envie um PDF ou uma imagem (PNG, JPG, WEBP).';
+  if (file.size > MATERIAL_TAMANHO_MAX) return 'Arquivo grande demais ('+tamanhoLegivel(file.size)+'). O limite é '+tamanhoLegivel(MATERIAL_TAMANHO_MAX)+'.';
+  return null;
+}
+function lerArquivoBase64(file){
+  return new Promise((ok, falha)=>{
+    const r = new FileReader();
+    r.onload = ()=>ok(String(r.result).split(',')[1] || '');
+    r.onerror = ()=>falha(new Error('Não foi possível ler o arquivo.'));
+    r.readAsDataURL(file);
+  });
+}
+async function salvarMaterialApoio(file){
+  const erro = validarArquivoMaterial(file);
+  if (erro) throw new Error(erro);
+  const dados = await lerArquivoBase64(file);
+  const tipo = file.type || (/\.pdf$/i.test(file.name) ? 'application/pdf' : 'application/octet-stream');
+  const ref = db.ref('materiais').push();
+  try{
+    await ref.set({nome:file.name, tipo, tamanho:file.size, dados, criadoEm:Date.now()});
+  } catch(e){
+    if (/permission/i.test(e.message)) throw new Error('O banco recusou a gravação (permission_denied). Inclua o nó "materiais" nas regras do Realtime Database.');
+    throw e;
+  }
+  return {id:ref.key, nome:file.name, tipo, tamanho:file.size};
+}
+async function vincularMaterialAtividade(atividadeId, file){
+  const registro = (await db.ref('atividadesCadastradas/'+atividadeId).once('value')).val() || {};
+  const meta = await salvarMaterialApoio(file);
+  await db.ref('atividadesCadastradas/'+atividadeId+'/materialApoio').set(meta);
+  if (registro.materialApoio && registro.materialApoio.id) await db.ref('materiais/'+registro.materialApoio.id).remove().catch(()=>{});
+  return meta;
+}
+async function removerMaterialAtividade(atividadeId){
+  const registro = (await db.ref('atividadesCadastradas/'+atividadeId).once('value')).val() || {};
+  await db.ref('atividadesCadastradas/'+atividadeId+'/materialApoio').remove();
+  if (registro.materialApoio && registro.materialApoio.id) await db.ref('materiais/'+registro.materialApoio.id).remove().catch(()=>{});
+}
+async function obterUrlMaterial(meta){
+  if (cacheBlobMaterial[meta.id]) return cacheBlobMaterial[meta.id];
+  const reg = (await db.ref('materiais/'+meta.id).once('value')).val();
+  if (!reg || !reg.dados) throw new Error('O arquivo deste material não foi encontrado no banco.');
+  const bin = atob(reg.dados);
+  const bytes = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], {type:reg.tipo||meta.tipo||'application/pdf'}));
+  cacheBlobMaterial[meta.id] = url;
+  return url;
+}
+async function abrirMaterialApoio(meta, tituloAtividade){
+  if (!meta || !meta.id) return;
+  abrirModal('Material de apoio — '+(tituloAtividade||meta.nome), '<p class="vazio-msg">Carregando material…</p>');
+  try{
+    const url = await obterUrlMaterial(meta);
+    const ehPdf = (meta.tipo||'').includes('pdf') || /\.pdf$/i.test(meta.nome);
+    const ehImagem = /^image\//.test(meta.tipo||'');
+    const telaLarga = window.innerWidth >= 700;
+    let visual = '';
+    if (ehImagem) visual = '<img src="'+url+'" alt="'+escapeHTML(meta.nome)+'" style="max-width:100%;border:1px solid var(--borda);border-radius:8px;">';
+    else if (ehPdf && telaLarga) visual = '<iframe src="'+url+'" title="'+escapeHTML(meta.nome)+'" style="width:100%;height:70vh;border:1px solid var(--borda);border-radius:8px;background:#fff;"></iframe>';
+    else if (ehPdf) visual = '<p style="font-size:.88rem;color:var(--ink-suave);">No celular, toque em <strong>Abrir material</strong> para ler o arquivo no leitor de PDF do aparelho.</p>';
+    document.getElementById('modal-conteudo').innerHTML =
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">'+
+      '<a class="botao botao-primario botao-pequeno" href="'+url+'" target="_blank" rel="noopener" style="text-decoration:none;">📄 Abrir material</a>'+
+      '<a class="botao botao-secundario botao-pequeno" href="'+url+'" download="'+escapeHTML(meta.nome)+'" style="text-decoration:none;">Baixar</a>'+
+      '<span style="font-size:.8rem;color:var(--ink-suave);">'+escapeHTML(meta.nome)+(meta.tamanho?' · '+tamanhoLegivel(meta.tamanho):'')+'</span></div>'+visual;
+  } catch(e){
+    document.getElementById('modal-conteudo').innerHTML = '<p class="erro-msg">Não foi possível carregar o material: '+escapeHTML(e.message)+'</p>';
+  }
+}
+function botaoMaterialAlunoHtml(a){
+  if (!a || !a.materialApoio || !a.materialApoio.id) return '';
+  return '<button type="button" class="botao-material-apoio" data-material-codigo="'+escapeHTML(a.codigo)+'">📄 Material de apoio</button>';
+}
+function ligarBotoesMaterialAluno(raiz){
+  raiz.querySelectorAll('[data-material-codigo]').forEach(b=>b.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const lista = (atividadesDisponiveisTemp||[]).concat(atividadeAtual?[atividadeAtual]:[]);
+    const a = lista.find(x=>x.codigo===b.dataset.materialCodigo);
+    if (a) abrirMaterialApoio(a.materialApoio, a.titulo);
+  }));
+}
+function atualizarMaterialNasTelasDaAtividade(){
+  ['material-desafio','material-resultado','material-aguardando'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = atividadeAtual ? botaoMaterialAlunoHtml(atividadeAtual) : '';
+    ligarBotoesMaterialAluno(el);
+  });
+}
+
+/* ---- professor: gerenciar material de uma atividade já cadastrada ---- */
+function abrirModalMaterialAtividade(registro){
+  const titulo = registro.nomeAtividade || registro.codigo;
+  const meta = registro.materialApoio;
+  abrirModal('Material de apoio — '+titulo,
+    (meta && meta.id
+      ? '<p style="margin:0 0 12px;">Material atual: <strong>'+escapeHTML(meta.nome)+'</strong> ('+tamanhoLegivel(meta.tamanho)+')</p>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;"><button type="button" class="botao botao-secundario botao-pequeno" id="mm-ver">Visualizar</button>'+
+        '<button type="button" class="botao botao-perigo botao-pequeno" id="mm-remover">Remover material</button></div>'
+      : '<p class="vazio-msg" style="margin:0 0 12px;">Esta atividade ainda não tem material de apoio.</p>')+
+    '<label style="display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;">'+(meta&&meta.id?'Substituir por outro arquivo':'Anexar arquivo')+' (PDF ou imagem, até '+tamanhoLegivel(MATERIAL_TAMANHO_MAX)+')</label>'+
+    '<input type="file" id="mm-arquivo" accept="'+MATERIAL_TIPOS_ACEITOS+'" style="margin-bottom:12px;display:block;">'+
+    '<p class="erro-msg" id="mm-erro" hidden></p>'+
+    '<button type="button" class="botao botao-primario" id="mm-salvar">Salvar material</button>'+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:12px 0 0;">O aluno vê o botão "📄 Material de apoio" na lista de atividades e dentro da atividade, antes e depois de responder.</p>');
+  const erro = document.getElementById('mm-erro');
+  const bv = document.getElementById('mm-ver');
+  if (bv) bv.addEventListener('click', ()=>abrirMaterialApoio(meta, titulo));
+  const br = document.getElementById('mm-remover');
+  if (br) br.addEventListener('click', async ()=>{
+    if (!confirm('Remover o material de apoio desta atividade?')) return;
+    br.disabled = true;
+    try{
+      await removerMaterialAtividade(registro.id);
+      atividadesCacheModulo = await buscarAtividadesCadastradas();
+      renderListaAtividadesCadastro();
+      fecharModal();
+    } catch(e){ erro.textContent='Erro: '+e.message; erro.hidden=false; br.disabled=false; }
+  });
+  document.getElementById('mm-salvar').addEventListener('click', async ()=>{
+    const file = document.getElementById('mm-arquivo').files[0];
+    erro.hidden = true;
+    const msgValid = validarArquivoMaterial(file);
+    if (msgValid){ erro.textContent = msgValid; erro.hidden = false; return; }
+    const bs = document.getElementById('mm-salvar');
+    bs.disabled = true; bs.textContent = 'Enviando…';
+    try{
+      await vincularMaterialAtividade(registro.id, file);
+      atividadesCacheModulo = await buscarAtividadesCadastradas();
+      renderListaAtividadesCadastro();
+      const atualizado = atividadesCacheModulo.find(a=>a.id===registro.id);
+      if (atualizado) abrirModalMaterialAtividade(atualizado); else fecharModal();
+    } catch(e){
+      erro.textContent = 'Erro: '+e.message; erro.hidden = false;
+      bs.disabled = false; bs.textContent = 'Salvar material';
+    }
+  });
 }
 
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
