@@ -142,6 +142,7 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .stat-alerta{background:#FBF3E6;color:var(--folder-escuro);font-weight:800;}
 .stat-card-ativo{outline:3px solid var(--ink);outline-offset:1px;}
 .contagem-entregas{display:contents;}
+.aviso-preview{background:#FBF3E6;border-color:var(--folder-escuro);color:var(--ink);}
 .botao-material-apoio{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;font-weight:800;font-size:.85rem;cursor:pointer;box-shadow:2px 2px 0 var(--ink);}
 .botao-material-apoio:hover{background:#F0EDE4;}
 .item-atividade .botao-material-apoio{padding:4px 10px;font-size:.75rem;box-shadow:none;}
@@ -3165,6 +3166,11 @@ document.getElementById('entrega-toggle').addEventListener('click', ()=>{
 });
 document.getElementById('btn-cadastrar-entrega').addEventListener('click', cadastrarEntregaTexto);
 document.getElementById('btn-voltar-entrega').addEventListener('click', async ()=>{
+  if (entregaAtualEstado && entregaAtualEstado.preview){
+    entregaAtualEstado = null;
+    mostrarTela('tela-professor-atividades');
+    return;
+  }
   if (document.getElementById('texto-entrega')) await salvarRascunhoEntrega();
   entregaAtualEstado = null;
   await mostrarEscolhaAtividade();
@@ -5419,7 +5425,7 @@ function cardEntregaTextoHtml(a){
     '<div class="turma-card-topo"><h3>'+escapeHTML(a.nomeAtividade||'(sem nome)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
     '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span> '+
     '<span class="badge-pendente" style="background:var(--ink);">Entrega de texto</span></h3>'+
-    '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="corrigir-entrega">Corrigir entregas →</button>'+
+    '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="ver-como-aluno-entrega" title="Abre a tela da atividade exatamente como o aluno vê — nada é salvo">👁 Ver como o aluno</button><button type="button" class="botao-texto" data-acao="corrigir-entrega">Corrigir entregas →</button>'+
     '<button type="button" class="botao-texto" data-acao="material-apoio">'+(temMaterial?'📄 Material de apoio':'+ Material de apoio')+'</button>'+
     '<button type="button" class="botao-texto" data-acao="editar-entrega">Editar →</button>'+
     '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
@@ -5446,6 +5452,7 @@ async function contarEntregasRegistro(registro){
 }
 function ligarCardsEntregaTexto(lista){
   const achar = el=>atividadesCacheModulo.find(a=>a.id===el.closest('.turma-card').dataset.ativId);
+  lista.querySelectorAll('[data-acao="ver-como-aluno-entrega"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.target); if (r) abrirPreviewEntregaProfessor(r); }));
   lista.querySelectorAll('[data-acao="corrigir-entrega"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.target); if (r) abrirModalCorrecaoEntregas(r); }));
   lista.querySelectorAll('[data-acao="corrigir-entrega-turma"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.currentTarget); if (r) abrirModalCorrecaoEntregas(r, e.currentTarget.dataset.turmaId); }));
   lista.querySelectorAll('[data-acao="editar-entrega"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.target); if (r) abrirModalEditarEntrega(r); }));
@@ -5845,6 +5852,51 @@ async function confirmarEntregaTexto(){
     erro.textContent = 'Não foi possível entregar ('+e.message+'). Seu texto continua salvo; tente de novo.'; erro.hidden = false;
     btn.disabled = false;
   }
+}
+
+/* ---- professor: ver a atividade de pesquisa como o aluno vê (nada é salvo) ---- */
+function abrirPreviewEntregaProfessor(registro){
+  const ativ = construirAtividadeEfetiva(registro);
+  if (!ativ) return;
+  entregaAtualEstado = {ativ, preview:true, colagens:0, caracteresColados:0};
+  document.getElementById('titulo-entrega').textContent = ativ.titulo;
+  document.getElementById('subtitulo-entrega').textContent = 'pesquisa / texto · vale '+formatarValorPonto(ativ.valorTotal)+' · Nome do Aluno';
+  document.getElementById('instrucao-entrega').textContent = ativ.instrucao || '';
+  const infos = [];
+  if (ativ.prazoEm) infos.push('<span class="stat-mini'+(prazoEncerrado(ativ)?' stat-alerta':'')+'">Prazo: '+formatarData(ativ.prazoEm)+(prazoEncerrado(ativ)?' (encerrado)':'')+'</span>');
+  if (ativ.minPalavras) infos.push('<span class="stat-mini">Mínimo de '+ativ.minPalavras+' palavras</span>');
+  document.getElementById('info-entrega').innerHTML = infos.join('');
+  const mat = document.getElementById('material-entrega');
+  mat.innerHTML = ativ.materialApoio && ativ.materialApoio.id ? '<button type="button" class="botao-material-apoio" id="btn-material-preview-entrega">📄 Material de apoio</button>' : '';
+  const bm = document.getElementById('btn-material-preview-entrega');
+  if (bm) bm.addEventListener('click', ()=>abrirMaterialApoio(ativ.materialApoio, ativ.titulo));
+  const bloqueado = ativ.bloquearAposPrazo && prazoEncerrado(ativ);
+  document.getElementById('area-entrega').innerHTML =
+    '<div class="aviso-entrega aviso-preview">👁 <strong>Visualização do professor</strong> — é exatamente esta tela que o aluno vê. Pode digitar para testar: nada é salvo nem entregue.</div>'+
+    (bloqueado?'<div class="aviso-entrega aviso-erro">O prazo terminou e o(a) professor(a) não está mais aceitando entregas.</div>':'')+
+    '<textarea id="texto-entrega" class="textarea-entrega" placeholder="Escreva aqui a sua pesquisa…" '+(bloqueado?'readonly':'')+'></textarea>'+
+    '<div class="barra-entrega"><span id="contador-entrega"></span><span id="status-salvo-entrega"></span></div>'+
+    (bloqueado?'':
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">'+
+    '<button type="button" class="botao botao-secundario" id="btn-salvar-rascunho-entrega">Salvar rascunho</button>'+
+    '<button type="button" class="botao botao-primario" id="btn-entregar-texto">Entregar pesquisa</button></div>'+
+    '<p class="erro-msg" id="erro-entrega" hidden></p>'+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:12px 0 0;">O texto é salvo automaticamente enquanto você escreve. Você pode sair e voltar depois para terminar — mas só o(a) professor(a) recebe depois que você clicar em "Entregar pesquisa".</p>');
+  const ta = document.getElementById('texto-entrega');
+  atualizarContadorEntrega();
+  ta.addEventListener('input', ()=>{ atualizarContadorEntrega(); marcarStatusEntrega('Visualização — o aluno veria aqui "Rascunho salvo às …"'); });
+  const avisoPreview = (acao)=>{
+    const erro = document.getElementById('erro-entrega');
+    const n = contarPalavras(ta.value);
+    if (acao==='entregar' && !ta.value.trim()){ erro.textContent='O aluno veria: "Escreva sua pesquisa antes de entregar."'; }
+    else if (acao==='entregar' && ativ.minPalavras && n < ativ.minPalavras){ erro.textContent='O aluno veria: "Seu texto tem '+n+' palavras. O mínimo pedido é '+ativ.minPalavras+'."'; }
+    else erro.textContent = acao==='entregar' ? 'Na tela do aluno, aqui ele confirmaria e a pesquisa seria entregue. Na visualização do professor nada é enviado.' : 'Na tela do aluno, o rascunho seria salvo. Na visualização do professor nada é salvo.';
+    erro.hidden = false;
+  };
+  const bs = document.getElementById('btn-salvar-rascunho-entrega'); if (bs) bs.addEventListener('click', ()=>avisoPreview('salvar'));
+  const be = document.getElementById('btn-entregar-texto'); if (be) be.addEventListener('click', ()=>avisoPreview('entregar'));
+  mostrarTela('tela-entrega-texto');
+  window.scrollTo({top:0});
 }
 
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
