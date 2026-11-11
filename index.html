@@ -127,6 +127,21 @@ footer{margin-top:36px;font-size:.8rem;color:var(--ink-suave);text-align:center;
 .stat-card{background:var(--papel);border:1.5px solid var(--ink);border-radius:10px;padding:18px;text-align:left;font-family:var(--font-display);cursor:pointer;}
 .stat-card:hover{background:#F0EDE4;}
 .stat-card-info{cursor:default;}
+/* ---- entrega de texto (pesquisa) ---- */
+.textarea-entrega{width:100%;min-height:55vh;padding:16px;border:1.5px solid var(--ink);border-radius:10px;font-size:1rem;line-height:1.6;font-family:var(--font-display);background:#fff;color:var(--ink);resize:vertical;box-sizing:border-box;}
+.textarea-entrega:focus-visible{outline:3px solid var(--folder-escuro);outline-offset:1px;}
+.textarea-entrega[readonly]{background:var(--bg);}
+.barra-entrega{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-suave);margin-top:6px;}
+.aviso-entrega{border-radius:8px;padding:12px 14px;margin:0 0 12px;font-size:.9rem;border:1.5px solid;}
+.aviso-ok{background:#E6F2EC;border-color:var(--verde);color:var(--ink);}
+.aviso-erro{background:#FCEAE8;border-color:var(--vermelho);color:var(--ink);}
+.entrega-texto-leitura{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--borda);border-radius:8px;padding:16px;max-height:55vh;overflow-y:auto;line-height:1.6;font-size:.95rem;margin-bottom:14px;}
+.caixa-correcao{background:var(--bg);border:1.5px solid var(--ink);border-radius:10px;padding:14px 16px;}
+.stat-clicavel{cursor:pointer;border:none;font:inherit;}
+.stat-clicavel:hover{text-decoration:underline;}
+.stat-alerta{background:#FBF3E6;color:var(--folder-escuro);font-weight:800;}
+.stat-card-ativo{outline:3px solid var(--ink);outline-offset:1px;}
+.contagem-entregas{display:contents;}
 .botao-material-apoio{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;font-weight:800;font-size:.85rem;cursor:pointer;box-shadow:2px 2px 0 var(--ink);}
 .botao-material-apoio:hover{background:#F0EDE4;}
 .item-atividade .botao-material-apoio{padding:4px 10px;font-size:.75rem;box-shadow:none;}
@@ -436,6 +451,23 @@ code{font-family:var(--font-mono);background:var(--bg);padding:1px 5px;border-ra
     <footer>
       Atividade elaborada para apoiar o estudo de Gestão de Pessoas.
     </footer>
+  </div>
+</section>
+
+<!-- ===== TELA: ENTREGA DE TEXTO (PESQUISA) ===== -->
+<section id="tela-entrega-texto" class="tela">
+  <div class="pagina">
+    <div class="aba-processo">Pesquisa · Entrega de texto</div>
+    <header class="cabecalho">
+      <button class="botao-voltar-canto" id="btn-voltar-entrega" type="button" aria-label="Voltar">←</button>
+      <h1 id="titulo-entrega"></h1>
+      <p class="subtitulo" id="subtitulo-entrega"></p>
+      <p class="instrucao" id="instrucao-entrega" style="white-space:pre-line;"></p>
+      <div class="turma-card-stats" id="info-entrega"></div>
+      <div class="bloco-material" id="material-entrega"></div>
+    </header>
+    <main id="area-entrega"></main>
+    <footer>Atividade elaborada para apoiar o estudo de Gestão de Pessoas.</footer>
   </div>
 </section>
 
@@ -768,6 +800,60 @@ Texto do caso/contexto, aparece uma vez no topo.
           <p class="msg-sucesso" id="msg-dupla-cadastrada" hidden></p>
         </div>
       </div>
+
+      <div style="margin-top:32px;border-top:1.5px solid var(--borda);padding-top:24px;">
+        <div class="arquivo-cabecalho" id="entrega-toggle">
+          <span id="entrega-seta">▸</span>
+          <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-suave);">Pesquisa / trabalho escrito (o aluno escreve e entrega aqui)</h2>
+        </div>
+        <div id="entrega-corpo" hidden style="margin-top:14px;">
+          <p style="font-size:.85rem;color:var(--ink-suave);max-width:70ch;">O aluno abre a atividade, lê as instruções, escreve o texto num campo grande (salvo automaticamente enquanto ele digita) e clica em <strong>Entregar</strong>. Você lê cada entrega, lança a nota e, se quiser, um comentário. A nota vai direto para o módulo Notas e para a média da unidade escolhida.</p>
+          <div class="campo" style="max-width:520px;">
+            <label for="input-nome-nova-entrega">Nome da atividade</label>
+            <input type="text" id="input-nome-nova-entrega" placeholder="Ex.: Pesquisa — Treinamento e Desenvolvimento nas empresas">
+          </div>
+          <div class="campo" style="max-width:720px;">
+            <label for="textarea-instrucoes-nova-entrega">Instruções da pesquisa (o que o aluno deve pesquisar e escrever)</label>
+            <textarea id="textarea-instrucoes-nova-entrega" rows="7" class="textarea-discursiva" placeholder="Ex.: Pesquise uma empresa da sua cidade e descreva como ela treina os novos funcionários. Responda: 1) ... 2) ... Cite as fontes consultadas."></textarea>
+          </div>
+          <div class="admin-form" style="max-width:860px;">
+            <div class="campo">
+              <label for="input-valor-nova-entrega">Valor (nota máxima)</label>
+              <input type="text" inputmode="decimal" id="input-valor-nova-entrega" value="1">
+            </div>
+            <div class="campo">
+              <label for="select-unidade-nova-entrega">Unidade</label>
+              <select id="select-unidade-nova-entrega" class="select-turma">
+                <option value="1">1ª Unidade</option>
+                <option value="2">2ª Unidade</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="select-disciplina-nova-entrega">Disciplina</label>
+              <select id="select-disciplina-nova-entrega" class="select-turma"><option value="">— nenhuma —</option></select>
+            </div>
+            <div class="campo">
+              <label for="input-prazo-nova-entrega">Prazo de entrega (opcional)</label>
+              <input type="datetime-local" id="input-prazo-nova-entrega">
+            </div>
+            <div class="campo">
+              <label for="input-minpalavras-nova-entrega">Mínimo de palavras (opcional)</label>
+              <input type="text" inputmode="numeric" id="input-minpalavras-nova-entrega" placeholder="Ex.: 150">
+            </div>
+          </div>
+          <label class="admin-check"><input type="checkbox" id="chk-bloquear-prazo-nova-entrega"> Não aceitar entregas depois do prazo (sem marcar, a entrega atrasada é aceita e fica sinalizada)</label>
+          <div class="campo">
+            <label>Turmas com acesso</label>
+            <div id="checkboxes-turmas-nova-entrega" class="lista-selecao" style="max-height:240px;"></div>
+          </div>
+          <div class="campo" style="max-width:520px;">
+            <label for="input-material-nova-entrega">Material de apoio (opcional — PDF ou imagem, até 8 MB)</label>
+            <input type="file" id="input-material-nova-entrega" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*">
+          </div>
+          <button class="botao botao-primario" id="btn-cadastrar-entrega">Cadastrar pesquisa</button>
+          <p class="msg-sucesso" id="msg-entrega-cadastrada" hidden></p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1094,6 +1180,28 @@ function parsearAtividadeHTML(texto){
   if (!titulo) throw new Error('Falta a tag <titulo>Nome da atividade</titulo>.');
   const subtitulo = pegarTexto(raiz, 'subtitulo');
   const caso = pegarTexto(raiz, 'caso');
+  const tipoRaiz = String(raiz.getAttribute('tipo')||'').trim().toLowerCase();
+  if (['pesquisa','entrega','entrega-texto','trabalho'].includes(tipoRaiz)){
+    const instrucoes = pegarTexto(raiz, 'instrucoes') || caso;
+    if (!instrucoes) throw new Error('Na atividade de pesquisa, falta a tag <instrucoes>...</instrucoes> com o que o aluno deve escrever.');
+    const numero = (v)=>{ const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? null : n; };
+    const minPal = parseInt(raiz.getAttribute('minimo-palavras') || pegarTexto(raiz,'minimo-palavras'), 10);
+    const prazoTxt = raiz.getAttribute('prazo') || pegarTexto(raiz,'prazo');
+    let prazoEm = null;
+    if (prazoTxt){
+      const m = prazoTxt.match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/) || prazoTxt.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+      if (!m) throw new Error('Prazo em formato não reconhecido. Use AAAA-MM-DD HH:MM ou DD/MM/AAAA HH:MM.');
+      const [ano, mes, dia] = m[1].length===4 ? [m[1],m[2],m[3]] : [m[3],m[2],m[1]];
+      prazoEm = new Date(+ano, +mes-1, +dia, m[4]!=null?+m[4]:23, m[5]!=null?+m[5]:59).getTime();
+    }
+    return {
+      tipo:'pesquisa', titulo, subtitulo, instrucoes,
+      valor: numero(raiz.getAttribute('valor') || pegarTexto(raiz,'valor')),
+      minPalavras: isNaN(minPal)||minPal<1 ? 0 : minPal,
+      prazoEm, bloquearAposPrazo: /^(sim|true|1)$/i.test(raiz.getAttribute('bloquear-apos-prazo')||''),
+      perguntas:[]
+    };
+  }
   const questoesEl = raiz.querySelectorAll('questao');
   if (!questoesEl.length) throw new Error('Não encontrei nenhuma tag <questao>...</questao>.');
   const perguntas = Array.from(questoesEl).map((qEl, i)=>{
@@ -1150,7 +1258,7 @@ function turmaSlug(nome){
     .replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'x';
 }
 function itensAtividade(atividade){
-  if (atividade.tipoEspecial === 'entrevista-dupla') return [];
+  if (atividade.tipoEspecial === 'entrevista-dupla' || atividade.tipo === 'entrega-texto') return [];
   if (atividade.tipo === 'multipla-escolha') return atividade.perguntas.filter(p=>p.tipo!=='discursiva').map(p=>({num:p.numero, correta:p.correta}));
   return atividade.historias.map(h=>({num:h.num, correta:h.pensadorId}));
 }
@@ -1163,7 +1271,7 @@ function calcularAcertos(respostas, atividade){
   let n=0; itens.forEach(it=>{ if(respostas[it.num]===it.correta) n++; }); return n;
 }
 function calcularNota(acertos, totalItens, valorTotal){
-  if (!valorTotal) return null;
+  if (!valorTotal || !totalItens) return null;
   return Math.min(Math.round((acertos/totalItens)*valorTotal*10)/10, valorTotal);
 }
 function formatarData(ts){
@@ -1787,6 +1895,18 @@ async function restaurarAtividadesAnteriores(){
 }
 
 function construirAtividadeEfetiva(registro){
+  if (registro.tipoEspecial === 'entrega-texto'){
+    return {
+      tipoEspecial:'entrega-texto', tipo:'entrega-texto',
+      titulo: registro.nomeAtividade || 'Pesquisa', nomeAtividade: registro.nomeAtividade||'',
+      subtitulo:'pesquisa — entrega de texto', instrucao: registro.instrucoes||'', perguntas:[],
+      codigo:registro.codigo, numero:registro.numero, valorTotal:registro.valorTotal, unidade:registro.unidade||'1',
+      id:registro.id, turmasIds:registro.turmasIds||{}, ativa:registro.ativa!==false,
+      disciplina:registro.disciplina||'', dataAtividade:registro.codigo.slice(7,15),
+      prazoEm:registro.prazoEm||null, bloquearAposPrazo:!!registro.bloquearAposPrazo, minPalavras:registro.minPalavras||0,
+      materialApoio: registro.materialApoio || null
+    };
+  }
   if (registro.tipoEspecial === 'entrevista-dupla'){
     return {
       tipoEspecial:'entrevista-dupla', tipo:'entrevista-dupla',
@@ -1954,7 +2074,11 @@ async function mostrarEscolhaAtividade(){
       for (const a of atividadesDisponiveisTemp){
         let badge = '';
         let podeImprimir = false;
-        if (identificado){
+        if (identificado && a.tipo==='entrega-texto'){
+          badge = await badgeEntregaTextoHtml(turmaKey, a, chave);
+        } else if (a.tipo==='entrega-texto'){
+          badge = '<span class="badge-pendente">Pesquisa'+(a.prazoEm?' · prazo '+formatarData(a.prazoEm):'')+'</span>';
+        } else if (identificado){
           try{
             const dados = await buscarSubmissaoAtividade(turmaKey, a.codigo, chave);
             if (!dados) badge = '<span class="badge-pendente">Ainda não respondida</span>';
@@ -2182,6 +2306,7 @@ async function atualizarBotaoMediaAluno(){
 }
 
 async function entrarNaAtividade(){
+  if (atividadeAtual && atividadeAtual.tipo==='entrega-texto'){ await abrirEntregaTexto(); return; }
   mostrarTela('tela-carregando');
   const chave = turmaSlug(identidade.nome);
   aplicarTextoAtividade();
@@ -2228,6 +2353,11 @@ async function renderizarOutrasAtividades(idContainer){
   const chave = turmaSlug(identidade.nome);
   const linhas = [];
   for (const a of outras){
+    if (a.tipo==='entrega-texto'){
+      const b = await badgeEntregaTextoHtml(identidade.turmaKey, a, chave);
+      linhas.push('<div class="item-selecao item-atividade"><span class="item-atividade-alvo" data-codigo="'+a.codigo+'">'+escapeHTML(a.titulo)+'</span>'+b+'</div>');
+      continue;
+    }
     let statusTxt = 'Ainda não respondida', cls='badge-pendente', podeImprimir=false;
     try{
       const dados = await buscarSubmissaoAtividade(identidade.turmaKey, a.codigo, chave);
@@ -2529,7 +2659,7 @@ async function entrarProfessor(){
   mostrarTela('tela-carregando');
   await carregarConteudosCadastrados();
   const registros = await buscarAtividadesCadastradas();
-  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(a=>a && a.tipo!=='entrega-texto');
   popularSeletorAtividade(false);
   mostrarTela('tela-professor-painel');
   if (!atividadeSelecionadaProf){ document.getElementById('stats-gerais').innerHTML=''; document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
@@ -3028,6 +3158,17 @@ document.getElementById('cursos-disciplinas-toggle').addEventListener('click', (
   corpo.hidden = !corpo.hidden;
   seta.textContent = corpo.hidden ? '▸' : '▾';
 });
+document.getElementById('entrega-toggle').addEventListener('click', ()=>{
+  const corpo = document.getElementById('entrega-corpo');
+  corpo.hidden = !corpo.hidden;
+  document.getElementById('entrega-seta').textContent = corpo.hidden ? '▸' : '▾';
+});
+document.getElementById('btn-cadastrar-entrega').addEventListener('click', cadastrarEntregaTexto);
+document.getElementById('btn-voltar-entrega').addEventListener('click', async ()=>{
+  if (document.getElementById('texto-entrega')) await salvarRascunhoEntrega();
+  entregaAtualEstado = null;
+  await mostrarEscolhaAtividade();
+});
 document.getElementById('dupla-toggle').addEventListener('click', ()=>{
   const corpo = document.getElementById('dupla-corpo');
   const seta = document.getElementById('dupla-seta');
@@ -3106,6 +3247,9 @@ async function abrirTelaAtividades(){
   const turmasAtivasParaNova = turmasCacheAtiv.filter(t=>!t.arquivada);
   renderCheckboxesTurmas('checkboxes-turmas-nova-atividade', turmasAtivasParaNova, null);
   renderCheckboxesTurmas('checkboxes-turmas-nova-dupla', turmasAtivasParaNova, null);
+  renderCheckboxesTurmas('checkboxes-turmas-nova-entrega', turmasAtivasParaNova, null);
+  document.getElementById('select-disciplina-nova-entrega').innerHTML = selDisciplina.innerHTML;
+  document.getElementById('msg-entrega-cadastrada').hidden = true;
   renderCriteriosDupla();
   renderListaAtividadesCadastro();
   document.getElementById('input-nome-nova-atividade').value = '';
@@ -3124,7 +3268,7 @@ async function irParaVerDetalhes(registro, turmaKey){
   fecharModal();
   mostrarTela('tela-carregando');
   const registros = await buscarAtividadesCadastradas();
-  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(a=>a && a.tipo!=='entrega-texto');
   modoTodasAtividades = false;
   atividadeSelecionadaProf = efetiva;
   popularSeletorAtividade(true);
@@ -3516,6 +3660,7 @@ function renderListaAtividadesCadastro(){
   const lista = document.getElementById('lista-atividades-cadastro');
   if (!atividadesCacheModulo.length){ lista.innerHTML='<p class="vazio-msg">Nenhuma atividade cadastrada ainda.</p>'; return; }
   lista.innerHTML = atividadesCacheModulo.map(a=>{
+    if (a.tipoEspecial === 'entrega-texto') return cardEntregaTextoHtml(a);
     if (a.tipoEspecial === 'entrevista-dupla'){
       const nomesTurmasDupla = Object.keys(a.turmasIds||{})
         .map(tid=>{ const t = turmasCacheAtiv.find(x=>x.id===tid); return t ? t.nome : null; })
@@ -3562,6 +3707,7 @@ function renderListaAtividadesCadastro(){
     const registro = atividadesCacheModulo.find(a=>a.id===e.target.closest('.turma-card').dataset.ativId);
     if (registro) abrirMaterialApoio(registro.materialApoio, registro.nomeAtividade||registro.codigo);
   }));
+  ligarCardsEntregaTexto(lista);
   lista.querySelectorAll('[data-acao="gerenciar-duplas"]').forEach(b=>b.addEventListener('click', (e)=>{
     const id = e.target.closest('.turma-card').dataset.ativId;
     const registro = atividadesCacheModulo.find(a=>a.id===id);
@@ -3725,6 +3871,21 @@ async function preVisualizarHTMLAtividade(){
     return;
   }
   conteudoParseadoTemp = resultado;
+  if (resultado.tipo === 'pesquisa'){
+    preview.innerHTML =
+      '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+' <span class="badge-pendente" style="background:var(--ink);">Pesquisa — entrega de texto</span></h3>'+
+      '<p style="font-size:.85rem;margin:8px 0 6px;color:var(--ink-suave);">O aluno lê as instruções abaixo, escreve no campo da plataforma (com salvamento automático) e clica em Entregar. Você corrige pelo botão "Corrigir entregas →" do card e a nota vai para o módulo Notas.</p>'+
+      '<div class="pergunta-enunciado">'+escapeHTML(resultado.instrucoes)+'</div>'+
+      '<div class="turma-card-stats">'+
+      (resultado.valor!=null?'<span class="stat-mini">Valor no HTML: '+resultado.valor+'</span>':'')+
+      (resultado.minPalavras?'<span class="stat-mini">Mínimo de '+resultado.minPalavras+' palavras</span>':'')+
+      (resultado.prazoEm?'<span class="stat-mini">Prazo: '+formatarData(resultado.prazoEm)+(resultado.bloquearAposPrazo?' (bloqueia depois)':' (aceita atrasada, sinalizando)')+'</span>':'<span class="stat-mini">Sem prazo</span>')+
+      '</div></div>';
+    document.getElementById('input-nome-nova-atividade').value = resultado.titulo;
+    document.getElementById('input-valor-nova-atividade').value = resultado.valor!=null ? String(resultado.valor).replace('.',',') : '1';
+    camposDepois.hidden = false;
+    return;
+  }
   preview.innerHTML =
     '<div class="turma-card"><h3>'+escapeHTML(resultado.titulo)+'</h3>'+
     '<p style="font-size:.85rem;margin:8px 0;color:var(--ink-suave);">'+resultado.perguntas.length+' questão(ões) encontrada(s):</p>'+
@@ -3788,6 +3949,38 @@ document.getElementById('btn-cadastrar-atividade').addEventListener('click', asy
     if (msgValid){ erroMaterial.textContent = msgValid; erroMaterial.hidden = false; return; }
   }
   const btnCad = document.getElementById('btn-cadastrar-atividade');
+  if (conteudoParseadoTemp.tipo === 'pesquisa'){
+    if (!Object.keys(turmasIds).length){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Marque pelo menos uma turma.'; return; }
+    if (isNaN(valorDigitado) || valorDigitado<=0){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Informe o valor da pesquisa (ex.: 1).'; return; }
+    btnCad.disabled = true;
+    try{
+      const p = conteudoParseadoTemp;
+      const novaId = await criarAtividadeEntregaTexto({
+        nomeAtividade, instrucoes:p.instrucoes, valorTotal:valorDigitado, unidade, disciplina, turmasIds,
+        prazoEm:p.prazoEm, bloquearAposPrazo:p.bloquearAposPrazo, minPalavras:p.minPalavras
+      });
+      let aviso = '';
+      if (arquivoMaterial){
+        try{ await vincularMaterialAtividade(novaId, arquivoMaterial); aviso = ' Material de apoio anexado.'; }
+        catch(e){ aviso = ' Atenção: o material não foi anexado ('+e.message+').'; }
+      }
+      inputMaterial.value = '';
+      document.getElementById('input-nome-nova-atividade').value = '';
+      document.getElementById('input-valor-nova-atividade').value = '';
+      document.getElementById('select-disciplina-nova-atividade').value = '';
+      document.querySelectorAll('#checkboxes-turmas-nova-atividade input[type=checkbox]:checked').forEach(cb=>{ cb.checked = false; });
+      document.getElementById('textarea-html-atividade').value = '';
+      document.getElementById('preview-html-atividade').innerHTML = '';
+      document.getElementById('campos-atividade-apos-preview').hidden = true;
+      conteudoParseadoTemp = null;
+      msg.hidden=false; msg.style.color = aviso.startsWith(' Atenção') ? 'var(--vermelho)' : 'var(--verde)';
+      msg.textContent = 'Pesquisa cadastrada! Os alunos das turmas marcadas já podem escrever e entregar.'+aviso;
+      atividadesCacheModulo = await buscarAtividadesCadastradas();
+      renderListaAtividadesCadastro();
+    } catch(e){ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent='Erro ao cadastrar: '+e.message; }
+    btnCad.disabled = false;
+    return;
+  }
   btnCad.disabled = true;
   const ref = db.ref('conteudosCadastrados').push();
   await ref.set(Object.assign({criadoEm: Date.now()}, conteudoParseadoTemp));
@@ -5132,6 +5325,528 @@ function abrirModalMaterialAtividade(registro){
   });
 }
 
+/* ===== ENTREGA DE TEXTO (pesquisa / trabalho escrito, corrigido manualmente) =====
+   Cadastro:  atividadesCadastradas/{id}  {tipoEspecial:'entrega-texto', nomeAtividade, instrucoes, valorTotal, unidade,
+              disciplina, turmasIds, prazoEm, bloquearAposPrazo, minPalavras, ativa, materialApoio}
+   Rascunho:  turmas/{turma}/entregasRascunho/{codigo}/{aluno}  {texto, atualizadoEm, colagens, caracteresColados}
+   Entrega:   turmas/{turma}/atividades/{codigo}/alunos/{aluno} {texto, palavras, enviadoEm, atualizadoEm, nota, comentario, corrigidoEm…}
+   A nota fica no mesmo lugar das demais atividades, então entra sozinha no módulo Notas e nas médias. */
+
+let entregaAtualEstado = null;      // estado da tela do aluno
+let timerAutosaveEntrega = null;
+
+function contarPalavras(txt){ return String(txt||'').trim().split(/\s+/).filter(Boolean).length; }
+function formatarValorPonto(v){ const n = Number(v)||0; return (Math.round(n*100)/100).toLocaleString('pt-BR',{maximumFractionDigits:2})+' ponto'+(n===1?'':'s'); }
+function formatarNotaEntrega(v){ return (Math.round((Number(v)||0)*100)/100).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
+function prazoEncerrado(ativ){ return !!(ativ.prazoEm && Date.now() > ativ.prazoEm); }
+function entregaCorrigida(sub){ return !!(sub && sub.nota!=null && sub.nota!=='' && sub.corrigidoEm); }
+
+/* ---------- cadastro (professor) ---------- */
+async function criarAtividadeEntregaTexto(dados){
+  const numero = await proximoNumeroAtividade();
+  const codigo = gerarCodigoAtividade(numero);
+  const ref = db.ref('atividadesCadastradas').push();
+  await ref.set(Object.assign({
+    tipoEspecial:'entrega-texto', modeloConteudo:'', numero, codigo, ativa:true, criadaEm:Date.now()
+  }, dados));
+  return ref.key;
+}
+function lerPrazoInput(id){
+  const v = document.getElementById(id).value;
+  if (!v) return null;
+  const t = new Date(v).getTime();
+  return isNaN(t) ? null : t;
+}
+function prazoParaInput(ts){
+  if (!ts) return '';
+  const d = new Date(ts); const p = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+}
+async function cadastrarEntregaTexto(){
+  const msg = document.getElementById('msg-entrega-cadastrada');
+  const falha = t=>{ msg.hidden=false; msg.style.color='var(--vermelho)'; msg.textContent=t; };
+  msg.hidden = true;
+  const nomeAtividade = document.getElementById('input-nome-nova-entrega').value.trim();
+  const instrucoes = document.getElementById('textarea-instrucoes-nova-entrega').value.trim();
+  const valorDig = parseFloat(document.getElementById('input-valor-nova-entrega').value.replace(',','.'));
+  const minPal = parseInt(document.getElementById('input-minpalavras-nova-entrega').value,10);
+  const turmasIds = {};
+  document.querySelectorAll('#checkboxes-turmas-nova-entrega input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+  const arquivo = document.getElementById('input-material-nova-entrega').files[0] || null;
+  if (!nomeAtividade) return falha('Informe o nome da atividade.');
+  if (!instrucoes) return falha('Escreva as instruções da pesquisa — é o que o aluno vai ler antes de escrever.');
+  if (isNaN(valorDig) || valorDig<=0) return falha('Informe um valor maior que zero.');
+  if (!Object.keys(turmasIds).length) return falha('Marque pelo menos uma turma.');
+  if (arquivo){ const e = validarArquivoMaterial(arquivo); if (e) return falha(e); }
+  const btn = document.getElementById('btn-cadastrar-entrega');
+  btn.disabled = true;
+  try{
+    const id = await criarAtividadeEntregaTexto({
+      nomeAtividade, instrucoes, valorTotal:valorDig,
+      unidade: document.getElementById('select-unidade-nova-entrega').value,
+      disciplina: document.getElementById('select-disciplina-nova-entrega').value,
+      turmasIds, prazoEm: lerPrazoInput('input-prazo-nova-entrega'),
+      bloquearAposPrazo: document.getElementById('chk-bloquear-prazo-nova-entrega').checked,
+      minPalavras: isNaN(minPal)||minPal<1 ? 0 : minPal
+    });
+    let aviso = '';
+    if (arquivo){
+      try{ await vincularMaterialAtividade(id, arquivo); aviso = ' Material de apoio anexado.'; }
+      catch(e){ aviso = ' Atenção: o material não foi anexado ('+e.message+').'; }
+    }
+    ['input-nome-nova-entrega','textarea-instrucoes-nova-entrega','input-prazo-nova-entrega','input-minpalavras-nova-entrega','input-material-nova-entrega'].forEach(i=>{ document.getElementById(i).value=''; });
+    document.getElementById('input-valor-nova-entrega').value = '1';
+    document.getElementById('chk-bloquear-prazo-nova-entrega').checked = false;
+    document.querySelectorAll('#checkboxes-turmas-nova-entrega input[type=checkbox]:checked').forEach(cb=>{ cb.checked=false; });
+    msg.hidden=false; msg.style.color = aviso.startsWith(' Atenção') ? 'var(--vermelho)' : 'var(--verde)';
+    msg.textContent = 'Atividade de entrega de texto cadastrada! Os alunos das turmas marcadas já podem escrever e entregar.'+aviso;
+    atividadesCacheModulo = await buscarAtividadesCadastradas();
+    renderListaAtividadesCadastro();
+  } catch(e){ falha('Erro ao cadastrar: '+e.message); }
+  btn.disabled = false;
+}
+
+/* ---------- card na lista de atividades (professor) ---------- */
+function cardEntregaTextoHtml(a){
+  const nomesTurmas = Object.keys(a.turmasIds||{})
+    .map(tid=>{ const t = turmasCacheAtiv.find(x=>x.id===tid); return t ? {id:t.id, nome:t.nome} : null; })
+    .filter(Boolean).sort((x,y)=>x.nome.localeCompare(y.nome,'pt-BR'));
+  const turmasHtml = nomesTurmas.length
+    ? nomesTurmas.map(t=>'<button type="button" class="pill-turma" data-acao="corrigir-entrega-turma" data-turma-id="'+t.id+'" title="Corrigir as entregas desta turma">'+escapeHTML(t.nome)+'</button>').join('')
+    : '<span class="stat-mini" style="font-style:italic;">Nenhuma turma com acesso ainda</span>';
+  const temMaterial = a.materialApoio && a.materialApoio.id;
+  return '<div class="turma-card" data-ativ-id="'+a.id+'">'+
+    '<div class="turma-card-topo"><h3>'+escapeHTML(a.nomeAtividade||'(sem nome)')+' <span class="codigo-atividade">'+a.codigo+'</span> '+
+    '<span class="'+(a.ativa!==false?'badge-liberado':'badge-pendente')+'">'+(a.ativa!==false?'Ativa':'Inativa')+'</span> '+
+    '<span class="badge-pendente" style="background:var(--ink);">Entrega de texto</span></h3>'+
+    '<div class="turma-card-botoes"><button type="button" class="botao-texto" data-acao="corrigir-entrega">Corrigir entregas →</button>'+
+    '<button type="button" class="botao-texto" data-acao="material-apoio">'+(temMaterial?'📄 Material de apoio':'+ Material de apoio')+'</button>'+
+    '<button type="button" class="botao-texto" data-acao="editar-entrega">Editar →</button>'+
+    '<button type="button" class="link-zerar" data-acao="excluir-atividade">Excluir</button></div></div>'+
+    '<div class="turma-card-stats"><span class="stat-mini">Valor: '+a.valorTotal+'</span><span class="stat-mini">'+(a.unidade==='2'?'2ª':'1ª')+' Unidade</span>'+
+    '<span class="stat-mini">Criada em: '+formatarData(a.criadaEm)+'</span>'+
+    (a.prazoEm?'<span class="stat-mini">Prazo: '+formatarData(a.prazoEm)+(a.bloquearAposPrazo?' (bloqueia depois)':'')+'</span>':'')+
+    (a.minPalavras?'<span class="stat-mini">Mín. '+a.minPalavras+' palavras</span>':'')+
+    (temMaterial?'<button type="button" class="stat-mini stat-material" data-acao="ver-material" title="Abrir o material de apoio">📄 '+escapeHTML(a.materialApoio.nome)+' · '+tamanhoLegivel(a.materialApoio.tamanho)+'</button>':'')+
+    '<span class="contagem-entregas" data-contagem-entrega="'+a.id+'"><span class="stat-mini">Contando entregas…</span></span></div>'+
+    '<div style="margin-top:8px;">'+turmasHtml+'</div></div>';
+}
+async function contarEntregasRegistro(registro){
+  const turmas = turmasCacheAtiv.filter(t=>registro.turmasIds && registro.turmasIds[t.id]);
+  let entregues=0, corrigidas=0, totalAlunos=0;
+  await Promise.all(turmas.map(async t=>{
+    totalAlunos += Object.values(t.alunos||{}).filter(a=>a && !a.especial && !a.inabilitado).length;
+    const subs = (await db.ref('turmas/'+turmaSlug(t.nome)+'/atividades/'+registro.codigo+'/alunos').once('value')).val() || {};
+    Object.values(subs).forEach(s=>{
+      if (entregaCorrigida(s)){ entregues++; corrigidas++; }
+      else if (s && s.texto) entregues++;
+    });
+  }));
+  return {entregues, corrigidas, aguardando: Math.max(entregues-corrigidas,0), totalAlunos};
+}
+function ligarCardsEntregaTexto(lista){
+  const achar = el=>atividadesCacheModulo.find(a=>a.id===el.closest('.turma-card').dataset.ativId);
+  lista.querySelectorAll('[data-acao="corrigir-entrega"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.target); if (r) abrirModalCorrecaoEntregas(r); }));
+  lista.querySelectorAll('[data-acao="corrigir-entrega-turma"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.currentTarget); if (r) abrirModalCorrecaoEntregas(r, e.currentTarget.dataset.turmaId); }));
+  lista.querySelectorAll('[data-acao="editar-entrega"]').forEach(b=>b.addEventListener('click', e=>{ const r=achar(e.target); if (r) abrirModalEditarEntrega(r); }));
+  lista.querySelectorAll('[data-contagem-entrega]').forEach(async el=>{
+    const r = atividadesCacheModulo.find(a=>a.id===el.dataset.contagemEntrega);
+    if (!r) return;
+    try{
+      const c = await contarEntregasRegistro(r);
+      el.innerHTML =
+        '<button type="button" class="stat-mini stat-clicavel" data-filtro-card="entregues">'+c.entregues+'/'+c.totalAlunos+' entregaram</button>'+
+        '<button type="button" class="stat-mini stat-clicavel" data-filtro-card="corrigidas">'+c.corrigidas+' corrigida(s)</button>'+
+        '<button type="button" class="stat-mini stat-clicavel'+(c.aguardando?' stat-alerta':'')+'" data-filtro-card="aguardando">'+c.aguardando+' aguardando correção</button>';
+      el.querySelectorAll('[data-filtro-card]').forEach(b=>b.addEventListener('click', ()=>abrirModalCorrecaoEntregas(r, null, b.dataset.filtroCard)));
+    } catch(e){ el.innerHTML = '<span class="stat-mini">Não foi possível contar as entregas</span>'; }
+  });
+}
+
+function abrirModalEditarEntrega(registro){
+  const opcoesDisc = '<option value="">— nenhuma —</option>'+(disciplinasCacheModulo||[]).map(d=>'<option value="'+escapeHTML(d.nome)+'"'+(d.nome===registro.disciplina?' selected':'')+'>'+escapeHTML(d.nome)+'</option>').join('');
+  abrirModal('Editar — '+(registro.nomeAtividade||registro.codigo),
+    '<div class="campo"><label for="ed-ent-nome">Nome da atividade</label><input type="text" id="ed-ent-nome" value="'+escapeHTML(registro.nomeAtividade||'')+'"></div>'+
+    '<div class="campo"><label for="ed-ent-instr">Instruções da pesquisa (o aluno lê antes de escrever)</label><textarea id="ed-ent-instr" rows="8" class="textarea-discursiva">'+escapeHTML(registro.instrucoes||'')+'</textarea></div>'+
+    '<div class="admin-form">'+
+    '<div class="campo"><label for="ed-ent-valor">Valor (nota máxima)</label><input type="text" inputmode="decimal" id="ed-ent-valor" value="'+registro.valorTotal+'"></div>'+
+    '<div class="campo"><label for="ed-ent-unidade">Unidade</label><select id="ed-ent-unidade" class="select-turma"><option value="1"'+(registro.unidade!=='2'?' selected':'')+'>1ª Unidade</option><option value="2"'+(registro.unidade==='2'?' selected':'')+'>2ª Unidade</option></select></div>'+
+    '<div class="campo"><label for="ed-ent-disc">Disciplina</label><select id="ed-ent-disc" class="select-turma">'+opcoesDisc+'</select></div>'+
+    '<div class="campo"><label for="ed-ent-prazo">Prazo de entrega (opcional)</label><input type="datetime-local" id="ed-ent-prazo" value="'+prazoParaInput(registro.prazoEm)+'"></div>'+
+    '<div class="campo"><label for="ed-ent-min">Mínimo de palavras (opcional)</label><input type="text" inputmode="numeric" id="ed-ent-min" value="'+(registro.minPalavras||'')+'"></div>'+
+    '</div>'+
+    '<label class="admin-check"><input type="checkbox" id="ed-ent-bloq"'+(registro.bloquearAposPrazo?' checked':'')+'> Não aceitar entregas depois do prazo</label>'+
+    '<label class="admin-check"><input type="checkbox" id="ed-ent-ativa"'+(registro.ativa!==false?' checked':'')+'> Atividade ativa (visível para os alunos)</label>'+
+    '<div class="campo"><label>Turmas com acesso</label><div id="ed-ent-turmas" class="lista-selecao" style="max-height:220px;"></div></div>'+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:0 0 12px;">Mudar o valor não altera notas já lançadas — revise as correções se necessário.</p>'+
+    '<p class="erro-msg" id="ed-ent-erro" hidden></p>'+
+    '<button type="button" class="botao botao-primario" id="ed-ent-salvar">Salvar alterações</button>');
+  renderCheckboxesTurmas('ed-ent-turmas', turmasCacheAtiv.filter(t=>!t.arquivada || (registro.turmasIds&&registro.turmasIds[t.id])), registro.turmasIds||{});
+  document.getElementById('ed-ent-salvar').addEventListener('click', async ()=>{
+    const erro = document.getElementById('ed-ent-erro'); erro.hidden = true;
+    const nome = document.getElementById('ed-ent-nome').value.trim();
+    const instr = document.getElementById('ed-ent-instr').value.trim();
+    const valor = parseFloat(document.getElementById('ed-ent-valor').value.replace(',','.'));
+    const min = parseInt(document.getElementById('ed-ent-min').value,10);
+    if (!nome || !instr || isNaN(valor) || valor<=0){ erro.textContent='Preencha nome, instruções e um valor maior que zero.'; erro.hidden=false; return; }
+    const turmasIds = {};
+    document.querySelectorAll('#ed-ent-turmas input[type=checkbox]:checked').forEach(cb=>{ turmasIds[cb.value]=true; });
+    try{
+      await db.ref('atividadesCadastradas/'+registro.id).update({
+        nomeAtividade:nome, instrucoes:instr, valorTotal:valor,
+        unidade:document.getElementById('ed-ent-unidade').value,
+        disciplina:document.getElementById('ed-ent-disc').value,
+        prazoEm: lerPrazoInput('ed-ent-prazo'), bloquearAposPrazo: document.getElementById('ed-ent-bloq').checked,
+        minPalavras: isNaN(min)||min<1 ? 0 : min,
+        ativa: document.getElementById('ed-ent-ativa').checked, turmasIds
+      });
+      atividadesCacheModulo = await buscarAtividadesCadastradas();
+      renderListaAtividadesCadastro();
+      fecharModal();
+    } catch(e){ erro.textContent='Erro: '+e.message; erro.hidden=false; }
+  });
+}
+
+/* ---------- correção (professor) ---------- */
+async function carregarDadosCorrecao(registro, turma){
+  const tk = turmaSlug(turma.nome);
+  const [subs, rasc] = await Promise.all([
+    db.ref('turmas/'+tk+'/atividades/'+registro.codigo+'/alunos').once('value').then(s=>s.val()||{}),
+    db.ref('turmas/'+tk+'/entregasRascunho/'+registro.codigo).once('value').then(s=>s.val()||{})
+  ]);
+  const alunos = Object.values(turma.alunos||{}).filter(a=>a && !a.especial && a.nome)
+    .map(a=>{
+      const chave = turmaSlug(a.nome);
+      const sub = subs[chave] || null;
+      const r = rasc[chave] || null;
+      let situacao = 'nao';
+      if (entregaCorrigida(sub)) situacao = 'corrigida';
+      else if (sub && (sub.texto || sub.entregaForaPlataforma)) situacao = 'entregue';
+      else if (r && String(r.texto||'').trim()) situacao = 'rascunho';
+      return {nome:a.nome, chave, inabilitado:!!a.inabilitado, sub, rascunho:r, situacao};
+    }).sort((x,y)=>x.nome.localeCompare(y.nome,'pt-BR'));
+  return {tk, alunos};
+}
+const ROTULO_SITUACAO_ENTREGA = {
+  corrigida:'<span class="tag-status tag-ativo">Corrigida</span>',
+  entregue:'<span class="tag-status tag-admin">Aguardando correção</span>',
+  rascunho:'<span class="tag-status">Só rascunho</span>',
+  nao:'<span class="tag-status tag-inativo">Não entregou</span>'
+};
+async function abrirModalCorrecaoEntregas(registro, turmaIdInicial, filtroInicial){
+  const turmas = turmasCacheAtiv.filter(t=>registro.turmasIds && registro.turmasIds[t.id]).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const titulo = 'Entregas — '+(registro.nomeAtividade||registro.codigo);
+  if (!turmas.length){ abrirModal(titulo, '<p class="vazio-msg">Esta atividade não está liberada para nenhuma turma. Use "Editar →" para marcar as turmas.</p>'); return; }
+  const turmaSel = turmas.find(t=>t.id===turmaIdInicial) || turmas[0];
+  abrirModal(titulo,
+    '<div class="campo" style="max-width:360px;"><label for="corr-turma">Turma</label><select id="corr-turma" class="select-turma">'+
+    turmas.map(t=>'<option value="'+t.id+'"'+(t.id===turmaSel.id?' selected':'')+'>'+escapeHTML(t.nome)+'</option>').join('')+'</select></div>'+
+    '<div id="corr-corpo"><p class="vazio-msg">Carregando entregas…</p></div>');
+  const sel = document.getElementById('corr-turma');
+  sel.addEventListener('change', ()=>renderCorpoCorrecao(registro, turmas.find(t=>t.id===sel.value), 'todos'));
+  await renderCorpoCorrecao(registro, turmaSel, filtroInicial||'todos');
+}
+async function renderCorpoCorrecao(registro, turma, filtro){
+  const corpo = document.getElementById('corr-corpo');
+  if (!corpo) return;
+  corpo.innerHTML = '<p class="vazio-msg">Carregando entregas…</p>';
+  let dados;
+  try{ dados = await carregarDadosCorrecao(registro, turma); }
+  catch(e){ corpo.innerHTML = '<p class="erro-msg">Erro ao carregar: '+escapeHTML(e.message)+'</p>'; return; }
+  const ativos = dados.alunos.filter(a=>!a.inabilitado);
+  const grupos = {
+    todos: dados.alunos,
+    entregues: ativos.filter(a=>a.situacao==='entregue'||a.situacao==='corrigida'),
+    aguardando: ativos.filter(a=>a.situacao==='entregue'),
+    corrigidas: ativos.filter(a=>a.situacao==='corrigida'),
+    rascunho: ativos.filter(a=>a.situacao==='rascunho'),
+    nao: ativos.filter(a=>a.situacao==='nao')
+  };
+  if (!grupos[filtro]) filtro = 'todos';
+  const card = (k, n, rotulo)=>'<button type="button" class="stat-card'+(filtro===k?' stat-card-ativo':'')+'" data-corr-filtro="'+k+'"><span class="stat-num">'+n+'</span><span class="stat-label">'+rotulo+'</span></button>';
+  const lista = grupos[filtro];
+  const valor = Number(registro.valorTotal)||0;
+  corpo.innerHTML =
+    '<div class="stats-grid" style="margin:4px 0 16px;">'+
+    card('entregues', grupos.entregues.length+'/'+ativos.length, 'entregaram')+
+    card('aguardando', grupos.aguardando.length, 'aguardando correção')+
+    card('corrigidas', grupos.corrigidas.length, 'corrigidas')+
+    card('rascunho', grupos.rascunho.length, 'só rascunho (não entregaram)')+
+    card('nao', grupos.nao.length, 'não começaram')+
+    '</div>'+
+    (filtro!=='todos'?'<p style="margin:0 0 10px;font-size:.85rem;">Filtro: <strong>'+escapeHTML(({entregues:'entregaram',aguardando:'aguardando correção',corrigidas:'corrigidas',rascunho:'só rascunho',nao:'não começaram'})[filtro])+'</strong> · <button type="button" class="botao-texto" data-corr-filtro="todos">mostrar todos</button></p>':'')+
+    (lista.length ? '<div class="admin-tabela-wrap"><table class="tabela-alunos"><thead><tr><th>Aluno</th><th>Situação</th><th>Entregue em</th><th>Palavras</th><th>Nota (de '+formatarNotaEntrega(valor)+')</th></tr></thead><tbody>'+
+      lista.map(a=>{
+        const s = a.sub;
+        const quando = s && s.enviadoEm ? formatarData(s.atualizadoEm||s.enviadoEm)+(s.foraDoPrazo?' <span class="tag-status tag-inativo">Fora do prazo</span>':'') : (a.rascunho?'<span style="color:var(--ink-suave);">rascunho de '+formatarData(a.rascunho.atualizadoEm)+'</span>':'—');
+        const palavras = s && s.texto ? contarPalavras(s.texto) : (a.rascunho ? contarPalavras(a.rascunho.texto)+' (rasc.)' : '—');
+        return '<tr class="linha-clicavel" data-corr-aluno="'+escapeHTML(a.chave)+'"><td><strong>'+escapeHTML(a.nome)+'</strong>'+(a.inabilitado?' <span class="tag-status tag-inativo">Abandonou</span>':'')+'</td>'+
+          '<td>'+ROTULO_SITUACAO_ENTREGA[a.situacao]+'</td><td>'+quando+'</td><td>'+palavras+'</td>'+
+          '<td><strong>'+(entregaCorrigida(s)?formatarNotaEntrega(s.nota):'—')+'</strong></td></tr>';
+      }).join('')+'</tbody></table></div>'
+      : '<p class="vazio-msg">Nenhum aluno neste grupo.</p>')+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:12px 0 0;">Clique em um aluno para ler o texto e lançar a nota. A nota vai automaticamente para o módulo Notas.</p>';
+  corpo.querySelectorAll('[data-corr-filtro]').forEach(b=>b.addEventListener('click', ()=>renderCorpoCorrecao(registro, turma, b.dataset.corrFiltro)));
+  corpo.querySelectorAll('[data-corr-aluno]').forEach(tr=>tr.addEventListener('click', ()=>{
+    const ordem = lista.map(a=>a.chave);
+    renderEntregaAlunoProfessor(registro, turma, dados, tr.dataset.corrAluno, filtro, ordem);
+  }));
+}
+function renderEntregaAlunoProfessor(registro, turma, dados, chave, filtro, ordem){
+  const corpo = document.getElementById('corr-corpo');
+  const a = dados.alunos.find(x=>x.chave===chave);
+  if (!corpo || !a) return;
+  const s = a.sub || {};
+  const valor = Number(registro.valorTotal)||0;
+  const texto = s.texto || '';
+  const idx = ordem.indexOf(chave);
+  const proximoPendente = ordem.slice(idx+1).map(k=>dados.alunos.find(x=>x.chave===k)).find(x=>x && x.situacao==='entregue');
+  const rapidas = [0, .25, .5, .75, 1].map(f=>Math.round(valor*f*100)/100);
+  let blocoTexto;
+  if (texto){
+    blocoTexto = '<div class="entrega-texto-leitura">'+escapeHTML(texto)+'</div>';
+  } else if (a.rascunho && String(a.rascunho.texto||'').trim()){
+    blocoTexto = '<p class="erro-msg" style="margin:0 0 8px;">O aluno ainda não clicou em "Entregar". Abaixo está o rascunho salvo em '+formatarData(a.rascunho.atualizadoEm)+':</p>'+
+      '<div class="entrega-texto-leitura" style="opacity:.75;">'+escapeHTML(a.rascunho.texto)+'</div>';
+  } else {
+    blocoTexto = '<p class="vazio-msg">Nenhum texto entregue na plataforma. Se o aluno entregou de outra forma (papel, e-mail), você pode lançar a nota mesmo assim.</p>';
+  }
+  const infoColagem = (s.colagens ? '<span class="stat-mini" title="Quantas vezes o aluno colou texto no campo de escrita">Colou texto '+s.colagens+'x ('+(s.caracteresColados||0)+' caracteres)</span>' : '');
+  corpo.innerHTML =
+    '<button type="button" class="botao-texto" id="corr-voltar" style="margin-bottom:10px;">← Voltar à lista</button>'+
+    '<h4 style="margin:0 0 6px;font-size:1.1rem;">'+escapeHTML(a.nome)+' '+ROTULO_SITUACAO_ENTREGA[a.situacao]+'</h4>'+
+    '<div class="turma-card-stats" style="margin-bottom:10px;">'+
+    (s.enviadoEm?'<span class="stat-mini">Entregue em '+formatarData(s.enviadoEm)+'</span>':'')+
+    (s.atualizadoEm && s.atualizadoEm!==s.enviadoEm?'<span class="stat-mini">Última alteração '+formatarData(s.atualizadoEm)+'</span>':'')+
+    (texto?'<span class="stat-mini">'+contarPalavras(texto)+' palavras · '+texto.length+' caracteres</span>':'')+
+    (s.foraDoPrazo?'<span class="stat-mini" style="background:#FCEAE8;color:var(--vermelho);">Entregue fora do prazo</span>':'')+
+    infoColagem+'</div>'+
+    blocoTexto+
+    '<div class="caixa-correcao">'+
+    '<label for="corr-nota" style="font-weight:800;">Nota (0 a '+formatarNotaEntrega(valor)+')</label>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px;">'+
+    '<input type="text" inputmode="decimal" id="corr-nota" value="'+(entregaCorrigida(s)?formatarNotaEntrega(s.nota):'')+'" style="width:90px;padding:9px 10px;border:1.5px solid var(--ink);border-radius:6px;font-size:1rem;font-weight:800;">'+
+    rapidas.map(v=>'<button type="button" class="chip" data-nota-rapida="'+v+'">'+formatarNotaEntrega(v)+'</button>').join('')+
+    '</div>'+
+    '<label for="corr-coment" style="font-weight:700;font-size:.85rem;">Comentário para o aluno (opcional — ele vê junto com a nota)</label>'+
+    '<textarea id="corr-coment" rows="3" class="textarea-discursiva" style="margin-top:6px;">'+escapeHTML(s.comentario||'')+'</textarea>'+
+    '<p class="erro-msg" id="corr-erro" hidden></p>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">'+
+    '<button type="button" class="botao botao-primario" id="corr-salvar">Salvar nota</button>'+
+    (proximoPendente?'<button type="button" class="botao botao-secundario" id="corr-salvar-prox">Salvar e corrigir o próximo ('+escapeHTML(proximoPendente.nome.split(' ')[0])+') →</button>':'')+
+    (entregaCorrigida(s)?'<button type="button" class="botao botao-perigo botao-pequeno" id="corr-desfazer" title="Remove a nota e libera o aluno para editar e reenviar">Desfazer correção</button>':'')+
+    '</div></div>';
+  document.getElementById('corr-voltar').addEventListener('click', ()=>renderCorpoCorrecao(registro, turma, filtro));
+  corpo.querySelectorAll('[data-nota-rapida]').forEach(b=>b.addEventListener('click', ()=>{ document.getElementById('corr-nota').value = formatarNotaEntrega(b.dataset.notaRapida); }));
+  const salvar = async (irProximo)=>{
+    const erro = document.getElementById('corr-erro'); erro.hidden = true;
+    const nota = parseFloat(document.getElementById('corr-nota').value.replace(',','.'));
+    if (isNaN(nota) || nota<0 || nota>valor){ erro.textContent='Informe uma nota entre 0 e '+formatarNotaEntrega(valor)+'.'; erro.hidden=false; return; }
+    const ref = db.ref('turmas/'+dados.tk+'/atividades/'+registro.codigo+'/alunos/'+chave);
+    const upd = {nota:Math.round(nota*100)/100, comentario:document.getElementById('corr-coment').value.trim(), corrigidoEm:Date.now(),
+      corrigidoPor:(professorLogado&&professorLogado.nome)||'', nome:a.nome, turma:turma.nome, acertos:0};
+    if (!texto) upd.entregaForaPlataforma = true;
+    try{
+      await ref.update(upd);
+      a.sub = Object.assign({}, s, upd); a.situacao = 'corrigida';
+      if (irProximo && proximoPendente) renderEntregaAlunoProfessor(registro, turma, dados, proximoPendente.chave, filtro, ordem);
+      else renderEntregaAlunoProfessor(registro, turma, dados, chave, filtro, ordem);
+      const msgOk = document.createElement('p'); msgOk.className='msg-sucesso'; msgOk.style.marginTop='8px';
+      msgOk.textContent = irProximo && proximoPendente ? 'Nota de '+a.nome+' salva.' : 'Nota salva — já aparece no módulo Notas.';
+      document.getElementById('corr-corpo').prepend(msgOk);
+    } catch(e){ erro.textContent='Erro ao salvar: '+e.message; erro.hidden=false; }
+  };
+  document.getElementById('corr-salvar').addEventListener('click', ()=>salvar(false));
+  const bp = document.getElementById('corr-salvar-prox'); if (bp) bp.addEventListener('click', ()=>salvar(true));
+  const bd = document.getElementById('corr-desfazer');
+  if (bd) bd.addEventListener('click', async ()=>{
+    if (!confirm('Remover a nota de '+a.nome+'? O aluno volta a poder editar e reenviar o texto.')) return;
+    const ref = db.ref('turmas/'+dados.tk+'/atividades/'+registro.codigo+'/alunos/'+chave);
+    try{
+      if (!s.texto) await ref.remove();
+      else await ref.update({nota:null, comentario:null, corrigidoEm:null, corrigidoPor:null});
+      a.sub = s.texto ? Object.assign({}, s, {nota:null, comentario:null, corrigidoEm:null}) : null;
+      a.situacao = s.texto ? 'entregue' : (a.rascunho && String(a.rascunho.texto||'').trim() ? 'rascunho' : 'nao');
+      renderEntregaAlunoProfessor(registro, turma, dados, chave, filtro, ordem);
+    } catch(e){ alert('Erro: '+e.message); }
+  });
+}
+
+/* ---------- aluno ---------- */
+async function situacaoEntregaAluno(turmaKey, ativ, chave){
+  const [sub, rasc] = await Promise.all([
+    buscarSubmissaoAtividade(turmaKey, ativ.codigo, chave),
+    db.ref('turmas/'+turmaKey+'/entregasRascunho/'+ativ.codigo+'/'+chave).once('value').then(s=>s.val())
+  ]);
+  return {sub, rasc};
+}
+async function badgeEntregaTextoHtml(turmaKey, ativ, chave){
+  try{
+    const {sub, rasc} = await situacaoEntregaAluno(turmaKey, ativ, chave);
+    if (entregaCorrigida(sub)) return '<span class="badge-liberado">Corrigida — nota '+formatarNotaEntrega(sub.nota)+'</span>';
+    if (sub && sub.texto) return '<span class="badge-liberado" style="background:var(--folder-escuro);">Entregue — aguardando correção</span>';
+    if (rasc && String(rasc.texto||'').trim()) return '<span class="badge-pendente">Rascunho salvo — falta entregar</span>';
+    return '<span class="badge-pendente">Ainda não entregue'+(ativ.prazoEm?' · prazo '+formatarData(ativ.prazoEm):'')+'</span>';
+  } catch(e){ return '<span class="badge-pendente">—</span>'; }
+}
+
+async function abrirEntregaTexto(){
+  const ativ = atividadeAtual;
+  const chave = turmaSlug(identidade.nome);
+  const tk = identidade.turmaKey;
+  mostrarTela('tela-carregando');
+  let sub=null, rasc=null;
+  try{ ({sub, rasc} = await situacaoEntregaAluno(tk, ativ, chave)); }
+  catch(e){
+    document.getElementById('erro-texto').textContent = 'Não foi possível abrir a atividade: '+e.message;
+    mostrarTela('tela-erro'); return;
+  }
+  let local = null;
+  try{ local = JSON.parse(localStorage.getItem('entrega_'+tk+'_'+ativ.codigo+'_'+chave)||'null'); } catch(e){}
+  // escolhe o texto mais recente entre entrega, rascunho no banco e cópia local
+  const candidatos = [];
+  if (sub && sub.texto) candidatos.push({texto:sub.texto, em:sub.atualizadoEm||sub.enviadoEm||0});
+  if (rasc && rasc.texto!=null) candidatos.push({texto:rasc.texto, em:rasc.atualizadoEm||0});
+  if (local && local.texto!=null) candidatos.push({texto:local.texto, em:local.em||0});
+  candidatos.sort((x,y)=>y.em-x.em);
+  const textoInicial = candidatos.length ? candidatos[0].texto : '';
+  entregaAtualEstado = {ativ, chave, tk, sub, colagens:(rasc&&rasc.colagens)||(sub&&sub.colagens)||0, caracteresColados:(rasc&&rasc.caracteresColados)||(sub&&sub.caracteresColados)||0, ultimoSalvo:textoInicial};
+
+  document.getElementById('titulo-entrega').textContent = ativ.titulo;
+  document.getElementById('subtitulo-entrega').textContent = 'pesquisa / texto · vale '+formatarValorPonto(ativ.valorTotal)+' · '+identidade.nome;
+  document.getElementById('instrucao-entrega').textContent = ativ.instrucao || '';
+  const infos = [];
+  if (ativ.prazoEm) infos.push('<span class="stat-mini'+(prazoEncerrado(ativ)?' stat-alerta':'')+'">Prazo: '+formatarData(ativ.prazoEm)+(prazoEncerrado(ativ)?' (encerrado)':'')+'</span>');
+  if (ativ.minPalavras) infos.push('<span class="stat-mini">Mínimo de '+ativ.minPalavras+' palavras</span>');
+  document.getElementById('info-entrega').innerHTML = infos.join('');
+  const mat = document.getElementById('material-entrega');
+  mat.innerHTML = botaoMaterialAlunoHtml(ativ); ligarBotoesMaterialAluno(mat);
+
+  const area = document.getElementById('area-entrega');
+  if (entregaCorrigida(sub)){
+    area.innerHTML =
+      '<div class="media-card media-card-final" style="margin:0 0 14px;"><h4>Sua nota</h4><p class="media-valor">'+formatarNotaEntrega(sub.nota)+' <span style="font-size:1rem;opacity:.75;">de '+formatarNotaEntrega(ativ.valorTotal)+'</span></p></div>'+
+      (sub.comentario?'<div class="caixa-correcao" style="margin:0 0 14px;"><strong>Comentário do(a) professor(a):</strong><p style="margin:6px 0 0;white-space:pre-line;">'+escapeHTML(sub.comentario)+'</p></div>':'')+
+      (sub.texto?'<p style="font-weight:800;margin:0 0 6px;">Seu texto entregue em '+formatarData(sub.enviadoEm)+':</p><div class="entrega-texto-leitura">'+escapeHTML(sub.texto)+'</div>'
+               :'<p class="vazio-msg">Nota lançada pelo(a) professor(a) para uma entrega feita fora da plataforma.</p>');
+    mostrarTela('tela-entrega-texto');
+    return;
+  }
+  const bloqueado = ativ.bloquearAposPrazo && prazoEncerrado(ativ);
+  const jaEntregue = !!(sub && sub.texto);
+  area.innerHTML =
+    (jaEntregue?'<div class="aviso-entrega aviso-ok">✓ Você entregou em '+formatarData(sub.enviadoEm)+(sub.atualizadoEm&&sub.atualizadoEm!==sub.enviadoEm?' (atualizado em '+formatarData(sub.atualizadoEm)+')':'')+'. Você ainda pode editar e clicar em "Atualizar entrega" até o(a) professor(a) corrigir.</div>':'')+
+    (bloqueado?'<div class="aviso-entrega aviso-erro">O prazo terminou e o(a) professor(a) não está mais aceitando '+(jaEntregue?'alterações':'entregas')+'.</div>':'')+
+    '<textarea id="texto-entrega" class="textarea-entrega" placeholder="Escreva aqui a sua pesquisa…" '+(bloqueado?'readonly':'')+'>'+escapeHTML(textoInicial)+'</textarea>'+
+    '<div class="barra-entrega"><span id="contador-entrega"></span><span id="status-salvo-entrega"></span></div>'+
+    (bloqueado?'':
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">'+
+    '<button type="button" class="botao botao-secundario" id="btn-salvar-rascunho-entrega">Salvar rascunho</button>'+
+    '<button type="button" class="botao botao-primario" id="btn-entregar-texto">'+(jaEntregue?'Atualizar entrega':'Entregar pesquisa')+'</button></div>'+
+    '<div class="confirmacao-envio" id="confirmacao-entrega" hidden><p id="confirmacao-entrega-texto"></p><div class="confirmacao-botoes">'+
+    '<button type="button" class="botao botao-primario botao-pequeno" id="btn-confirmar-entrega">Sim, entregar</button>'+
+    '<button type="button" class="botao botao-secundario botao-pequeno" id="btn-cancelar-entrega">Continuar escrevendo</button></div></div>'+
+    '<p class="erro-msg" id="erro-entrega" hidden></p>'+
+    '<p style="font-size:.8rem;color:var(--ink-suave);margin:12px 0 0;">O texto é salvo automaticamente enquanto você escreve. Você pode sair e voltar depois para terminar — mas só o(a) professor(a) recebe depois que você clicar em "'+(jaEntregue?'Atualizar entrega':'Entregar pesquisa')+'".</p>');
+  mostrarTela('tela-entrega-texto');
+  const ta = document.getElementById('texto-entrega');
+  atualizarContadorEntrega();
+  if (candidatos.length && jaEntregue && candidatos[0].texto !== sub.texto) marcarStatusEntrega('Você tem alterações que ainda não foram entregues.', true);
+  else if (rasc && rasc.atualizadoEm && !jaEntregue) marcarStatusEntrega('Rascunho salvo em '+formatarData(rasc.atualizadoEm));
+  if (bloqueado) return;
+  ta.addEventListener('input', ()=>{ atualizarContadorEntrega(); agendarAutosaveEntrega(); });
+  ta.addEventListener('blur', ()=>salvarRascunhoEntrega());
+  ta.addEventListener('paste', (e)=>{
+    const colado = (e.clipboardData && e.clipboardData.getData('text')) || '';
+    if (colado.length > 30){ entregaAtualEstado.colagens++; entregaAtualEstado.caracteresColados += colado.length; }
+  });
+  document.getElementById('btn-salvar-rascunho-entrega').addEventListener('click', ()=>salvarRascunhoEntrega(true));
+  document.getElementById('btn-entregar-texto').addEventListener('click', pedirConfirmacaoEntrega);
+  document.getElementById('btn-cancelar-entrega').addEventListener('click', ()=>{ document.getElementById('confirmacao-entrega').hidden = true; });
+  document.getElementById('btn-confirmar-entrega').addEventListener('click', confirmarEntregaTexto);
+}
+function atualizarContadorEntrega(){
+  const ta = document.getElementById('texto-entrega'); if (!ta) return;
+  const n = contarPalavras(ta.value), min = entregaAtualEstado.ativ.minPalavras||0;
+  document.getElementById('contador-entrega').innerHTML = '<strong>'+n+'</strong> palavra'+(n===1?'':'s')+' · '+ta.value.length+' caracteres'+
+    (min?' · <span style="color:'+(n>=min?'var(--verde)':'var(--vermelho)')+';font-weight:700;">mínimo '+min+'</span>':'');
+}
+function marcarStatusEntrega(txt, alerta){
+  const el = document.getElementById('status-salvo-entrega'); if (!el) return;
+  el.textContent = txt; el.style.color = alerta ? 'var(--vermelho)' : 'var(--ink-suave)';
+}
+function agendarAutosaveEntrega(){
+  clearTimeout(timerAutosaveEntrega);
+  marcarStatusEntrega('Salvando…');
+  timerAutosaveEntrega = setTimeout(()=>salvarRascunhoEntrega(), 1500);
+}
+async function salvarRascunhoEntrega(manual){
+  clearTimeout(timerAutosaveEntrega);
+  const ta = document.getElementById('texto-entrega');
+  const est = entregaAtualEstado;
+  if (!ta || !est) return;
+  const texto = ta.value;
+  const agora = Date.now();
+  try{ localStorage.setItem('entrega_'+est.tk+'_'+est.ativ.codigo+'_'+est.chave, JSON.stringify({texto, em:agora})); } catch(e){}
+  if (!manual && texto === est.ultimoSalvo){ marcarStatusEntrega('Tudo salvo'); return; }
+  try{
+    await db.ref('turmas/'+est.tk+'/entregasRascunho/'+est.ativ.codigo+'/'+est.chave).set({
+      texto, atualizadoEm:agora, nome:identidade.nome, colagens:est.colagens, caracteresColados:est.caracteresColados
+    });
+    est.ultimoSalvo = texto;
+    const pendente = est.sub && est.sub.texto && est.sub.texto !== texto;
+    marcarStatusEntrega(pendente ? 'Rascunho salvo às '+new Date(agora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' — clique em "Atualizar entrega" para enviar as alterações' : 'Rascunho salvo às '+new Date(agora).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), pendente);
+  } catch(e){
+    marcarStatusEntrega('Sem conexão — o texto ficou guardado neste aparelho. Tente salvar de novo.', true);
+  }
+}
+function pedirConfirmacaoEntrega(){
+  const est = entregaAtualEstado;
+  const ta = document.getElementById('texto-entrega');
+  const erro = document.getElementById('erro-entrega'); erro.hidden = true;
+  const texto = ta.value.trim();
+  const n = contarPalavras(texto);
+  if (!texto){ erro.textContent='Escreva sua pesquisa antes de entregar.'; erro.hidden=false; return; }
+  if (est.ativ.minPalavras && n < est.ativ.minPalavras){ erro.textContent='Seu texto tem '+n+' palavras. O mínimo pedido é '+est.ativ.minPalavras+'.'; erro.hidden=false; return; }
+  if (est.ativ.bloquearAposPrazo && prazoEncerrado(est.ativ)){ erro.textContent='O prazo de entrega terminou.'; erro.hidden=false; return; }
+  document.getElementById('confirmacao-entrega-texto').textContent =
+    (est.sub && est.sub.texto ? 'Atualizar sua entrega com o texto atual ('+n+' palavras)?' : 'Entregar sua pesquisa ('+n+' palavras) para o(a) professor(a)?')+
+    ' Você ainda poderá editar até a correção.'+(prazoEncerrado(est.ativ)?' Atenção: o prazo já passou, a entrega ficará marcada como fora do prazo.':'');
+  document.getElementById('confirmacao-entrega').hidden = false;
+}
+async function confirmarEntregaTexto(){
+  const est = entregaAtualEstado;
+  const ta = document.getElementById('texto-entrega');
+  const btn = document.getElementById('btn-confirmar-entrega');
+  const erro = document.getElementById('erro-entrega');
+  const texto = ta.value.trim();
+  const agora = Date.now();
+  btn.disabled = true;
+  try{
+    const ref = db.ref('turmas/'+est.tk+'/atividades/'+est.ativ.codigo+'/alunos/'+est.chave);
+    const atual = (await ref.once('value')).val() || {};
+    if (entregaCorrigida(atual)){ erro.textContent='Esta atividade já foi corrigida e não aceita mais alterações.'; erro.hidden=false; btn.disabled=false; return; }
+    const dados = {
+      tipo:'entrega-texto', nome:identidade.nome, turma:identidade.turmaNome, texto,
+      palavras:contarPalavras(texto), caracteres:texto.length,
+      enviadoEm: atual.enviadoEm || agora, atualizadoEm: agora, reenvios: atual.enviadoEm ? (atual.reenvios||0)+1 : 0,
+      foraDoPrazo: !!(est.ativ.prazoEm && agora > est.ativ.prazoEm) || !!atual.foraDoPrazo,
+      colagens: est.colagens, caracteresColados: est.caracteresColados, acertos:0
+    };
+    await ref.update(dados);
+    await db.ref('turmas/'+est.tk+'/entregasRascunho/'+est.ativ.codigo+'/'+est.chave).set({texto, atualizadoEm:agora, nome:identidade.nome, colagens:est.colagens, caracteresColados:est.caracteresColados});
+    await abrirEntregaTexto();
+    const area = document.getElementById('area-entrega');
+    const ok = document.createElement('div'); ok.className = 'aviso-entrega aviso-ok';
+    ok.innerHTML = '<strong>Pesquisa entregue com sucesso!</strong> O(a) professor(a) já pode ler e dar a nota.';
+    area.prepend(ok);
+    window.scrollTo({top:0, behavior:'smooth'});
+  } catch(e){
+    erro.textContent = 'Não foi possível entregar ('+e.message+'). Seu texto continua salvo; tente de novo.'; erro.hidden = false;
+    btn.disabled = false;
+  }
+}
+
 /* ===== INICIALIZAÇÃO / ROTEAMENTO ===== */
 async function iniciar(){
   const params = new URLSearchParams(location.search);
@@ -5210,7 +5925,7 @@ document.getElementById('btn-modulo-atividades').addEventListener('click', abrir
 document.getElementById('btn-voltar-painel-atividades').addEventListener('click', async ()=>{
   mostrarTela('tela-carregando');
   const registros = await buscarAtividadesCadastradas();
-  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(Boolean);
+  atividadesEfetivasProf = registros.map(construirAtividadeEfetiva).filter(a=>a && a.tipo!=='entrega-texto');
   popularSeletorAtividade(true);
   mostrarTela('tela-professor-painel');
   if (atividadeSelecionadaProf || modoTodasAtividades){ renderPainelProfessorAtual(); } else { document.getElementById('turmas-lista').innerHTML='<p class="vazio-msg">Cadastre uma atividade no módulo Atividades para começar.</p>'; }
